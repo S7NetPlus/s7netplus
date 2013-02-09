@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net", "S7.Net\S7.Net.csproj", "{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net.Test", "S7.Net.Test\S7.Net.Test.csproj", "{D34F7AF6-19DA-4AE6-9BB0-6666970F6838}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D34F7AF6-19DA-4AE6-9BB0-6666970F6838}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D34F7AF6-19DA-4AE6-9BB0-6666970F6838}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D34F7AF6-19DA-4AE6-9BB0-6666970F6838}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D34F7AF6-19DA-4AE6-9BB0-6666970F6838}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
