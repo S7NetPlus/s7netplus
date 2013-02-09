@@ -1,4 +1,5 @@
-# s7netplus -- A .NET library so Siemens S7 Connectivity
+# s7netplus
+#### A .NET Library for Siemens S7 Connectivity
 
 ## Overview
 
