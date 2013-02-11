@@ -7,11 +7,10 @@ namespace S7
 {
     public class Plc : IPlc
     {
-        // public properties
         public string IP
         { get; set; }
 
-        public CPU_Type CPU
+        public CpuType CPU
         { get; set; }
 
         public Int16 Rack
@@ -32,26 +31,20 @@ namespace S7
             {
                 Ping ping = new Ping();
                 PingReply result = ping.Send(IP);
-                if (result.Status == IPStatus.Success)
-                    return true;
-                else
-                    return false;
+                return result != null && result.Status == IPStatus.Success;
             }
         }
 
         public bool IsConnected { get; private set; }
 
-        public ErrorCode lastErrorCode = 0;
-        public string lastErrorString;
+        public string LastErrorString { get; private set; }
+        public ErrorCode LastErrorCode { get; private set; }
 
-        public int LastReadTime = 0;
-        public int LastWriteTime = 0;
+        private Socket _mSocket;
 
-        private Socket mSocket;
+        public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
 
-        public Plc() : this(CPU_Type.S7400, "localhost", 0, 2) { }
-
-        public Plc(CPU_Type cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
         {
             IsConnected = false;
             IP = ip;
@@ -62,38 +55,38 @@ namespace S7
             Tag = tag;
         }
 
-	    #region Connection (Open, Close)
-	    public ErrorCode Open()
+        public ErrorCode Open()
 	    {
 		    byte[] bReceive = new byte[256];
 
-		    try {
+		    try 
+            {
 			    // check if available
-			    Ping p = new Ping();
-                PingReply pingReplay = p.Send(IP);
-                if (pingReplay.Status != IPStatus.Success)
+                if (!IsAvailable)
+                {
                     throw new Exception();
-		    }
+                }
+            }
 		    catch  
             {
-			    lastErrorCode = ErrorCode.IPAdressNotAvailable;
-			    lastErrorString = "Destination IP-Address '" + IP + "' is not available!";
-			    return lastErrorCode;
+			    LastErrorCode = ErrorCode.IPAddressNotAvailable;
+			    LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
+			    return LastErrorCode;
 		    }
 
 		    try {
 			    // open the channel
-			    mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			    _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-			    mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
-			    mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
+			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
+			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
 
-			    IPEndPoint _server = new IPEndPoint(new IPAddress(IPToByteArray(IP)), 102);
-			    mSocket.Connect(_server);
+			    IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+			    _mSocket.Connect(server);
 		    }
 		    catch (Exception ex) {
-			    lastErrorCode = ErrorCode.ConnectionError;
-			    lastErrorString = ex.Message;
+			    LastErrorCode = ErrorCode.ConnectionError;
+			    LastErrorString = ex.Message;
 			    return ErrorCode.ConnectionError;
 		    }
 
@@ -102,7 +95,7 @@ namespace S7
 			    0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 
 			    1, 9 };
 			    switch (CPU) {
-				    case CPU_Type.S7200:
+				    case CpuType.S7200:
 					    //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
 					    bSend1[11] = 193;
 					    bSend1[12] = 2;
@@ -114,7 +107,7 @@ namespace S7
 					    bSend1[17] = 16;
 					    bSend1[18] = 0;
 					    break;
-				    case CPU_Type.S7300:
+				    case CpuType.S7300:
 					    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
 					    bSend1[11] = 193;
 					    bSend1[12] = 2;
@@ -126,7 +119,7 @@ namespace S7
 					    bSend1[17] = 3;
 					    bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
 					    break;
-				    case CPU_Type.S7400:
+				    case CpuType.S7400:
 					    //S7400: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
 					    bSend1[11] = 193;
 					    bSend1[12] = 2;
@@ -141,22 +134,22 @@ namespace S7
 				    default:
 					    return ErrorCode.WrongCPU_Type;
 			    }
-			    mSocket.Send(bSend1, 22, SocketFlags.None);
+			    _mSocket.Send(bSend1, 22, SocketFlags.None);
 
-			    if (mSocket.Receive(bReceive, 22, SocketFlags.None) != 22) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
+			    if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
 
 			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 
 			    0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 
 			    3, 0, 3, 1, 0 };
-			    mSocket.Send(bsend2, 25, SocketFlags.None);
+			    _mSocket.Send(bsend2, 25, SocketFlags.None);
 
-			    if (mSocket.Receive(bReceive, 27, SocketFlags.None) != 27) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
+			    if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
 			    IsConnected = true;
 		    }
 		    catch 
             {
-			    lastErrorCode = ErrorCode.ConnectionError;
-			    lastErrorString = "Couldn't establish the connection!";
+			    LastErrorCode = ErrorCode.ConnectionError;
+			    LastErrorString = "Couldn't establish the connection!";
 			    IsConnected = false;
 			    return ErrorCode.ConnectionError;
 		    }
@@ -167,46 +160,12 @@ namespace S7
 
 	    public void Close()
 	    {
-		    if (mSocket != null && mSocket.Connected) {
-			    mSocket.Close();
+		    if (_mSocket != null && _mSocket.Connected) {
+			    _mSocket.Close();
                 IsConnected = false;
 		    }
 	    }
 
-        private byte[] IPToByteArray(string ip)
-        {
-            byte[] v = new byte[4];
-            string txt = ip;
-            string txt2 = null;
-            try
-            {
-                txt2 = txt.Substring(0, txt.IndexOf("."));
-                v[0] = byte.Parse(txt2);
-                txt = txt.Substring(txt2.Length + 1);
-
-                txt2 = txt.Substring(0, txt.IndexOf("."));
-                v[1] = byte.Parse(txt2);
-                txt = txt.Substring(txt2.Length + 1);
-
-                txt2 = txt.Substring(0, txt.IndexOf("."));
-                v[2] = byte.Parse(txt2);
-                txt = txt.Substring(txt2.Length + 1);
-
-                v[3] = byte.Parse(txt);
-                return v;
-            }
-            catch
-            {
-                v[0] = 0;
-                v[1] = 0;
-                v[2] = 0;
-                v[3] = 0;
-                return v;
-            }
-        }
-	    #endregion
-
-        #region ReadBytes(DataType DataType, int DB, int StartByteAdr, int count)
         public byte[] ReadBytes(DataType DataType, int DB, int StartByteAdr, int count)
         {
             byte[] bytes = new byte[count];
@@ -249,10 +208,10 @@ namespace S7
                         break;
                 }
 
-                mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
                 byte[] bReceive = new byte[512];
-                int numReceived = mSocket.Receive(bReceive, 512, SocketFlags.None);
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
                 if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 for (int cnt = 0; cnt < count; cnt++)
@@ -262,13 +221,12 @@ namespace S7
             }
             catch
             {
-                lastErrorCode = ErrorCode.WriteData;
-                lastErrorString = "";
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = "";
                 return null;
             }
         }
-        #endregion
-        #region Read(DataType DataType, int DB, int StartByteAdr, VarType VarType, int VarCount)
+
         public object Read(DataType DataType, int DB, int StartByteAdr, VarType VarType, int VarCount)
         {
             byte[] bytes = null;
@@ -359,9 +317,8 @@ namespace S7
             }
             return null;
         }
-        #endregion
-        #region Read(string variable)
-        public object Read(string variable)
+
+        object IPlc.Read(string variable)
         {
             DataType mDataType;
             int mDB;
@@ -489,13 +446,12 @@ namespace S7
             }
             catch 
             {
-                lastErrorCode = ErrorCode.WrongVarFormat;
-                lastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
-                return lastErrorCode;
+                LastErrorCode = ErrorCode.WrongVarFormat;
+                LastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
+                return LastErrorCode;
             }
         }
-        #endregion
-        #region ReadStruct(Type structType, int DB)
+
         public object ReadStruct(Type structType, int DB)
         {
             double numBytes = Types.Struct.GetStructSize(structType);
@@ -504,9 +460,7 @@ namespace S7
             // and decode it
             return Types.Struct.FromBytes(structType, bytes);
         }
-        #endregion
 
-        #region WriteBytes(DataType DataType, int DB, int StartByteAdr, byte[] value)
         public ErrorCode WriteBytes(DataType DataType, int DB, int StartByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
@@ -537,22 +491,21 @@ namespace S7
                 // now join the header and the data
                 package.Add(value);
 
-                mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                int numReceived = mSocket.Receive(bReceive, 512, SocketFlags.None);
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
                 if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 return ErrorCode.NoError;
             }
             catch
             {
-                lastErrorCode = ErrorCode.WriteData;
-                lastErrorString = "";
-                return lastErrorCode;
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = "";
+                return LastErrorCode;
             }
         }
-        #endregion
-        #region Write(DataType DataType, int DB, int StartByteAdr, object value)
+
         public object Write(DataType DataType, int DB, int StartByteAdr, object value)
         {
             byte[] package = null;
@@ -603,8 +556,7 @@ namespace S7
             }
             return WriteBytes(DataType, DB, StartByteAdr, package);
         }
-        #endregion
-        #region Write(string variable, object value)
+
         public object Write(string variable, object value)
         {
             DataType mDataType;
@@ -742,13 +694,12 @@ namespace S7
             catch (Exception ex)
             {
                 string msg = ex.Message;
-                lastErrorCode = ErrorCode.WrongVarFormat;
-                lastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
-                return lastErrorCode;
+                LastErrorCode = ErrorCode.WrongVarFormat;
+                LastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
+                return LastErrorCode;
             }
         }
-        #endregion
-        #region WriteStruct(object value, int DB)
+
         public ErrorCode WriteStruct(object structValue, int DB)
         {
             try
@@ -759,18 +710,17 @@ namespace S7
             }
             catch
             {
-                lastErrorCode = ErrorCode.WriteData;
-                lastErrorString = "Fehler beim Schreiben der Daten aufgetreten!";
-                return lastErrorCode;
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = "Fehler beim Schreiben der Daten aufgetreten!";
+                return LastErrorCode;
             }
         }
-        #endregion
 
         public void Dispose()
         {
-            if (mSocket != null)
+            if (_mSocket != null)
             {
-                ((IDisposable)mSocket).Dispose();
+                ((IDisposable)_mSocket).Dispose();
             }
         }
     }

@@ -135,27 +135,6 @@ namespace S7
             }
         }
 
-        public static int ByteToInt16(this byte[] data, int offset)
-        {
-            byte[] bytes = data.Skip(offset).Take(2).ToArray();
-            Array.Reverse(bytes);
-            return BitConverter.ToInt16(bytes, 0);
-        }
-
-        public static int ByteToInt32(this byte[] data, int offset)
-        {
-            byte[] bytes = data.Skip(offset).Take(4).ToArray();
-            Array.Reverse(bytes);
-            return BitConverter.ToInt32(bytes, 0);
-        }
-
-        public static float ByteToFloat(this byte[] data, int offset)
-        {
-            byte[] bytes = data.Skip(offset).Take(4).ToArray();
-            Array.Reverse(bytes);
-            return BitConverter.ToSingle(bytes, 0);
-        }
-
         public static bool SelectBit(this byte data, int bitPosition)
         {
             int mask = 1 << bitPosition;

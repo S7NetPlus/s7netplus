@@ -6,7 +6,7 @@ namespace S7
     {
         string IP { get; set; }
         bool IsConnected { get; }
-        CPU_Type CPU { get; set; }
+        CpuType CPU { get; set; }
         Int16 Rack { get; set; }
         Int16 Slot { get; set; }
         string Name { get; set; }
