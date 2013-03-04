@@ -13,3 +13,36 @@ to my request for committing code, I decided to pick up where he left off here o
 
 + Compatible S7 PLC (S7-200, S7-300, S7-400, S7-1200)
 + .NET Framework 3.5 or higher
+
+## Basic Usage
+
+```C#
+string deviceIpAddress = "172.25.116.87";
+int rackNumber = 0;
+int slotNumber = 2;
+using (var plc = new PLC(CPU_Type.S7300, deviceIpAddress, rackNumber, slotNumber))
+{
+	//Ensure IP is responding
+    if (plc.IsAvailable)
+    {
+        ErrorCode connectionResult = plc.Open();
+
+		 //Verify that connection was successful
+        if (connectionResult.Equals(ErrorCode.NoError))
+        {
+            //Get data
+            object data = plc.Read("MB59");
+
+            Console.WriteLine("SUCCESS: Read result of MB59 is {0}", data);
+        }
+        else
+        {
+            Console.WriteLine("ERROR: Device is available but connection was unsuccessful!");
+        }
+    }
+    else
+    {
+        Console.WriteLine("ERROR: Device is not available!");
+    }
+} 
+```

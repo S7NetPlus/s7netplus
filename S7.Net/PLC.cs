@@ -7,6 +7,8 @@ namespace S7
 {
     public class Plc : IPlc
     {
+        private Socket _mSocket; //TCP connection to device
+
         public string IP
         { get; set; }
 
@@ -39,8 +41,6 @@ namespace S7
 
         public string LastErrorString { get; private set; }
         public ErrorCode LastErrorCode { get; private set; }
-
-        private Socket _mSocket;
 
         public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
 
@@ -91,9 +91,8 @@ namespace S7
 		    }
 
 		    try {
-			    byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 
-			    0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 
-			    1, 9 };
+			    byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
+
 			    switch (CPU) {
 				    case CpuType.S7200:
 					    //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
@@ -107,6 +106,7 @@ namespace S7
 					    bSend1[17] = 16;
 					    bSend1[18] = 0;
 					    break;
+                    case CpuType.S71200:
 				    case CpuType.S7300:
 					    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
 					    bSend1[11] = 193;
@@ -136,14 +136,19 @@ namespace S7
 			    }
 			    _mSocket.Send(bSend1, 22, SocketFlags.None);
 
-			    if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
+			    if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
+			    {
+			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+			    } 
 
-			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 
-			    0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 
-			    3, 0, 3, 1, 0 };
+			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
+
 			    _mSocket.Send(bsend2, 25, SocketFlags.None);
 
-			    if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString()); 
+			    if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
+			    {
+			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+			    } 
 			    IsConnected = true;
 		    }
 		    catch 
@@ -155,7 +160,6 @@ namespace S7
 		    }
 
 		    return ErrorCode.NoError;
-		    // ok
 	    }
 
 	    public void Close()
@@ -178,9 +182,7 @@ namespace S7
 
                 package.Add(new byte[] { 0x03, 0x00, 0x00 });
                 package.Add((byte)packageSize);
-                package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 
-                                         0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 
-                                         0x0a, 0x10});
+                package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
                // package.Add(0x02);  // datenart
                 switch (DataType)
                 {
