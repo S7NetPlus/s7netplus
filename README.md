@@ -8,3 +8,8 @@ I found the library simple and effective, but the project has languished unchang
 
 I was doing some automation work already and saw a few places where the code base could be improved. Because Juergen did not respond
 to my request for committing code, I decided to pick up where he left off here on GitHub.
+
+## Requirements
+
++ Compatible S7 PLC (S7-200, S7-300, S7-400, S7-1200)
++ .NET Framework 3.5 or higher
