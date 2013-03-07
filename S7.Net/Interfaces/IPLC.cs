@@ -14,13 +14,13 @@ namespace S7
         bool IsAvailable { get; }
         ErrorCode Open();
         void Close();
-        byte[] ReadBytes(DataType DataType, int DB, int StartByteAdr, int count);
-        object Read(DataType DataType, int DB, int StartByteAdr, VarType VarType, int VarCount);
+        byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count);
+        object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount);
         object Read(string variable);
-        object ReadStruct(Type structType, int DB);
-        ErrorCode WriteBytes(DataType DataType, int DB, int StartByteAdr, byte[] value);
-        object Write(DataType DataType, int DB, int StartByteAdr, object value);
+        object ReadStruct(Type structType, int db);
+        ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value);
+        object Write(DataType dataType, int db, int startByteAdr, object value);
         object Write(string variable, object value);
-        ErrorCode WriteStruct(object structValue, int DB);
+        ErrorCode WriteStruct(object structValue, int db);
     }
 }

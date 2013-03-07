@@ -9,24 +9,12 @@ namespace S7
     {
         private Socket _mSocket; //TCP connection to device
 
-        public string IP
-        { get; set; }
-
-        public CpuType CPU
-        { get; set; }
-
-        public Int16 Rack
-        { get; set; }
-
-        public Int16 Slot
-        { get; set; }
-
-        public string Name
-        { get; set; }
-
-        public object Tag
-        { get; set; }
-
+        public string IP { get; set; }
+        public CpuType CPU { get; set; }
+        public Int16 Rack { get; set; }
+        public Int16 Slot { get; set; }
+        public string Name { get; set; }
+        public object Tag { get; set; }
         public bool IsAvailable
         {
             get
@@ -36,9 +24,7 @@ namespace S7
                 return result != null && result.Status == IPStatus.Success;
             }
         }
-
         public bool IsConnected { get; private set; }
-
         public string LastErrorString { get; private set; }
         public ErrorCode LastErrorCode { get; private set; }
 
@@ -90,7 +76,8 @@ namespace S7
 			    return ErrorCode.ConnectionError;
 		    }
 
-		    try {
+		    try 
+            {
 			    byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
 
 			    switch (CPU) {
@@ -134,15 +121,14 @@ namespace S7
 				    default:
 					    return ErrorCode.WrongCPU_Type;
 			    }
-			    _mSocket.Send(bSend1, 22, SocketFlags.None);
 
+			    _mSocket.Send(bSend1, 22, SocketFlags.None);
 			    if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
 			    {
 			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 			    } 
 
 			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
-
 			    _mSocket.Send(bsend2, 25, SocketFlags.None);
 
 			    if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
@@ -154,7 +140,7 @@ namespace S7
 		    catch 
             {
 			    LastErrorCode = ErrorCode.ConnectionError;
-			    LastErrorString = "Couldn't establish the connection!";
+			    LastErrorString = string.Format("Couldn't establish the connection to {0}!", IP);
 			    IsConnected = false;
 			    return ErrorCode.ConnectionError;
 		    }
@@ -164,13 +150,14 @@ namespace S7
 
 	    public void Close()
 	    {
-		    if (_mSocket != null && _mSocket.Connected) {
+		    if (_mSocket != null && _mSocket.Connected) 
+            {
 			    _mSocket.Close();
                 IsConnected = false;
 		    }
 	    }
 
-        public byte[] ReadBytes(DataType DataType, int DB, int StartByteAdr, int count)
+        public byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
 
@@ -184,11 +171,11 @@ namespace S7
                 package.Add((byte)packageSize);
                 package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
                // package.Add(0x02);  // datenart
-                switch (DataType)
+                switch (dataType)
                 {
                     case DataType.Timer:
                     case DataType.Counter:
-                        package.Add((byte)DataType);
+                        package.Add((byte)dataType);
                         break;
                     default:
                         package.Add(0x02);
@@ -197,16 +184,16 @@ namespace S7
 
                 package.Add(Types.Word.ToByteArray((ushort)(count)));
                 package.Add(Types.Word.ToByteArray((ushort)(DB)));
-                package.Add((byte)DataType);
+                package.Add((byte)dataType);
                 package.Add((byte)0);
-                switch (DataType)
+                switch (dataType)
                 {
                     case DataType.Timer:
                     case DataType.Counter:
-                        package.Add(Types.Word.ToByteArray((ushort)(StartByteAdr)));
+                        package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
                         break;
                     default:
-                        package.Add(Types.Word.ToByteArray((ushort)((StartByteAdr) * 8)));
+                        package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
                         break;
                 }
 
@@ -229,95 +216,94 @@ namespace S7
             }
         }
 
-        public object Read(DataType DataType, int DB, int StartByteAdr, VarType VarType, int VarCount)
+        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
         {
             byte[] bytes = null;
             int cntBytes = 0;
 
-            switch (VarType)
+            switch (varType)
             {
                 case VarType.Byte:
-                    cntBytes = VarCount;
+                    cntBytes = varCount;
                     if (cntBytes < 1) cntBytes = 1;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return bytes[0];
                     else
                         return bytes;
                 case VarType.Word:
-                    cntBytes = VarCount * 2;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 2;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.Word.FromByteArray(bytes);
                     else
                         return Types.Word.ToArray(bytes);
                 case VarType.Int:
-                    cntBytes = VarCount * 2;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 2;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.Int.FromByteArray(bytes);
                     else
                         return Types.Int.ToArray(bytes);
                 case VarType.DWord:
-                    cntBytes = VarCount * 4;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 4;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.DWord.FromByteArray(bytes);
                     else
                         return Types.DWord.ToArray(bytes);
                 case VarType.DInt:
-                    cntBytes = VarCount * 4;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 4;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.DInt.FromByteArray(bytes);
                     else
                         return Types.DInt.ToArray(bytes);
                 case VarType.Real:
-                    cntBytes = VarCount * 4;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 4;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.Double.FromByteArray(bytes);
                     else
                         return Types.Double.ToArray(bytes);
                 case VarType.String:
-                    cntBytes = VarCount;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
                     return Types.String.FromByteArray(bytes);
                 case VarType.Timer:
-                    cntBytes = VarCount * 2;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 2;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.Timer.FromByteArray(bytes);
                     else
                         return Types.Timer.ToArray(bytes);
                 case VarType.Counter:
-                    cntBytes = VarCount * 2;
-                    bytes = ReadBytes(DataType, DB, StartByteAdr, cntBytes);
+                    cntBytes = varCount * 2;
+                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
                     if (bytes == null) return null;
 
-                    if (VarCount == 1)
+                    if (varCount == 1)
                         return Types.Counter.FromByteArray(bytes);
                     else
                         return Types.Counter.ToArray(bytes);
                 default:
                     return null;
             }
-            return null;
         }
 
         object IPlc.Read(string variable)
@@ -346,7 +332,6 @@ namespace S7
                             throw new Exception();
 
                         mDB = int.Parse(strings[0].Substring(2));
-                        mDataType = DataType.DataBlock;
                         string dbType = strings[1].Substring(0, 3);
                         int dbIndex = int.Parse(strings[1].Substring(3));
 
@@ -371,57 +356,57 @@ namespace S7
                                 throw new Exception();
                         }
                     case "EB":
-                        // Eingangsbyte
+                        // Input byte
                         objByte = (byte)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "EW":
-                        // Eingangswort
+                        // Input word
                         objUInt16 = (UInt16)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "ED":
-                        // Eingangsdoppelwort
+                        // Input double-word
                         objUInt32 = (UInt32)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     case "AB":
-                        // Ausgangsbyte
+                        // Output byte
                         objByte = (byte)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "AW":
-                        // Ausgangswort
+                        // Output word
                         objUInt16 = (UInt16)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "AD":
-                        // Ausgangsdoppelwort
+                        // Output double-word
                         objUInt32 = (UInt32)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     case "MB":
-                        // Merkerbyte
-                        objByte = (byte)Read(DataType.Marker, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
+                        // Memory byte
+                        objByte = (byte)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "MW":
-                        // Merkerwort
-                        objUInt16 = (UInt16)Read(DataType.Marker, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
+                        // Memory word
+                        objUInt16 = (UInt16)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "MD":
-                        // Merkerdoppelwort
-                        objUInt32 = (UInt32)Read(DataType.Marker, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
+                        // Memory double-word
+                        objUInt32 = (UInt32)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     default:
                         switch (txt.Substring(0, 1))
                         {
                             case "E":
                             case "I":
-                                // Eingang
+                                // Input
                                 mDataType = DataType.Input;
                                 break;
                             case "A":
                             case "O":
-                                // Ausgang
+                                // Output
                                 mDataType = DataType.Output;
                                 break;
                             case "M":
-                                // Merker
-                                mDataType = DataType.Marker;
+                                // Memory
+                                mDataType = DataType.Memory;
                                 break;
                             case "T":
                                 // Timer
@@ -449,21 +434,21 @@ namespace S7
             catch 
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
-                LastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
+                LastErrorString = "The variable'" + variable + "' could not be read. Please check the syntax and try again.";
                 return LastErrorCode;
             }
         }
 
-        public object ReadStruct(Type structType, int DB)
+        public object ReadStruct(Type structType, int db)
         {
             double numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            byte[] bytes = (byte[])Read(DataType.DataBlock, DB, 0, VarType.Byte, (int)numBytes);
+            byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
             // and decode it
             return Types.Struct.FromBytes(structType, bytes);
         }
 
-        public ErrorCode WriteBytes(DataType DataType, int DB, int StartByteAdr, byte[] value)
+        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
@@ -483,10 +468,10 @@ namespace S7
                 package.Add(Types.Word.ToByteArray((ushort)(varCount + 4)));
                 package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
                 package.Add(Types.Word.ToByteArray((ushort)varCount));
-                package.Add(Types.Word.ToByteArray((ushort)(DB)));
-                package.Add((byte)DataType);
+                package.Add(Types.Word.ToByteArray((ushort)(db)));
+                package.Add((byte)dataType);
                 package.Add((byte)0);
-                package.Add(Types.Word.ToByteArray((ushort)(StartByteAdr * 8)));
+                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
                 package.Add(new byte[] { 0, 4 });
                 package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
 
@@ -496,7 +481,10 @@ namespace S7
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
                 int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                if (bReceive[21] != 0xff)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
 
                 return ErrorCode.NoError;
             }
@@ -508,7 +496,7 @@ namespace S7
             }
         }
 
-        public object Write(DataType DataType, int DB, int StartByteAdr, object value)
+        public object Write(DataType dataType, int db, int startByteAdr, object value)
         {
             byte[] package = null;
 
@@ -556,7 +544,7 @@ namespace S7
                 default:
                     return ErrorCode.WrongVarFormat;
             }
-            return WriteBytes(DataType, DB, StartByteAdr, package);
+            return WriteBytes(dataType, db, startByteAdr, package);
         }
 
         public object Write(string variable, object value)
@@ -566,12 +554,12 @@ namespace S7
             int mByte;
             int mBit;
 
-            string txt2;
+            string addressLocation;
             byte _byte;
             object objValue;
 
             string txt = variable.ToUpper();
-            txt = txt.Replace(" ", ""); // Leerzeichen entfernen 
+            txt = txt.Replace(" ", ""); // Remove spaces
 
             try
             {
@@ -583,7 +571,6 @@ namespace S7
                             throw new Exception();
 
                         mDB = int.Parse(strings[0].Substring(2));
-                        mDataType = DataType.DataBlock;
                         string dbType = strings[1].Substring(0, 3);
                         int dbIndex = int.Parse(strings[1].Substring(3));                       
                        
@@ -601,7 +588,10 @@ namespace S7
                             case "DBX":
                                 mByte = dbIndex;
                                 mBit = int.Parse(strings[2]);
-                                if (mBit > 7) throw new Exception();
+                                if (mBit > 7)
+                                {
+                                    throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
+                                }
                                 byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
                                 if ((int)value == 1)
                                     b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
@@ -613,107 +603,114 @@ namespace S7
                                 // DB-String
                                 return Write(DataType.DataBlock, mDB, dbIndex, (string)value);
                             default:
-                                throw new Exception();
+                                throw new Exception(string.Format("Addressing Error: Unable to parse address {0}. Supported formats include DBB (byte), DBW (word), DBD (dword), DBX (bitwise), DBS (string).", dbType));
                         }
                     case "EB":
-                        // Eingangsbyte
+                        // Input Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
                         return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "EW":
-                        // Eingangswort
+                        // Input Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
                         return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "ED":
-                        // Eingangsdoppelwort
+                        // Input Double-Word
                         objValue = Convert.ChangeType(value, typeof(UInt32));
                         return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
                     case "AB":
-                        // Ausgangsbyte
+                        // Output Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
                         return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "AW":
-                        // Ausgangswort
+                        // Output Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
                         return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "AD":
-                        // Ausgangsdoppelwort
+                        // Output Double-Word
                         objValue = Convert.ChangeType(value, typeof(UInt32));
                         return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
                     case "MB":
-                        // Merkerbyte
+                        // Memory Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
-                        return Write(DataType.Marker, 0, int.Parse(txt.Substring(2)), (byte)objValue);
+                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "MW":
-                        // Merkerwort
+                        // Memory Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
-                        return Write(DataType.Marker, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
+                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "MD":
-                        // Merkerdoppelwort
-                        return Write(DataType.Marker, 0, int.Parse(txt.Substring(2)), value);
+                        // Memory Double-Word
+                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), value);
                     default:
                         switch (txt.Substring(0, 1))
                         {
                             case "E":
                             case "I":
-                                // Eingang
+                                // Input
                                 mDataType = DataType.Input;
                                 break;
                             case "A":
                             case "O":
-                                // Ausgang
+                                // Output
                                 mDataType = DataType.Output;
                                 break;
                             case "M":
-                                // Merker
-                                mDataType = DataType.Marker;
+                                // Memory
+                                mDataType = DataType.Memory;
                                 break;
                             case "T":
                                 // Timer
                                 return Write(DataType.Timer, 0, int.Parse(txt.Substring(1)), (double)value);
                             case "Z":
                             case "C":
-                                // Zähler
+                                // Counter
                                 return Write(DataType.Counter, 0, int.Parse(txt.Substring(1)), (short)value);
                             default:
-                                throw new Exception("Unbekannte Variable");
+                                throw new Exception(string.Format("Unknown variable type {0}.",txt.Substring(0,1)));
                         }
 
-                        txt2 = txt.Substring(1);
-                        if (txt2.IndexOf(".") == -1) throw new Exception("Unbekannte Variable");
+                        addressLocation = txt.Substring(1);
+                        int decimalPointIndex = addressLocation.IndexOf(".");
+                        if (decimalPointIndex == -1)
+                        {
+                            throw new Exception(string.Format("Cannot parse variable {0}. Input, Output, Memory Address, Timer, and Counter types require bit-level addressing (e.g. I0.1).",addressLocation));
+                        }
 
-                        mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
-                        mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
-                        if (mBit > 7) throw new Exception("Unbekannte Variable");
+                        mByte = int.Parse(addressLocation.Substring(0, decimalPointIndex));
+                        mBit = int.Parse(addressLocation.Substring(decimalPointIndex + 1));
+                        if (mBit > 7)
+                        {
+                            throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
+                        }
+
                         _byte = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
                         if ((int)value == 1)
-                            _byte = (byte)(_byte | (byte)Math.Pow(2, mBit));      // Bit setzen
+                            _byte = (byte)(_byte | (byte)Math.Pow(2, mBit));      // Set bit
                         else
-                            _byte = (byte)(_byte & (_byte ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
+                            _byte = (byte)(_byte & (_byte ^ (byte)Math.Pow(2, mBit))); // Reset bit
 
                         return Write(mDataType, 0, mByte, (byte)_byte);
                 }
             }
             catch (Exception ex)
             {
-                string msg = ex.Message;
                 LastErrorCode = ErrorCode.WrongVarFormat;
-                LastErrorString = "Die Variable '" + variable + "' konnte nicht entschlüsselt werden!";
+                LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.";
                 return LastErrorCode;
             }
         }
 
-        public ErrorCode WriteStruct(object structValue, int DB)
+        public ErrorCode WriteStruct(object structValue, int db)
         {
             try
             {
                 byte[] bytes = Types.Struct.ToBytes(structValue);
-                ErrorCode errCode = WriteBytes(DataType.DataBlock, DB, 0, bytes);
+                ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
                 return errCode;
             }
             catch
             {
                 LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "Fehler beim Schreiben der Daten aufgetreten!";
+                LastErrorString = "An error occurred while writing data.";
                 return LastErrorCode;
             }
         }
@@ -722,7 +719,12 @@ namespace S7
         {
             if (_mSocket != null)
             {
-                ((IDisposable)_mSocket).Dispose();
+                if (_mSocket.Connected)
+                {
+                    //Close() performs a Dispose on the socket.
+                    _mSocket.Close();
+                }
+                //((IDisposable)_mSocket).Dispose();
             }
         }
     }

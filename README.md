@@ -17,9 +17,12 @@ to my request for committing code, I decided to pick up where he left off here o
 ## Basic Usage
 
 ```C#
+//Basic connection properties
 string deviceIpAddress = "172.25.116.87";
 int rackNumber = 0;
 int slotNumber = 2;
+
+//Connection to device
 using (var plc = new PLC(CPU_Type.S7300, deviceIpAddress, rackNumber, slotNumber))
 {
 	//Ensure IP is responding

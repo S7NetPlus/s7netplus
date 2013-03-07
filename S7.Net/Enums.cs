@@ -28,7 +28,7 @@
     {
         Input = 129,
         Output = 130,
-        Marker = 131,
+        Memory = 131,
         DataBlock = 132,
         Timer = 29,
         Counter = 28
