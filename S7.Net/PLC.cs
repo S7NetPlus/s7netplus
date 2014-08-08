@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Interfaces;
-using S7.Net.Types;
 using Double = System.Double;
 
 namespace S7.Net
@@ -345,10 +344,10 @@ namespace S7.Net
                                 byte obj = (byte)Read(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
                                 return obj;
                             case "DBW":
-                                UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
+								Int16 objI = (Int16)(UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
                                 return objI;
                             case "DBD":
-                                UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
+								Int32 objU = (Int32)(UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
                                 return objU;
                             case "DBX":
                                 mByte = dbIndex;
