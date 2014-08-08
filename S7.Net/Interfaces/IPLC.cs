@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace S7
+namespace S7.Net.Interfaces
 {
     public interface IPlc : IDisposable
     {
@@ -22,5 +22,7 @@ namespace S7
         object Write(DataType dataType, int db, int startByteAdr, object value);
         object Write(string variable, object value);
         ErrorCode WriteStruct(object structValue, int db);
+		string LastErrorString { get; }
+		ErrorCode LastErrorCode { get; }
     }
 }
