@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace S7.Types
+﻿namespace S7.Net.Types
 {
     public static class Byte
     {

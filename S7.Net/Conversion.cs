@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Linq;
 
-namespace S7
+namespace S7.Net
 {
     public static class Conversion
     {

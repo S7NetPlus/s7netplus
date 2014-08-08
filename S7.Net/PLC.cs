@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Net;
-using System.Net.Sockets;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using S7.Net.Interfaces;
 
-namespace S7
+namespace S7.Net
 {
     public class Plc : IPlc
     {

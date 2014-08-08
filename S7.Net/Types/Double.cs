@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using S7;
 
-namespace S7.Types
+namespace S7.Net.Types
 {
     public static class Double
     {
@@ -48,14 +45,14 @@ namespace S7.Types
         #region FromDWord
         public static double FromDWord(Int32 value)
         {
-            byte[] b = S7.Types.DInt.ToByteArray(value);
+            byte[] b = DInt.ToByteArray(value);
             double d = FromByteArray(b);
             return d;
         }
 
         public static double FromDWord(UInt32 value)
         {
-            byte[] b = S7.Types.DWord.ToByteArray(value);
+            byte[] b = DWord.ToByteArray(value);
             double d = FromByteArray(b);
             return d;
         }

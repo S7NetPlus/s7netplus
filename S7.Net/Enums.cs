@@ -1,4 +1,4 @@
-﻿namespace S7
+﻿namespace S7.Net
 {
     public enum CpuType
     {
