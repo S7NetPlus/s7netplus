@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace S7.Types
+namespace S7.Net.Types
 {
     public static class DInt
     {

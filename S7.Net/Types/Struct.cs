@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace S7.Types
+namespace S7.Net.Types
 {
     public static class Struct
     {
@@ -99,7 +97,7 @@ namespace S7.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        info.SetValue(structValue, S7.Types.Word.FromBytes(bytes[(int)numBytes + 1],
+                        info.SetValue(structValue, Word.FromBytes(bytes[(int)numBytes + 1],
                                                                           bytes[(int)numBytes]));
                         numBytes += 2;
                         break;
@@ -109,7 +107,7 @@ namespace S7.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        info.SetValue(structValue, S7.Types.DWord.FromBytes(bytes[(int)numBytes],
+                        info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3]));
@@ -120,7 +118,7 @@ namespace S7.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        info.SetValue(structValue, S7.Types.Double.FromByteArray(new byte[] { bytes[(int)numBytes],
+                        info.SetValue(structValue, Double.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3] }));
@@ -140,7 +138,7 @@ namespace S7.Types
         {
             Type type = structValue.GetType();
 
-            int size = S7.Types.Struct.GetStructSize(type);
+            int size = Struct.GetStructSize(type);
             byte[] bytes = new byte[size];
             byte[] bytes2 = null;
 
@@ -171,19 +169,19 @@ namespace S7.Types
                         numBytes++;
                         break;
                     case "Int16":
-                        bytes2 = S7.Types.Int.ToByteArray((Int16)info.GetValue(structValue));
+                        bytes2 = Int.ToByteArray((Int16)info.GetValue(structValue));
                         break;
                     case "UInt16":
-                        bytes2 = S7.Types.Word.ToByteArray((UInt16)info.GetValue(structValue));
+                        bytes2 = Word.ToByteArray((UInt16)info.GetValue(structValue));
                         break;
                     case "Int32":
-                        bytes2 = S7.Types.DInt.ToByteArray((Int32)info.GetValue(structValue));
+                        bytes2 = DInt.ToByteArray((Int32)info.GetValue(structValue));
                         break;
                     case "UInt32":
-                        bytes2 = S7.Types.DWord.ToByteArray((UInt32)info.GetValue(structValue));
+                        bytes2 = DWord.ToByteArray((UInt32)info.GetValue(structValue));
                         break;
                     case "Double":
-                        bytes2 = S7.Types.Double.ToByteArray((double)info.GetValue(structValue));
+                        bytes2 = Double.ToByteArray((double)info.GetValue(structValue));
                         break;
                 }
                 if (bytes2 != null)

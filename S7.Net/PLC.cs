@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Net;
-using System.Net.Sockets;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using S7.Net.Interfaces;
+using Double = System.Double;
 
-namespace S7
+namespace S7.Net
 {
     public class Plc : IPlc
     {
@@ -317,7 +320,7 @@ namespace S7
             UInt16 objUInt16;
             UInt32 objUInt32;
             double objDouble;
-            bool[] objBoolArray;
+            BitArray objBoolArray;
 
             string txt = variable.ToUpper();
             txt = txt.Replace(" ", "");     // remove spaces
@@ -341,16 +344,17 @@ namespace S7
                                 byte obj = (byte)Read(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
                                 return obj;
                             case "DBW":
-                                UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
+								Int16 objI = (Int16)(UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
                                 return objI;
                             case "DBD":
-                                UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
+								Int32 objU = (Int32)(UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
                                 return objU;
                             case "DBX":
                                 mByte = dbIndex;
                                 mBit = int.Parse(strings[2]);
                                 if (mBit > 7) throw new Exception();
-                                objBoolArray = (bool[])Read(DataType.DataBlock, mDB, mByte, VarType.Bit, 1);
+                                byte obj2 = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
+								objBoolArray = new BitArray(new byte[] { obj2 });
                                 return objBoolArray[mBit];
                             default:
                                 throw new Exception();
@@ -427,7 +431,8 @@ namespace S7
                         mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
                         if (mBit > 7) throw new Exception();
-                        objBoolArray = (bool[])Read(mDataType, 0, mByte, VarType.Bit, 1);
+                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Bit, 1);
+						objBoolArray = new BitArray(new byte[]{obj3});
                         return objBoolArray[mBit];
                 }
             }
