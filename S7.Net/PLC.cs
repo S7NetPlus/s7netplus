@@ -164,53 +164,61 @@ namespace S7.Net
         {
             byte[] bytes = new byte[count];
 
-            try
-            {
-                // first create the header
-                int packageSize = 31;
-                Types.ByteArray package = new Types.ByteArray(packageSize);
+	        try
+	        {
+		        // first create the header
+		        int packageSize = 31;
+		        Types.ByteArray package = new Types.ByteArray(packageSize);
 
-                package.Add(new byte[] { 0x03, 0x00, 0x00 });
-                package.Add((byte)packageSize);
-                package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
-               // package.Add(0x02);  // datenart
-                switch (dataType)
-                {
-                    case DataType.Timer:
-                    case DataType.Counter:
-                        package.Add((byte)dataType);
-                        break;
-                    default:
-                        package.Add(0x02);
-                        break;
-                }
+		        package.Add(new byte[] {0x03, 0x00, 0x00});
+		        package.Add((byte) packageSize);
+		        package.Add(new byte[]
+		        {0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
+		        // package.Add(0x02);  // datenart
+		        switch (dataType)
+		        {
+			        case DataType.Timer:
+			        case DataType.Counter:
+				        package.Add((byte) dataType);
+				        break;
+			        default:
+				        package.Add(0x02);
+				        break;
+		        }
 
-                package.Add(Types.Word.ToByteArray((ushort)(count)));
-                package.Add(Types.Word.ToByteArray((ushort)(DB)));
-                package.Add((byte)dataType);
-                package.Add((byte)0);
-                switch (dataType)
-                {
-                    case DataType.Timer:
-                    case DataType.Counter:
-                        package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
-                        break;
-                    default:
-                        package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
-                        break;
-                }
+		        package.Add(Types.Word.ToByteArray((ushort) (count)));
+		        package.Add(Types.Word.ToByteArray((ushort) (DB)));
+		        package.Add((byte) dataType);
+		        package.Add((byte) 0);
+		        switch (dataType)
+		        {
+			        case DataType.Timer:
+			        case DataType.Counter:
+				        package.Add(Types.Word.ToByteArray((ushort) (startByteAdr)));
+				        break;
+			        default:
+				        package.Add(Types.Word.ToByteArray((ushort) ((startByteAdr)*8)));
+				        break;
+		        }
 
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+		        _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+		        byte[] bReceive = new byte[512];
+		        int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+		        if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = bReceive[cnt + 25];
+		        for (int cnt = 0; cnt < count; cnt++)
+			        bytes[cnt] = bReceive[cnt + 25];
 
-                return bytes;
-            }
+		        return bytes;
+	        }
+	        catch (SocketException socketException)
+	        {
+		        IsConnected = false;
+				LastErrorCode = ErrorCode.WriteData;
+				LastErrorString = socketException.Message;
+				return null;
+	        }
             catch
             {
                 LastErrorCode = ErrorCode.WriteData;
