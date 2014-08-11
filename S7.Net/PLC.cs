@@ -317,7 +317,7 @@ namespace S7.Net
             }
         }
 
-        object IPlc.Read(string variable)
+        public object Read(string variable)
         {
             DataType mDataType;
             int mDB;
