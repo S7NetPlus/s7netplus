@@ -1,7 +1,7 @@
 S7.Net/bin
 S7.Net/obj
-S7.Net.Test/bin
-S7.Net.Test/obj
+S7.Net.UnitTest/bin
+S7.Net.UnitTest/obj
 *.DotSettings
 *.v11
 *.user
