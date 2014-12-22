@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Globalization;
 
 namespace S7.Net.Types
 {
@@ -92,6 +94,14 @@ namespace S7.Net.Types
                         numBytes++;
                         break;
                     case "Int16":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        // hier auswerten
+                        ushort source = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
+                        info.SetValue(structValue, source.ConvertToShort());
+                        numBytes += 2;
+                        break;
                     case "UInt16":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -102,6 +112,17 @@ namespace S7.Net.Types
                         numBytes += 2;
                         break;
                     case "Int32":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        // hier auswerten
+                        uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
+                                                                           bytes[(int)numBytes + 2],
+                                                                           bytes[(int)numBytes + 1],
+                                                                           bytes[(int)numBytes + 0]);                        
+                        info.SetValue(structValue, sourceUInt.ConvertToInt());                       
+                        numBytes += 4;
+                        break;
                     case "UInt32":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -198,5 +219,7 @@ namespace S7.Net.Types
             }
             return bytes;
         }
+
+       
     }
 }
