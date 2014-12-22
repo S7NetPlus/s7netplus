@@ -718,7 +718,7 @@ namespace S7.Net
                         return Write(mDataType, 0, mByte, (byte)_byte);
                 }
             }
-            catch (Exception ex)
+            catch 
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.";
