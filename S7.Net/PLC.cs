@@ -593,10 +593,24 @@ namespace S7.Net
                                 objValue = Convert.ChangeType(value, typeof(byte));
                                 return Write(DataType.DataBlock, mDB, dbIndex, (byte)objValue);
                             case "DBW":
-                                objValue = Convert.ChangeType(value, typeof(UInt16));
+                                if (value is short)
+                                {
+                                    objValue = ((short)value).ConvertToUshort();
+                                }
+                                else
+                                {
+                                    objValue = Convert.ChangeType(value, typeof(UInt16));
+                                }
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt16)objValue);
                             case "DBD":
-                                objValue = Convert.ChangeType(value, typeof(UInt32));
+                                if (value is int)
+                                {
+                                    return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
+                                }
+                                else
+                                {
+                                    objValue = Convert.ChangeType(value, typeof(UInt32));
+                                }
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
