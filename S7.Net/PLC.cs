@@ -439,7 +439,7 @@ namespace S7.Net
                         mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
                         if (mBit > 7) throw new Exception();
-                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Bit, 1);
+                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
 						objBoolArray = new BitArray(new byte[]{obj3});
                         return objBoolArray[mBit];
                 }
