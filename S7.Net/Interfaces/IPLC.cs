@@ -18,10 +18,12 @@ namespace S7.Net.Interfaces
         object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount);
         object Read(string variable);
         object ReadStruct(Type structType, int db);
+        void ReadClass(object sourceClass, int db);
         ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value);
         object Write(DataType dataType, int db, int startByteAdr, object value);
         object Write(string variable, object value);
         ErrorCode WriteStruct(object structValue, int db);
+        ErrorCode WriteClass(object classValue, int db);
 		string LastErrorString { get; }
 		ErrorCode LastErrorCode { get; }
     }

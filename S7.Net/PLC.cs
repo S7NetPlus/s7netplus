@@ -461,6 +461,21 @@ namespace S7.Net
             return Types.Struct.FromBytes(structType, bytes);
         }
 
+        /// <summary>
+        /// Read a class from plc. Only properties are readed
+        /// </summary>
+        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        public void ReadClass(object sourceClass, int db)
+        {
+            Type classType = sourceClass.GetType();
+            double numBytes = Types.Class.GetClassSize(classType);
+            // now read the package
+            byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
+            // and decode it
+            Types.Class.FromBytes(sourceClass, classType, bytes);
+        }
+
         public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
@@ -731,6 +746,22 @@ namespace S7.Net
             try
             {
                 byte[] bytes = Types.Struct.ToBytes(structValue);
+                ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
+                return errCode;
+            }
+            catch
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = "An error occurred while writing data.";
+                return LastErrorCode;
+            }
+        }
+
+        public ErrorCode WriteClass(object classValue, int db)
+        {
+            try
+            {
+                byte[] bytes = Types.Class.ToBytes(classValue);
                 ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
                 return errCode;
             }

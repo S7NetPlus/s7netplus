@@ -76,6 +76,7 @@
     <Compile Include="Types\Boolean.cs" />
     <Compile Include="Types\Byte.cs" />
     <Compile Include="Types\ByteArray.cs" />
+    <Compile Include="Types\Class.cs" />
     <Compile Include="Types\Double.cs" />
     <Compile Include="Types\DWord.cs" />
     <Compile Include="Types\Int.cs" />
