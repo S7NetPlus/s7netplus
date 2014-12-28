@@ -352,10 +352,10 @@ namespace S7.Net
                                 byte obj = (byte)Read(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
                                 return obj;
                             case "DBW":
-								Int16 objI = (Int16)(UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
+								UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
                                 return objI;
                             case "DBD":
-								Int32 objU = (Int32)(UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
+								UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
                                 return objU;
                             case "DBX":
                                 mByte = dbIndex;
@@ -439,7 +439,7 @@ namespace S7.Net
                         mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
                         if (mBit > 7) throw new Exception();
-                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Bit, 1);
+                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
 						objBoolArray = new BitArray(new byte[]{obj3});
                         return objBoolArray[mBit];
                 }
@@ -459,6 +459,21 @@ namespace S7.Net
             byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
             // and decode it
             return Types.Struct.FromBytes(structType, bytes);
+        }
+
+        /// <summary>
+        /// Read a class from plc. Only properties are readed
+        /// </summary>
+        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        public void ReadClass(object sourceClass, int db)
+        {
+            Type classType = sourceClass.GetType();
+            double numBytes = Types.Class.GetClassSize(classType);
+            // now read the package
+            byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
+            // and decode it
+            Types.Class.FromBytes(sourceClass, classType, bytes);
         }
 
         public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
@@ -593,10 +608,24 @@ namespace S7.Net
                                 objValue = Convert.ChangeType(value, typeof(byte));
                                 return Write(DataType.DataBlock, mDB, dbIndex, (byte)objValue);
                             case "DBW":
-                                objValue = Convert.ChangeType(value, typeof(UInt16));
+                                if (value is short)
+                                {
+                                    objValue = ((short)value).ConvertToUshort();
+                                }
+                                else
+                                {
+                                    objValue = Convert.ChangeType(value, typeof(UInt16));
+                                }
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt16)objValue);
                             case "DBD":
-                                objValue = Convert.ChangeType(value, typeof(UInt32));
+                                if (value is int)
+                                {
+                                    return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
+                                }
+                                else
+                                {
+                                    objValue = Convert.ChangeType(value, typeof(UInt32));
+                                }
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
@@ -704,7 +733,7 @@ namespace S7.Net
                         return Write(mDataType, 0, mByte, (byte)_byte);
                 }
             }
-            catch (Exception ex)
+            catch 
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.";
@@ -717,6 +746,22 @@ namespace S7.Net
             try
             {
                 byte[] bytes = Types.Struct.ToBytes(structValue);
+                ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
+                return errCode;
+            }
+            catch
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = "An error occurred while writing data.";
+                return LastErrorCode;
+            }
+        }
+
+        public ErrorCode WriteClass(object classValue, int db)
+        {
+            try
+            {
+                byte[] bytes = Types.Class.ToBytes(classValue);
                 ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
                 return errCode;
             }

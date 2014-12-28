@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace S7.Net
 {
@@ -140,6 +141,78 @@ namespace S7.Net
             int result = data & mask;
 
             return (result != 0);
+        }
+
+        /// <summary>
+        /// Converts from ushort value to short value; it's used to retrieve negative values from words
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static short ConvertToShort(this ushort input)
+        {
+            short output;
+            output = short.Parse(input.ToString("X"), NumberStyles.HexNumber);
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from short value to ushort value; it's used to pass negative values to DWs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static ushort ConvertToUshort(this short input)
+        {
+            ushort output;
+            output = ushort.Parse(input.ToString("X"), NumberStyles.HexNumber);
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from UInt32 value to Int32 value; it's used to retrieve negative values from DBDs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static Int32 ConvertToInt(this uint input)
+        {
+            int output;
+            output = int.Parse(input.ToString("X"), NumberStyles.HexNumber);
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from Int32 value to UInt32 value; it's used to pass negative values to DBDs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static UInt32 ConvertToUInt(this int input)
+        {
+            uint output;
+            output = uint.Parse(input.ToString("X"), NumberStyles.HexNumber);
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from double to DWord (DBD)
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static UInt32 ConvertToUInt(this double input) 
+        {
+            uint output;
+            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Double.ToByteArray(input));
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from DWord (DBD) to double
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static double ConvertToDouble(this uint input)
+        {
+            double output;
+            output = S7.Net.Types.Double.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
+            return output;
         }
     }
 }
