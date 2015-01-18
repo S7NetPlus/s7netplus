@@ -219,10 +219,10 @@ namespace S7.Net
 				LastErrorString = socketException.Message;
 				return null;
 	        }
-            catch
+            catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "";
+                LastErrorString = exc.Message;
                 return null;
             }
         }
