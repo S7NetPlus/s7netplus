@@ -193,13 +193,17 @@ namespace S7.Net.UnitTest
 
         private static void ShutDownServiceS7oiehsx64()
         {
-            ServiceController sc = new ServiceController("s7oiehsx64");
-            switch (sc.Status)
+            try
             {
-                case ServiceControllerStatus.Running:
-                    sc.Stop();
-                    break;
+                ServiceController sc = new ServiceController("s7oiehsx64");
+                switch (sc.Status)
+                {
+                    case ServiceControllerStatus.Running:
+                        sc.Stop();
+                        break;
+                }
             }
+            catch { } // service not found
         }
 
         #endregion
