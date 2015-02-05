@@ -53,5 +53,5 @@ using (var plc = new PLC(CPU_Type.S7300, deviceIpAddress, rackNumber, slotNumber
 ## Running the tests
 
 Unit tests use Snap7 server, so port 102 must be not in use.
-If you have Siemens Step7 installer, the service s7oiehsx64 has to be stopped (this is done automatically inside the constructor of the unit tests).
-You have to restart it manually if you need it.
+If you have Siemens Step7 installed, the service s7oiehsx64 is stopped when running unit tests.
+You have to restart the service manually if you need it.
