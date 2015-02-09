@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+	<metadata>
+		<id>S7netplus</id>
+		<version>$version$</version>
+		<title>S7.Net Plus</title>
+		<authors>Derek Heiser</authors>
+		<owners>Derek Heiser</owners>
+		<projectUrl>https://github.com/killnine/s7netplus</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>A continuation of Juergen1969's Siemens communication library.</description>
+		<tags>PLC Siemens Communication S7</tags>
+		<language>en-US</language>
+		<copyright>Derek Heiser 2015</copyright>
+		<dependencies></dependencies>
+	</metadata>
+</package>

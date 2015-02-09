@@ -14,6 +14,10 @@ to my request for committing code, I decided to pick up where he left off here o
 + Compatible S7 PLC (S7-200, S7-300, S7-400, S7-1200)
 + .NET Framework 3.5 or higher
 
+## Nuget
+
+PM> Install-Package S7netplus
+
 ## Basic Usage
 
 ```C#

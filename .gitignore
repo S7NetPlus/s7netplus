@@ -7,3 +7,5 @@ S7.Net.UnitTest/obj
 *.user
 *.suo
 *.ncrunchproject
+*.nupkg
+.vs
