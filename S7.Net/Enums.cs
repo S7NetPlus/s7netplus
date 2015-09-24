@@ -6,6 +6,7 @@
         S7300 = 10,
         S7400 = 20,
         S71200 = 30,
+        S71500 = 40,
     }
 
     public enum ErrorCode
