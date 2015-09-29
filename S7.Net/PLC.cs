@@ -119,7 +119,10 @@ namespace S7.Net
 					    bSend1[15] = 194;
 					    bSend1[16] = 2;
 					    bSend1[17] = 3;
-				    case CpuType.S71500:
+                        bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
+                        break;
+
+                    case CpuType.S71500:
 				            // Eigener Tsap
                         		    bSend1[11] = 193;
                         		    bSend1[12] = 2;
@@ -131,9 +134,6 @@ namespace S7.Net
                         		    bSend1[17] = 0x3;
                         		    bSend1[18] = 0x0;
                         		    break;
-				    default:
-                        bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
-					    break;
 				    default:
 					    return ErrorCode.WrongCPU_Type;
 			    }
