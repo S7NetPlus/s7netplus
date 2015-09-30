@@ -27,7 +27,20 @@ namespace S7.Net
                 return result != null && result.Status == IPStatus.Success;
             }
         }
-        public bool IsConnected { get; private set; }
+        public bool IsConnected
+        {
+            get
+            {
+                if (_mSocket != null)
+                {
+                    return _mSocket.Connected;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
         public string LastErrorString { get; private set; }
         public ErrorCode LastErrorCode { get; private set; }
 
@@ -35,7 +48,6 @@ namespace S7.Net
 
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
         {
-            IsConnected = false;
             IP = ip;
             CPU = cpu;
             Rack = rack;
@@ -150,13 +162,11 @@ namespace S7.Net
 			    {
 			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 			    } 
-			    IsConnected = true;
 		    }
 		    catch 
             {
 			    LastErrorCode = ErrorCode.ConnectionError;
 			    LastErrorString = string.Format("Couldn't establish the connection to {0}!", IP);
-			    IsConnected = false;
 			    return ErrorCode.ConnectionError;
 		    }
 
@@ -168,8 +178,7 @@ namespace S7.Net
 		    if (_mSocket != null && _mSocket.Connected) 
             {
 			    _mSocket.Close();
-                IsConnected = false;
-		    }
+            }
 	    }
 
         public byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count)
@@ -226,7 +235,6 @@ namespace S7.Net
 	        }
 	        catch (SocketException socketException)
 	        {
-		        IsConnected = false;
 				LastErrorCode = ErrorCode.WriteData;
 				LastErrorString = socketException.Message;
 				return null;
