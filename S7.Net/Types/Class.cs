@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace S7.Net.Types
 {
@@ -12,7 +7,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Gets the size of the struct in bytes.
         /// </summary>
-        /// <param name="structType">the type of the struct</param>
+        /// <param name="classType">the type of the class</param>
         /// <returns>the number of bytes</returns>
         public static int GetClassSize(Type classType)
         {
@@ -28,7 +23,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Given a property name, it returns the number of bytes that is composed
         /// </summary>
-        /// <param name="propertyName"></param>
+        /// <param name="propertyType">type of the property</param>
         /// <returns></returns>
         static double CalculateBytes(string propertyType)
         {
@@ -70,6 +65,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Creates a struct of a specified type by an array of bytes.
         /// </summary>
+        /// <param name="sourceClass"></param>
         /// <param name="classType">The struct type</param>
         /// <param name="bytes">The array of bytes</param>
         /// <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
@@ -97,14 +93,14 @@ namespace S7.Net.Types
                         bytePos = (int)Math.Floor(numBytes);
                         bitPos = (int)((numBytes - (double)bytePos) / 0.125);
                         if ((bytes[bytePos] & (int)Math.Pow(2, bitPos)) != 0)
-                            property.SetValue(sourceClass, true);
+                            property.SetValue(sourceClass, true, null);
                         else
-                            property.SetValue(sourceClass, false);
+                            property.SetValue(sourceClass, false, null);
                         numBytes += 0.125;
                         break;
                     case "Byte":
                         numBytes = Math.Ceiling(numBytes);
-                        property.SetValue(sourceClass, (byte)(bytes[(int)numBytes]));
+                        property.SetValue(sourceClass, (byte)(bytes[(int)numBytes]), null);
                         numBytes++;
                         break;
                     case "Int16":
@@ -113,7 +109,7 @@ namespace S7.Net.Types
                             numBytes++;
                         // hier auswerten
                         ushort source = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
-                        property.SetValue(sourceClass, source.ConvertToShort());
+                        property.SetValue(sourceClass, source.ConvertToShort(), null);
                         numBytes += 2;
                         break;
                     case "UInt16":
@@ -121,7 +117,7 @@ namespace S7.Net.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        property.SetValue(sourceClass, Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]));
+                        property.SetValue(sourceClass, Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]), null);
                         numBytes += 2;
                         break;
                     case "Int32":
@@ -133,7 +129,7 @@ namespace S7.Net.Types
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 0]);
-                        property.SetValue(sourceClass, sourceUInt.ConvertToInt());
+                        property.SetValue(sourceClass, sourceUInt.ConvertToInt(), null);
                         numBytes += 4;
                         break;
                     case "UInt32":
@@ -144,7 +140,7 @@ namespace S7.Net.Types
                         property.SetValue(sourceClass, DWord.FromBytes(bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3]));
+                                                                           bytes[(int)numBytes + 3]), null);
                         numBytes += 4;
                         break;
                     case "Double":
@@ -155,7 +151,7 @@ namespace S7.Net.Types
                         property.SetValue(sourceClass, Double.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3] }));
+                                                                           bytes[(int)numBytes + 3] }), null);
                         numBytes += 4;
                         break;
                 }
@@ -188,7 +184,7 @@ namespace S7.Net.Types
                         // get the value
                         bytePos = (int)Math.Floor(numBytes);
                         bitPos = (int)((numBytes - (double)bytePos) / 0.125);
-                        if ((bool)property.GetValue(sourceClass))
+                        if ((bool)property.GetValue(sourceClass, null))
                             bytes[bytePos] |= (byte)Math.Pow(2, bitPos);            // is true
                         else
                             bytes[bytePos] &= (byte)(~(byte)Math.Pow(2, bitPos));   // is false
@@ -197,23 +193,23 @@ namespace S7.Net.Types
                     case "Byte":
                         numBytes = (int)Math.Ceiling(numBytes);
                         bytePos = (int)numBytes;
-                        bytes[bytePos] = (byte)property.GetValue(sourceClass);
+                        bytes[bytePos] = (byte)property.GetValue(sourceClass, null);
                         numBytes++;
                         break;
                     case "Int16":
-                        bytes2 = Int.ToByteArray((Int16)property.GetValue(sourceClass));
+                        bytes2 = Int.ToByteArray((Int16)property.GetValue(sourceClass, null));
                         break;
                     case "UInt16":
-                        bytes2 = Word.ToByteArray((UInt16)property.GetValue(sourceClass));
+                        bytes2 = Word.ToByteArray((UInt16)property.GetValue(sourceClass, null));
                         break;
                     case "Int32":
-                        bytes2 = DInt.ToByteArray((Int32)property.GetValue(sourceClass));
+                        bytes2 = DInt.ToByteArray((Int32)property.GetValue(sourceClass, null));
                         break;
                     case "UInt32":
-                        bytes2 = DWord.ToByteArray((UInt32)property.GetValue(sourceClass));
+                        bytes2 = DWord.ToByteArray((UInt32)property.GetValue(sourceClass, null));
                         break;
                     case "Double":
-                        bytes2 = Double.ToByteArray((double)property.GetValue(sourceClass));
+                        bytes2 = Double.ToByteArray((double)property.GetValue(sourceClass, null));
                         break;
                 }
                 if (bytes2 != null)
