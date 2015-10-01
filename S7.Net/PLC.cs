@@ -18,6 +18,10 @@ namespace S7.Net
         public Int16 Slot { get; set; }
         public string Name { get; set; }
         public object Tag { get; set; }
+
+        /// <summary>
+        /// Pings the IP address and returns true if the result of the ping is Success.
+        /// </summary>
         public bool IsAvailable
         {
             get
@@ -27,18 +31,23 @@ namespace S7.Net
                 return result != null && result.Status == IPStatus.Success;
             }
         }
+
+        /// <summary>
+        /// Checks if the socket is connected and polls the other peer (the plc) to see if it's connected.
+        /// This is the variable that you should continously check to see if the communication is working
+        /// See also: http://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+        /// </summary>
         public bool IsConnected
         {
             get
             {
-                if (_mSocket != null)
+                try
                 {
-                    return _mSocket.Connected;
+                    if (_mSocket == null)
+                        return false;
+                    return !((_mSocket.Poll(1000, SelectMode.SelectRead) && (_mSocket.Available == 0)) || !_mSocket.Connected);
                 }
-                else
-                {
-                    return false;
-                }
+                catch { return false; }
             }
         }
         public string LastErrorString { get; private set; }
