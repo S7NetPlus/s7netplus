@@ -26,9 +26,19 @@ namespace S7.Net
         {
             get
             {
-                Ping ping = new Ping();
-                PingReply result = ping.Send(IP);
-                return result != null && result.Status == IPStatus.Success;
+                using (Ping ping = new Ping())
+                {
+                    PingReply result;
+                    try
+                    {
+                        result = ping.Send(IP);
+                    }
+                    catch (PingException)
+                    {
+                        result = null;
+                    }
+                    return result != null && result.Status == IPStatus.Success;
+                }
             }
         }
 
