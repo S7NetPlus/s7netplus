@@ -65,6 +65,18 @@ namespace S7.Net
 
         public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
 
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="cpu"></param>
+        /// <param name="ip"></param>
+        /// <param name="rack"></param>
+        /// <param name="slot"></param>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
         {
             IP = ip;
@@ -162,7 +174,7 @@ namespace S7.Net
                         bSend1[15] = 194;
                         bSend1[16] = 2;
                         bSend1[17] = 0x3;
-                        bSend1[18] = 0x0;
+                        bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
                         break;
 				    default:
 					    return ErrorCode.WrongCPU_Type;
