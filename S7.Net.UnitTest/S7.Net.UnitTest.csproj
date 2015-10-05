@@ -55,11 +55,13 @@
     <Compile Include="Helpers\ConsoleManager.cs" />
     <Compile Include="Helpers\NativeMethods.cs" />
     <Compile Include="Helpers\S7TestServer.cs" />
+    <Compile Include="Helpers\TestLongClass.cs" />
     <Compile Include="Snap7\snap7.net.cs" />
     <Compile Include="Helpers\TestClass.cs" />
     <Compile Include="Helpers\TestStruct.cs" />
     <Compile Include="S7NetTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Helpers\TestLongStruct.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="snap7.dll">

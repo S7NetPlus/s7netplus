@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -505,11 +507,12 @@ namespace S7.Net
 
         public object ReadStruct(Type structType, int db)
         {
-            double numBytes = Types.Struct.GetStructSize(structType);
+            int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
+            List<byte> resultBytes = ReadMultipleBytes(numBytes, db);
+            
             // and decode it
-            return Types.Struct.FromBytes(structType, bytes);
+            return Types.Struct.FromBytes(structType, resultBytes.ToArray());
         }
 
         /// <summary>
@@ -520,11 +523,11 @@ namespace S7.Net
         public void ReadClass(object sourceClass, int db)
         {
             Type classType = sourceClass.GetType();
-            double numBytes = Types.Class.GetClassSize(classType);
+            int numBytes = Types.Class.GetClassSize(classType);
             // now read the package
-            byte[] bytes = (byte[])Read(DataType.DataBlock, db, 0, VarType.Byte, (int)numBytes);
+            List<byte> resultBytes = ReadMultipleBytes(numBytes, db);
             // and decode it
-            Types.Class.FromBytes(sourceClass, classType, bytes);
+            Types.Class.FromBytes(sourceClass, classType, resultBytes.ToArray());
         }
 
         public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
@@ -794,35 +797,75 @@ namespace S7.Net
 
         public ErrorCode WriteStruct(object structValue, int db)
         {
-            try
-            {
-                byte[] bytes = Types.Struct.ToBytes(structValue);
-                ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
-                return errCode;
-            }
-            catch
-            {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "An error occurred while writing data.";
-                return LastErrorCode;
-            }
+            var bytes = Types.Struct.ToBytes(structValue).ToList();
+            var errCode = WriteMultipleBytes(bytes, db);
+            return errCode;
         }
 
         public ErrorCode WriteClass(object classValue, int db)
         {
+            var bytes = Types.Class.ToBytes(classValue).ToList();
+            var errCode = WriteMultipleBytes(bytes, db);
+            return errCode;
+        }
+
+        /// <summary>
+        /// Writes multiple bytes in a DB starting from index 0. This handles more than 200 bytes with multiple requests.
+        /// </summary>
+        /// <param name="bytes">The bytes to be written</param>
+        /// <param name="db">The DB number</param>
+        /// <returns>ErrorCode when writing (NoError if everything was ok)</returns>
+        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db)
+        {
+            ErrorCode errCode = ErrorCode.NoError;
+            int index = 0;
             try
             {
-                byte[] bytes = Types.Class.ToBytes(classValue);
-                ErrorCode errCode = WriteBytes(DataType.DataBlock, db, 0, bytes);
-                return errCode;
+                while (bytes.Count > 0)
+                {
+                    var maxToWrite = Math.Min(bytes.Count, 200);
+                    var part = bytes.ToList().GetRange(0, maxToWrite);
+                    errCode = WriteBytes(DataType.DataBlock, db, index, part.ToArray());
+                    bytes.RemoveRange(0, maxToWrite);
+                    index += maxToWrite;
+                    if (errCode != ErrorCode.NoError)
+                    {
+                        break;
+                    }
+                }
             }
             catch
             {
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = "An error occurred while writing data.";
-                return LastErrorCode;
             }
+            return errCode;
         }
+
+        /// <summary>
+        /// Reads a number of bytes from a DB starting from index 0. This handles more than 200 bytes with multiple requests.
+        /// </summary>
+        /// <param name="numBytes"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        private List<byte> ReadMultipleBytes(int numBytes, int db)
+        {
+            List<byte> resultBytes = new List<byte>();
+            int index = 0;
+            while (numBytes > 0)
+            {
+                var maxToRead = (int)Math.Min(numBytes, 200);
+                byte[] bytes = (byte[])Read(DataType.DataBlock, db, index, VarType.Byte, (int)maxToRead);
+                resultBytes.AddRange(bytes);
+                numBytes -= maxToRead;
+                index += maxToRead;
+            }
+            return resultBytes;
+        }
+
+
+
+        #region IDisposable members
 
         public void Dispose()
         {
@@ -835,6 +878,8 @@ namespace S7.Net
                 }
                 //((IDisposable)_mSocket).Dispose();
             }
-        }
+        } 
+
+        #endregion
     }
 }

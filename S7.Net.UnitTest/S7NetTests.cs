@@ -4,7 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.UnitTest;
-using System.ServiceProcess; 
+using System.ServiceProcess;
+using S7.UnitTest.Helpers;
 
 #endregion
 
@@ -185,7 +186,136 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
             Assert.AreEqual(tc.RealVariable, Math.Round(tc2.RealVariable, 3));
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
-        } 
+        }
+
+        /// <summary>
+        /// Read/Write a struct that has the same properties of a DB with the same field in the same order
+        /// </summary>
+        [TestMethod]
+        public void T06_ReadAndWriteLongStruct()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestLongStruct tc = new TestLongStruct();
+            tc.IntVariable0 = 0;
+            tc.IntVariable1 = 1;
+            tc.IntVariable10 = 10;
+            tc.IntVariable11 = 11;
+            tc.IntVariable20 = 20;
+            tc.IntVariable21 = 21;
+            tc.IntVariable30 = 30;
+            tc.IntVariable31 = 31;
+            tc.IntVariable40 = 40;
+            tc.IntVariable41 = 41;
+            tc.IntVariable50 = 50;
+            tc.IntVariable51 = 51;
+            tc.IntVariable60 = 60;
+            tc.IntVariable61 = 61;
+            tc.IntVariable70 = 70;
+            tc.IntVariable71 = 71;
+            tc.IntVariable80 = 80;
+            tc.IntVariable81 = 81;
+            tc.IntVariable90 = 90;
+            tc.IntVariable91 = 91;
+            tc.IntVariable100 = 100;
+            tc.IntVariable101 = 101;
+            tc.IntVariable110 = 200;
+            tc.IntVariable111 = 201;
+            plc.WriteStruct(tc, DB2);
+            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
+            // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
+            TestLongStruct tc2 = (TestLongStruct)plc.ReadStruct(typeof(TestLongStruct), DB2);
+            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
+            Assert.AreEqual( tc.IntVariable0,     tc2.IntVariable0 );
+            Assert.AreEqual( tc.IntVariable1,     tc2.IntVariable1 );
+            Assert.AreEqual( tc.IntVariable10, tc2.IntVariable10);
+            Assert.AreEqual( tc.IntVariable11, tc2.IntVariable11);
+            Assert.AreEqual( tc.IntVariable20, tc2.IntVariable20);
+            Assert.AreEqual( tc.IntVariable21, tc2.IntVariable21);
+            Assert.AreEqual( tc.IntVariable30, tc2.IntVariable30);
+            Assert.AreEqual( tc.IntVariable31, tc2.IntVariable31);
+            Assert.AreEqual( tc.IntVariable40, tc2.IntVariable40);
+            Assert.AreEqual( tc.IntVariable41, tc2.IntVariable41);
+            Assert.AreEqual( tc.IntVariable50, tc2.IntVariable50);
+            Assert.AreEqual( tc.IntVariable51, tc2.IntVariable51);
+            Assert.AreEqual( tc.IntVariable60, tc2.IntVariable60);
+            Assert.AreEqual( tc.IntVariable61, tc2.IntVariable61);
+            Assert.AreEqual( tc.IntVariable70, tc2.IntVariable70);
+            Assert.AreEqual( tc.IntVariable71, tc2.IntVariable71);
+            Assert.AreEqual( tc.IntVariable80, tc2.IntVariable80);
+            Assert.AreEqual( tc.IntVariable81, tc2.IntVariable81);
+            Assert.AreEqual( tc.IntVariable90, tc2.IntVariable90);
+            Assert.AreEqual(tc.IntVariable91,  tc2.IntVariable91);
+            Assert.AreEqual(tc.IntVariable100, tc2.IntVariable100);
+            Assert.AreEqual(tc.IntVariable101, tc2.IntVariable101);
+            Assert.AreEqual(tc.IntVariable110, tc2.IntVariable110);
+            Assert.AreEqual(tc.IntVariable111, tc2.IntVariable111);
+        }
+
+        /// <summary>
+        /// Read/Write a class that has the same properties of a DB with the same field in the same order
+        /// </summary>
+        [TestMethod]
+        public void T07_ReadAndWriteLongClass()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestLongClass tc = new TestLongClass();
+            tc.IntVariable0 = 0;
+            tc.IntVariable1 = 1;
+            tc.IntVariable10 = 10;
+            tc.IntVariable11 = 11;
+            tc.IntVariable20 = 20;
+            tc.IntVariable21 = 21;
+            tc.IntVariable30 = 30;
+            tc.IntVariable31 = 31;
+            tc.IntVariable40 = 40;
+            tc.IntVariable41 = 41;
+            tc.IntVariable50 = 50;
+            tc.IntVariable51 = 51;
+            tc.IntVariable60 = 60;
+            tc.IntVariable61 = 61;
+            tc.IntVariable70 = 70;
+            tc.IntVariable71 = 71;
+            tc.IntVariable80 = 80;
+            tc.IntVariable81 = 81;
+            tc.IntVariable90 = 90;
+            tc.IntVariable91 = 91;
+            tc.IntVariable100 = 100;
+            tc.IntVariable101 = 101;
+            tc.IntVariable110 = 200;
+            tc.IntVariable111 = 201;
+            plc.WriteClass(tc, DB2);
+            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
+            // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
+            TestLongClass tc2 = new TestLongClass();
+            plc.ReadClass(tc2, DB2);
+            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
+            Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
+            Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
+            Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
+            Assert.AreEqual(tc.IntVariable11, tc2.IntVariable11);
+            Assert.AreEqual(tc.IntVariable20, tc2.IntVariable20);
+            Assert.AreEqual(tc.IntVariable21, tc2.IntVariable21);
+            Assert.AreEqual(tc.IntVariable30, tc2.IntVariable30);
+            Assert.AreEqual(tc.IntVariable31, tc2.IntVariable31);
+            Assert.AreEqual(tc.IntVariable40, tc2.IntVariable40);
+            Assert.AreEqual(tc.IntVariable41, tc2.IntVariable41);
+            Assert.AreEqual(tc.IntVariable50, tc2.IntVariable50);
+            Assert.AreEqual(tc.IntVariable51, tc2.IntVariable51);
+            Assert.AreEqual(tc.IntVariable60, tc2.IntVariable60);
+            Assert.AreEqual(tc.IntVariable61, tc2.IntVariable61);
+            Assert.AreEqual(tc.IntVariable70, tc2.IntVariable70);
+            Assert.AreEqual(tc.IntVariable71, tc2.IntVariable71);
+            Assert.AreEqual(tc.IntVariable80, tc2.IntVariable80);
+            Assert.AreEqual(tc.IntVariable81, tc2.IntVariable81);
+            Assert.AreEqual(tc.IntVariable90, tc2.IntVariable90);
+            Assert.AreEqual(tc.IntVariable91, tc2.IntVariable91);
+            Assert.AreEqual(tc.IntVariable100, tc2.IntVariable100);
+            Assert.AreEqual(tc.IntVariable101, tc2.IntVariable101);
+            Assert.AreEqual(tc.IntVariable110, tc2.IntVariable110);
+            Assert.AreEqual(tc.IntVariable111, tc2.IntVariable111);
+        }
 
         #endregion
 
