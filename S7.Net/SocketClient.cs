@@ -8,7 +8,7 @@ namespace S7.Net
     internal class SocketClient
     {
 
-        public bool Connected { get; set; }
+        public bool Connected { get; private set; }
 
         public SocketClient(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
