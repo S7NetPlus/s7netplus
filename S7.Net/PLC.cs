@@ -12,7 +12,7 @@ namespace S7.Net
 {
     public class Plc : IPlc
     {
-        private Socket _mSocket; //TCP connection to device
+        private SocketClient _mSocket; //TCP connection to device
 
         public string IP { get; set; }
         public CpuType CPU { get; set; }
@@ -28,19 +28,19 @@ namespace S7.Net
         {
             get
             {
-                using (Ping ping = new Ping())
-                {
-                    PingReply result;
-                    try
-                    {
-                        result = ping.Send(IP);
-                    }
-                    catch (PingException)
-                    {
-                        result = null;
-                    }
-                    return result != null && result.Status == IPStatus.Success;
-                }
+                //using (Ping ping = new Ping())
+                //{
+                    //PingReply result;
+                    //try
+                    //{
+                    //    result = ping.Send(IP);
+                    //}
+                    //catch (PingException)
+                    //{
+                    //    result = null;
+                    //}
+                    return (!string.IsNullOrEmpty(IP)); // result != null && result.Status == IPStatus.Success;
+                //}
             }
         }
 
@@ -57,7 +57,7 @@ namespace S7.Net
                 {
                     if (_mSocket == null)
                         return false;
-                    return !((_mSocket.Poll(1000, SelectMode.SelectRead) && (_mSocket.Available == 0)) || !_mSocket.Connected);
+                    return _mSocket.Connected; //!((_mSocket.Poll(1000, SelectMode.SelectRead) && (_mSocket.Available == 0)) || !_mSocket.Connected);
                 }
                 catch { return false; }
             }
@@ -110,10 +110,10 @@ namespace S7.Net
 
 		    try {
 			    // open the channel
-			    _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			    _mSocket = new SocketClient(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
-			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
+			    _mSocket.SetReceiveTimeout(1000);
+			    _mSocket.SetSendTimeout(1000);
 
 			    IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
 			    _mSocket.Connect(server);
@@ -182,16 +182,16 @@ namespace S7.Net
 					    return ErrorCode.WrongCPU_Type;
 			    }
 
-			    _mSocket.Send(bSend1, 22, SocketFlags.None);
-			    if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
+			    _mSocket.Send(bSend1, 22);
+			    if (_mSocket.Receive(bReceive, 22) != 22)
 			    {
 			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 			    } 
 
 			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
-			    _mSocket.Send(bsend2, 25, SocketFlags.None);
+			    _mSocket.Send(bsend2, 25);
 
-			    if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
+			    if (_mSocket.Receive(bReceive, 27) != 27)
 			    {
 			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 			    } 
@@ -255,10 +255,10 @@ namespace S7.Net
 				        break;
 		        }
 
-		        _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+		        _mSocket.Send(package.array, package.array.Length);
 
 		        byte[] bReceive = new byte[512];
-		        int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+		        int numReceived = _mSocket.Receive(bReceive, 512);
 		        if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
 		        for (int cnt = 0; cnt < count; cnt++)
@@ -560,9 +560,9 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                _mSocket.Send(package.array, package.array.Length);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                int numReceived = _mSocket.Receive(bReceive, 512);
                 if (bReceive[21] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());

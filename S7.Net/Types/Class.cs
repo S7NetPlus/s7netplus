@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace S7.Net.Types
 {
