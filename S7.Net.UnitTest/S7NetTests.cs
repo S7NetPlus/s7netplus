@@ -49,8 +49,21 @@ namespace S7.Net.UnitTest
             plc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
             //ConsoleManager.Show();
             ShutDownServiceS7oiehsx64();
+            
+        }
+
+        [TestInitialize]
+        public void Setup()
+        {
             S7TestServer.Start();
             plc.Open();
+        }
+
+        [TestCleanup]
+        public void TearDown()
+        {
+            plc.Close();
+            S7TestServer.Stop();
         }
         
         #endregion
