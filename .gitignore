@@ -9,3 +9,6 @@ S7.Net.UnitTest/obj
 *.ncrunchproject
 *.nupkg
 .vs
+*.lock.json
+obj/
+bin/
