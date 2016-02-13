@@ -330,6 +330,54 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.IntVariable111, tc2.IntVariable111);
         }
 
+        /// <summary>
+        /// Tests that a read and a write on addresses bigger than 8192 are executed correctly
+        /// </summary>
+        [TestMethod]
+        public void T08_WriteAndReadInt16VariableAddress8192()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            // To write a ushort i don't need any cast, only unboxing must be done
+            ushort val = 8192;
+            plc.Write("DB2.DBW8192", val);
+            ushort result = (ushort)plc.Read("DB2.DBW8192");
+            Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
+
+            // To write a short i need to convert it to UShort, then i need to reconvert the readed value to get
+            // the negative sign back
+            // Depending if i'm writing on a DWORD or on a DEC, i will see ushort or short value in the plc
+            short value = -8192;
+            Assert.IsTrue(plc.IsConnected, "After connecting, IsConnected must be set to true");
+            plc.Write("DB2.DBW8192", value.ConvertToUshort());
+            short result2 = ((ushort)plc.Read("DB2.DBW8192")).ConvertToShort();
+            Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
+        }
+
+        /// <summary>
+        /// Tests that a read and a write on addresses bigger than 8192 are executed correctly
+        /// </summary>
+        [TestMethod]
+        public void T09_WriteAndReadInt16VariableAddress16384()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            // To write a ushort i don't need any cast, only unboxing must be done
+            ushort val = 16384;
+            plc.Write("DB2.DBW16384", val);
+            ushort result = (ushort)plc.Read("DB2.DBW16384");
+            Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
+
+            // To write a short i need to convert it to UShort, then i need to reconvert the readed value to get
+            // the negative sign back
+            // Depending if i'm writing on a DWORD or on a DEC, i will see ushort or short value in the plc
+            short value = -16384;
+            Assert.IsTrue(plc.IsConnected, "After connecting, IsConnected must be set to true");
+            plc.Write("DB2.DBW16384", value.ConvertToUshort());
+            short result2 = ((ushort)plc.Read("DB2.DBW16384")).ConvertToShort();
+            Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
+        }
+
         #endregion
 
         #region Private methods

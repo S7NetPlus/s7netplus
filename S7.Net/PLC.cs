@@ -243,8 +243,9 @@ namespace S7.Net
 		        package.Add(Types.Word.ToByteArray((ushort) (count)));
 		        package.Add(Types.Word.ToByteArray((ushort) (DB)));
 		        package.Add((byte) dataType);
-		        package.Add((byte) 0);
-		        switch (dataType)
+                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
+                switch (dataType)
 		        {
 			        case DataType.Timer:
 			        case DataType.Counter:
@@ -552,7 +553,8 @@ namespace S7.Net
                 package.Add(Types.Word.ToByteArray((ushort)varCount));
                 package.Add(Types.Word.ToByteArray((ushort)(db)));
                 package.Add((byte)dataType);
-                package.Add((byte)0);
+                var overflow = (int) (startByteAdr*8/0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
                 package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
                 package.Add(new byte[] { 0, 4 });
                 package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
