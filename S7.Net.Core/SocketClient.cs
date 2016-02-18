@@ -21,7 +21,7 @@ namespace S7.Net
 
             socketEventArg.RemoteEndPoint = server;
 
-            socketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
+            var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
             {
                 if (e.SocketError == SocketError.Success)
                 {
@@ -35,11 +35,15 @@ namespace S7.Net
                 _clientDone.Set();
             });
 
+            socketEventArg.Completed += completedEvent;
+
             _clientDone.Reset();
 
             _socket.ConnectAsync(socketEventArg);
 
             _clientDone.WaitOne(TIMEOUT_MILLISECONDS);
+
+            socketEventArg.Completed -= completedEvent;
         }
 
         public void SetReceiveTimeout(int milis)
@@ -63,7 +67,7 @@ namespace S7.Net
                 socketEventArg.RemoteEndPoint = _socket.RemoteEndPoint;
                 socketEventArg.UserToken = null;
 
-                socketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
+                var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
                 {
                     if (e.SocketError == SocketError.Success)
                     {
@@ -77,6 +81,8 @@ namespace S7.Net
                     _clientDone.Set();
                 });
 
+                socketEventArg.Completed += completedEvent;
+
                 socketEventArg.SetBuffer(buffer, 0, size);
 
                 _clientDone.Reset();
@@ -84,6 +90,8 @@ namespace S7.Net
                 _socket.SendAsync(socketEventArg);
 
                 _clientDone.WaitOne(_sendTimeout);
+
+                socketEventArg.Completed -= completedEvent;
             }
             else
             {
@@ -104,7 +112,7 @@ namespace S7.Net
                 socketEventArg.RemoteEndPoint = _socket.RemoteEndPoint;
                 socketEventArg.SetBuffer(buffer, 0, size);
 
-                socketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
+                var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
                 {
                     if (e.SocketError == SocketError.Success)
                     {
@@ -118,11 +126,15 @@ namespace S7.Net
                     _clientDone.Set();
                 });
 
+                socketEventArg.Completed += completedEvent;
+
                 _clientDone.Reset();
 
                 _socket.ReceiveAsync(socketEventArg);
 
                 _clientDone.WaitOne(_receiveTimeout);
+
+                socketEventArg.Completed -= completedEvent;
             }
             else
             {
@@ -139,6 +151,8 @@ namespace S7.Net
             if (_socket != null)
             {
                 _socket.Shutdown(SocketShutdown.Both);
+                _socket.Dispose();
+                _socket = null;
             }
         }
 
@@ -148,7 +162,7 @@ namespace S7.Net
 
         private static ManualResetEvent _clientDone = new ManualResetEvent(false);
 
-        private const int TIMEOUT_MILLISECONDS = 5000;
+        private const int TIMEOUT_MILLISECONDS = 1000;
 
     }
 }
