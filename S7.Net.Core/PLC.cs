@@ -508,10 +508,15 @@ namespace S7.Net
 
         public object ReadStruct(Type structType, int db)
         {
+            return ReadStruct(structType, db, 0);
+        }
+
+        public object ReadStruct(Type structType, int db, int startByteAdr)
+        {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            List<byte> resultBytes = ReadMultipleBytes(numBytes, db);
-            
+            List<byte> resultBytes = ReadMultipleBytes(numBytes, db, startByteAdr);
+
             // and decode it
             return Types.Struct.FromBytes(structType, resultBytes.ToArray());
         }
@@ -852,8 +857,13 @@ namespace S7.Net
         /// <returns></returns>
         private List<byte> ReadMultipleBytes(int numBytes, int db)
         {
+            return ReadMultipleBytes(numBytes, db, 0);
+        }
+
+        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr)
+        {
             List<byte> resultBytes = new List<byte>();
-            int index = 0;
+            int index = startByteAdr;
             while (numBytes > 0)
             {
                 var maxToRead = (int)Math.Min(numBytes, 200);
