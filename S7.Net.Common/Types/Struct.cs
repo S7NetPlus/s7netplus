@@ -49,6 +49,9 @@ namespace S7.Net.Types
                             numBytes++;
                         numBytes += 4;
                         break;
+                    default:
+                        numBytes += GetStructSize(info.FieldType);
+                        break;
                 }
             }
             return (int)numBytes;
@@ -145,6 +148,14 @@ namespace S7.Net.Types
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3] }));
                         numBytes += 4;
+                        break;
+                    default:
+                        var buffer = new byte[GetStructSize(info.FieldType)];
+                        if (buffer.Length == 0)
+                            continue;
+                        Buffer.BlockCopy(bytes, (int)Math.Ceiling(numBytes), buffer, 0, buffer.Length);
+                        info.SetValue(structValue, FromBytes(info.FieldType, buffer));
+                        numBytes += buffer.Length;
                         break;
                 }
             }

@@ -804,8 +804,13 @@ namespace S7.Net
 
         public ErrorCode WriteStruct(object structValue, int db)
         {
+            return WriteStruct(structValue, db, 0);
+        }
+
+        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr)
+        {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
-            var errCode = WriteMultipleBytes(bytes, db);
+            var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
@@ -824,8 +829,13 @@ namespace S7.Net
         /// <returns>ErrorCode when writing (NoError if everything was ok)</returns>
         private ErrorCode WriteMultipleBytes(List<byte> bytes, int db)
         {
+            return WriteMultipleBytes(bytes, db, 0);
+        }
+
+        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr)
+        {
             ErrorCode errCode = ErrorCode.NoError;
-            int index = 0;
+            int index = startByteAdr;
             try
             {
                 while (bytes.Count > 0)
