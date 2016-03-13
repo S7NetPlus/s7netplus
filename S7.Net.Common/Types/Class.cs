@@ -12,55 +12,47 @@ namespace S7.Net.Types
         /// <returns>the number of bytes</returns>
         public static int GetClassSize(Type classType)
         {
-            double numBytes = 0.0;                       
+            double numBytes = 0.0;       
+                            
             var properties = classType.GetProperties();
             foreach (var property in properties)
             {
-                numBytes += CalculateBytes(property.PropertyType.Name);
+                switch (property.PropertyType.Name)
+                {
+                    case "Boolean":
+                        numBytes += 0.125;
+                        break;
+                    case "Byte":
+                        numBytes = Math.Ceiling(numBytes);
+                        numBytes++;
+                        break;
+                    case "Int16":
+                    case "UInt16":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += 2;
+                        break;
+                    case "Int32":
+                    case "UInt32":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += 4;
+                        break;
+                    case "Float":
+                    case "Double":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += 4;
+                        break;
+                    default:
+                        numBytes += GetClassSize(property.PropertyType);
+                        break;
+                }
             }
             return (int)numBytes;
-        }
-
-        /// <summary>
-        /// Given a property name, it returns the number of bytes that is composed
-        /// </summary>
-        /// <param name="propertyType">type of the property</param>
-        /// <returns></returns>
-        static double CalculateBytes(string propertyType)
-        {
-            double numBytes = 0;
-            switch (propertyType)
-            {
-                case "Boolean":
-                    numBytes += 0.125;
-                    break;
-                case "Byte":
-                    numBytes = Math.Ceiling(numBytes);
-                    numBytes++;
-                    break;
-                case "Int16":
-                case "UInt16":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    numBytes += 2;
-                    break;
-                case "Int32":
-                case "UInt32":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    numBytes += 4;
-                    break;
-                case "Float":
-                case "Double":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    numBytes += 4;
-                    break;
-            }
-            return numBytes;
         }
 
         /// <summary>
@@ -155,6 +147,16 @@ namespace S7.Net.Types
                                                                            bytes[(int)numBytes + 3] }), null);
                         numBytes += 4;
                         break;
+                    default:
+                        var buffer = new byte[GetClassSize(property.PropertyType)];
+                        if (buffer.Length == 0)
+                            continue;
+                        Buffer.BlockCopy(bytes, (int)Math.Ceiling(numBytes), buffer, 0, buffer.Length);
+                        var propClass = Activator.CreateInstance(property.PropertyType);
+                        FromBytes(propClass, property.PropertyType, buffer);
+                        property.SetValue(sourceClass, propClass, null);
+                        numBytes += buffer.Length;
+                        break;
                 }
             }
         }
@@ -179,6 +181,7 @@ namespace S7.Net.Types
             var properties = sourceClass.GetType().GetProperties();
             foreach (var property in properties)
             {
+                bytes2 = null;
                 switch (property.PropertyType.Name)
                 {
                     case "Boolean":
