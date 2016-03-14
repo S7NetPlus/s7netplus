@@ -528,10 +528,15 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         public void ReadClass(object sourceClass, int db)
         {
+            ReadClass(sourceClass, db, 0);
+        }
+
+        public void ReadClass(object sourceClass, int db, int startByteAdr)
+        {
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
             // now read the package
-            List<byte> resultBytes = ReadMultipleBytes(numBytes, db);
+            List<byte> resultBytes = ReadMultipleBytes(numBytes, db, startByteAdr);
             // and decode it
             Types.Class.FromBytes(sourceClass, classType, resultBytes.ToArray());
         }
@@ -816,8 +821,13 @@ namespace S7.Net
 
         public ErrorCode WriteClass(object classValue, int db)
         {
+            return WriteClass(classValue, db, 0);
+        }
+
+        public ErrorCode WriteClass(object classValue, int db, int startByteAdr)
+        {
             var bytes = Types.Class.ToBytes(classValue).ToList();
-            var errCode = WriteMultipleBytes(bytes, db);
+            var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
@@ -878,6 +888,8 @@ namespace S7.Net
             {
                 var maxToRead = (int)Math.Min(numBytes, 200);
                 byte[] bytes = (byte[])Read(DataType.DataBlock, db, index, VarType.Byte, (int)maxToRead);
+                if (bytes == null)
+                    return new List<byte>();
                 resultBytes.AddRange(bytes);
                 numBytes -= maxToRead;
                 index += maxToRead;
