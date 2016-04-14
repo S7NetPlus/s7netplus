@@ -8,7 +8,18 @@ namespace S7.Net
     internal class SocketClient
     {
 
-        public bool Connected { get; private set; }
+        public bool Connected
+        {
+            get
+            {
+                if (_socket == null)
+                    return false;
+
+                return _socket.Connected;
+            }
+        }
+
+        public SocketError LastSocketError { get; private set; }
 
         public SocketClient(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -17,27 +28,26 @@ namespace S7.Net
 
         public void Connect(IPEndPoint server)
         {
-            SocketAsyncEventArgs socketEventArg = new SocketAsyncEventArgs();
+            if (Connected)
+                return;
+
+            LastSocketError = SocketError.NotConnected;
+
+            var socketEventArg = new SocketAsyncEventArgs();
 
             socketEventArg.RemoteEndPoint = server;
 
             var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
             {
-                if (e.SocketError == SocketError.Success)
-                {
-                    Connected = true;
-                }
-                else
-                {
-                    throw new SocketException((int)e.SocketError);
-                }
-
+                LastSocketError = e.SocketError;
                 _clientDone.Set();
             });
 
             socketEventArg.Completed += completedEvent;
 
             _clientDone.Reset();
+
+            LastSocketError = SocketError.TimedOut;
 
             _socket.ConnectAsync(socketEventArg);
 
@@ -62,21 +72,17 @@ namespace S7.Net
 
             if (_socket != null)
             {
-                SocketAsyncEventArgs socketEventArg = new SocketAsyncEventArgs();
+                var socketEventArg = new SocketAsyncEventArgs();
 
                 socketEventArg.RemoteEndPoint = _socket.RemoteEndPoint;
                 socketEventArg.UserToken = null;
 
                 var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
                 {
+                    LastSocketError = e.SocketError;
+
                     if (e.SocketError == SocketError.Success)
-                    {
                         response = e.BytesTransferred;
-                    }
-                    else
-                    {
-                        throw new SocketException((int)e.SocketError);
-                    }
 
                     _clientDone.Set();
                 });
@@ -87,6 +93,8 @@ namespace S7.Net
 
                 _clientDone.Reset();
 
+                LastSocketError = SocketError.TimedOut;
+
                 _socket.SendAsync(socketEventArg);
 
                 _clientDone.WaitOne(_sendTimeout);
@@ -95,7 +103,7 @@ namespace S7.Net
             }
             else
             {
-                throw new SocketException((int)SocketError.NotInitialized);
+                LastSocketError = SocketError.NotInitialized;
             }
 
             return response;
@@ -107,21 +115,17 @@ namespace S7.Net
 
             if (_socket != null)
             {
-                SocketAsyncEventArgs socketEventArg = new SocketAsyncEventArgs();
+                var socketEventArg = new SocketAsyncEventArgs();
 
                 socketEventArg.RemoteEndPoint = _socket.RemoteEndPoint;
                 socketEventArg.SetBuffer(buffer, 0, size);
 
                 var completedEvent = new EventHandler<SocketAsyncEventArgs>(delegate (object s, SocketAsyncEventArgs e)
                 {
+                    LastSocketError = e.SocketError;
+
                     if (e.SocketError == SocketError.Success)
-                    {
                         response = e.BytesTransferred;
-                    }
-                    else
-                    {
-                        throw new SocketException((int)e.SocketError);
-                    }
 
                     _clientDone.Set();
                 });
@@ -129,6 +133,8 @@ namespace S7.Net
                 socketEventArg.Completed += completedEvent;
 
                 _clientDone.Reset();
+
+                LastSocketError = SocketError.TimedOut;
 
                 _socket.ReceiveAsync(socketEventArg);
 
@@ -138,7 +144,7 @@ namespace S7.Net
             }
             else
             {
-                throw new SocketException((int)SocketError.NotInitialized);
+                LastSocketError = SocketError.NotInitialized;
             }
 
             return response;
@@ -146,8 +152,6 @@ namespace S7.Net
 
         public void Close()
         {
-            Connected = false;
-
             if (_socket != null)
             {
                 _socket.Shutdown(SocketShutdown.Both);
@@ -160,7 +164,8 @@ namespace S7.Net
         private int _receiveTimeout = TIMEOUT_MILLISECONDS;
         private int _sendTimeout = TIMEOUT_MILLISECONDS;
 
-        private static ManualResetEvent _clientDone = new ManualResetEvent(false);
+        private readonly static ManualResetEvent _clientDone =
+            new ManualResetEvent(false);
 
         private const int TIMEOUT_MILLISECONDS = 1000;
 
