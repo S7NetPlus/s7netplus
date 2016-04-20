@@ -1,10 +1,13 @@
 ﻿#region Using
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.UnitTest;
 using System.ServiceProcess;
+using S7.Net.Types;
 using S7.UnitTest.Helpers;
 
 #endregion
@@ -376,6 +379,49 @@ namespace S7.Net.UnitTest
             plc.Write("DB2.DBW16384", value.ConvertToUshort());
             short result2 = ((ushort)plc.Read("DB2.DBW16384")).ConvertToShort();
             Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
+        }
+
+        [TestMethod]
+        public void T10_ReadMultipleBytes()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            ushort val = 16384;
+            plc.Write("DB2.DBW16384", val);
+            ushort result = (ushort)plc.Read("DB2.DBW16384");
+            Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
+
+            ushort val2 = 129;
+            plc.Write("DB2.DBW16", val2);
+            ushort result2 = (ushort)plc.Read("DB2.DBW16");
+            Assert.AreEqual(val2, result2, "A ushort goes from 0 to 64512");
+            
+            var dataItems = new List<DataItem>()
+            {
+                new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartBitAdr = 0,
+                    StartByteAdr = 16384,
+                    VarType = VarType.Word
+                },
+                new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartBitAdr = 0,
+                    StartByteAdr = 16,
+                    VarType = VarType.Word
+                }
+            };
+
+            plc.ReadMultipleVars(dataItems);
+
+            Assert.AreEqual(dataItems[0].Value, val);
+            Assert.AreEqual(dataItems[1].Value, val2);
         }
 
         #endregion

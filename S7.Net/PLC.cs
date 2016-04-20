@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Interfaces;
+using S7.Net.Types;
 using Double = System.Double;
 
 namespace S7.Net
@@ -256,6 +257,114 @@ namespace S7.Net
 			    _mSocket.Close();
             }
 	    }
+        
+        private Types.ByteArray ReadHeaderPackage(int amount = 1)
+        {
+            //header size = 19 bytes
+            var package = new Types.ByteArray(19);
+            package.Add(new byte[] {0x03, 0x00, 0x00});
+            //complete package size
+            package.Add((byte) (19 + (12*amount)));
+            package.Add(new byte[] {0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00});
+            //data part size
+            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount*12))));
+            package.Add(new byte[] {0x00, 0x00, 0x04});
+            //amount of requests
+            package.Add((byte)amount);
+
+            return package;
+        }
+
+        private Types.ByteArray ReadDataRequestPackage(DataType dataType, int DB, int startByteAdr, int count = 1)
+        {
+            //single data req = 12
+            var package = new Types.ByteArray(12);
+            package.Add(new byte[] {0x12, 0x0a, 0x10});
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add((byte)dataType);
+                    break;
+                default:
+                    package.Add(0x02);
+                    break;
+            }
+
+            package.Add(Types.Word.ToByteArray((ushort)(count)));
+            package.Add(Types.Word.ToByteArray((ushort)(DB)));
+            package.Add((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.Add((byte)overflow);
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    break;
+                default:
+                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    break;
+            }
+
+            return package;
+        }
+
+        public List<DataItem> ReadMultipleVars(List<DataItem> dataItems)
+        {
+            int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
+
+            if (cntBytes > 222) throw new Exception("Too many bytes requested"); //todo, proper TDU check + split in multiple requests
+
+            try
+            {
+                // first create the header
+                int packageSize = 19 + (dataItems.Count*12);
+                Types.ByteArray package = new ByteArray(packageSize);
+                package.Add(ReadHeaderPackage(dataItems.Count));
+                // package.Add(0x02);  // datenart
+                foreach (var dataItem in dataItems)
+                {
+                    package.Add(ReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
+                }
+
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                int offset = 19;
+                foreach (var dataItem in dataItems)
+                {
+                    offset += 6;
+
+                    int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
+                    byte[] bytes = new byte[byteCnt];
+
+                    for (int i = 0; i < byteCnt; i++)
+                    {
+                        bytes[i] = bReceive[i + offset];
+                    }
+
+                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
+                }
+
+                return dataItems;
+            }
+            catch (SocketException socketException)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = socketException.Message;
+                return null;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return null;
+            }
+        }
 
         /// <summary>
         /// Reads up to 200 bytes from the plc and returns an array of bytes. You must specify the memory area type, memory are address, byte start address and bytes count.
@@ -274,39 +383,10 @@ namespace S7.Net
 	        {
 		        // first create the header
 		        int packageSize = 31;
-		        Types.ByteArray package = new Types.ByteArray(packageSize);
-
-		        package.Add(new byte[] {0x03, 0x00, 0x00});
-		        package.Add((byte) packageSize);
-		        package.Add(new byte[]
-		        {0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
+	            Types.ByteArray package = new ByteArray(packageSize);
+                package.Add(ReadHeaderPackage());
 		        // package.Add(0x02);  // datenart
-		        switch (dataType)
-		        {
-			        case DataType.Timer:
-			        case DataType.Counter:
-				        package.Add((byte) dataType);
-				        break;
-			        default:
-				        package.Add(0x02);
-				        break;
-		        }
-
-		        package.Add(Types.Word.ToByteArray((ushort) (count)));
-		        package.Add(Types.Word.ToByteArray((ushort) (DB)));
-		        package.Add((byte) dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                switch (dataType)
-		        {
-			        case DataType.Timer:
-			        case DataType.Counter:
-				        package.Add(Types.Word.ToByteArray((ushort) (startByteAdr)));
-				        break;
-			        default:
-				        package.Add(Types.Word.ToByteArray((ushort) ((startByteAdr)*8)));
-				        break;
-		        }
+                package.Add(ReadDataRequestPackage(dataType, DB, startByteAdr, count));
 
 		        _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
@@ -333,6 +413,85 @@ namespace S7.Net
             }
         }
 
+        public int VarTypeToByteLength(VarType varType, int varCount = 1)
+        {
+            switch (varType)
+            {
+                case VarType.Bit:
+                    return varCount; //TODO
+                case VarType.Byte:
+                    return (varCount < 1) ? 1 : varCount;
+                case VarType.String:
+                    return varCount;
+                case VarType.Word:
+                case VarType.Timer:
+                case VarType.Int:
+                case VarType.Counter:
+                    return varCount * 2;
+                case VarType.DWord:
+                case VarType.DInt:
+                case VarType.Real:
+                    return varCount * 4;
+                default:
+                    return 0;
+            }
+        }
+
+        public object ParseBytes(VarType varType, byte[] bytes, int varCount)
+        {
+            if (bytes == null) return null;
+
+            switch (varType)
+            {
+                case VarType.Byte:
+                    if (varCount == 1)
+                        return bytes[0];
+                    else
+                        return bytes;
+                case VarType.Word:
+                    if (varCount == 1)
+                        return Types.Word.FromByteArray(bytes);
+                    else
+                        return Types.Word.ToArray(bytes);
+                case VarType.Int:
+                    if (varCount == 1)
+                        return Types.Int.FromByteArray(bytes);
+                    else
+                        return Types.Int.ToArray(bytes);
+                case VarType.DWord:
+                    if (varCount == 1)
+                        return Types.DWord.FromByteArray(bytes);
+                    else
+                        return Types.DWord.ToArray(bytes);
+                case VarType.DInt:
+                    if (varCount == 1)
+                        return Types.DInt.FromByteArray(bytes);
+                    else
+                        return Types.DInt.ToArray(bytes);
+                case VarType.Real:
+                    if (varCount == 1)
+                        return Types.Double.FromByteArray(bytes);
+                    else
+                        return Types.Double.ToArray(bytes);
+                case VarType.String:
+                    return Types.String.FromByteArray(bytes);
+                case VarType.Timer:
+                    if (varCount == 1)
+                        return Types.Timer.FromByteArray(bytes);
+                    else
+                        return Types.Timer.ToArray(bytes);
+                case VarType.Counter:
+                    if (varCount == 1)
+                        return Types.Counter.FromByteArray(bytes);
+                    else
+                        return Types.Counter.ToArray(bytes);
+                case VarType.Bit:
+                    return null; //TODO
+                default:
+                    return null;
+            }
+        }
+
         /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided. 
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
@@ -342,98 +501,15 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="varType">Type of the variable/s that you are reading</param>
-        /// <param name="varCount">Number of the variables (NOT number of bytes) to read</param>
-        /// <returns></returns>
+        /// <param name="varCount">Number of 
         public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
         {
-            byte[] bytes = null;
-            int cntBytes = 0;
+            int cntBytes = VarTypeToByteLength(varType, varCount);
+            byte[] bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
 
-            switch (varType)
-            {
-                case VarType.Byte:
-                    cntBytes = varCount;
-                    if (cntBytes < 1) cntBytes = 1;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-                    if (varCount == 1)
-                        return bytes[0];
-                    else
-                        return bytes;
-                case VarType.Word:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.Word.FromByteArray(bytes);
-                    else
-                        return Types.Word.ToArray(bytes);
-                case VarType.Int:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.Int.FromByteArray(bytes);
-                    else
-                        return Types.Int.ToArray(bytes);
-                case VarType.DWord:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.DWord.FromByteArray(bytes);
-                    else
-                        return Types.DWord.ToArray(bytes);
-                case VarType.DInt:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.DInt.FromByteArray(bytes);
-                    else
-                        return Types.DInt.ToArray(bytes);
-                case VarType.Real:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.Double.FromByteArray(bytes);
-                    else
-                        return Types.Double.ToArray(bytes);
-                case VarType.String:
-                    cntBytes = varCount;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    return Types.String.FromByteArray(bytes);
-                case VarType.Timer:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.Timer.FromByteArray(bytes);
-                    else
-                        return Types.Timer.ToArray(bytes);
-                case VarType.Counter:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
-                    if (varCount == 1)
-                        return Types.Counter.FromByteArray(bytes);
-                    else
-                        return Types.Counter.ToArray(bytes);
-                default:
-                    return null;
-            }
+            return ParseBytes(varType, bytes, varCount);
         }
-
+        
         /// <summary>
         /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
