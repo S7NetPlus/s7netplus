@@ -313,7 +313,8 @@ namespace S7.Net
         public List<DataItem> ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-
+            
+            if (dataItems.Count > 20) throw new Exception("Too many vars requested");
             if (cntBytes > 222) throw new Exception("Too many bytes requested"); //todo, proper TDU check + split in multiple requests
 
             try
@@ -334,11 +335,9 @@ namespace S7.Net
                 int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
                 if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 19;
+                int offset = 25;
                 foreach (var dataItem in dataItems)
                 {
-                    offset += 6;
-
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
                     byte[] bytes = new byte[byteCnt];
 
@@ -346,6 +345,8 @@ namespace S7.Net
                     {
                         bytes[i] = bReceive[i + offset];
                     }
+
+                    offset += byteCnt + 4;
 
                     dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
                 }
