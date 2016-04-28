@@ -701,7 +701,7 @@ namespace S7.Net
                                     throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                                 }
                                 byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
-                                if ((int)value == 1)
+                                if (Convert.ToInt32(value) == 1)
                                     b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
                                 else
                                     b = (byte)(b & (b ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
