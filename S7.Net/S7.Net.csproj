@@ -72,8 +72,53 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\S7.Net.Common\**\*.*">
-      <Link>%(RecursiveDir)%(FileName)</Link>
+    <Compile Include="..\S7.Net.Common\Conversion.cs">
+      <Link>Conversion</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Enums.cs">
+      <Link>Enums</Link>
+    </Compile>   
+    <Compile Include="..\S7.Net.Common\Types\Boolean.cs">
+      <Link>Types\Boolean</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Byte.cs">
+      <Link>Types\Byte</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\ByteArray.cs">
+      <Link>Types\ByteArray</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Class.cs">
+      <Link>Types\Class</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Counter.cs">
+      <Link>Types\Counter</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\DataItem.cs">
+      <Link>Types\DataItem</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\DInt.cs">
+      <Link>Types\DInt</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Double.cs">
+      <Link>Types\Double</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\DWord.cs">
+      <Link>Types\DWord</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Int.cs">
+      <Link>Types\Int</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\String.cs">
+      <Link>Types\String</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Struct.cs">
+      <Link>Types\Struct</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Timer.cs">
+      <Link>Types\Timer</Link>
+    </Compile>
+    <Compile Include="..\S7.Net.Common\Types\Word.cs">
+      <Link>Types\Word</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

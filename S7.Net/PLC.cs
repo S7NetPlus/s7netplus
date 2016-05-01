@@ -5,13 +5,12 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using S7.Net.Interfaces;
 using S7.Net.Types;
 using Double = System.Double;
 
 namespace S7.Net
 {
-    public class Plc : IPlc
+    public class Plc 
     {
         private Socket _mSocket; //TCP connection to device
 
