@@ -273,12 +273,14 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads multiple vars in a single request. You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+        /// Reads multiple vars in a single request. 
+        /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+        /// Values are stored in the property "Value" of the dataItem and are already converted.
+        /// If you don't want the conversion, just create a dataItem of bytes. 
         /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
-        /// <returns>List of dataItem containing the values of the variables</returns>
-        public List<DataItem> ReadMultipleVars(List<DataItem> dataItems)
+        public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
             
@@ -318,20 +320,16 @@ namespace S7.Net
 
                     dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
                 }
-
-                return dataItems;
             }
             catch (SocketException socketException)
             {
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = socketException.Message;
-                return null;
             }
             catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = exc.Message;
-                return null;
             }
         }
 
