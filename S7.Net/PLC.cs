@@ -14,11 +14,34 @@ namespace S7.Net
     {
         private Socket _mSocket; //TCP connection to device
 
+        /// <summary>
+        /// Ip address of the plc
+        /// </summary>
         public string IP { get; set; }
+
+        /// <summary>
+        /// Cpu type of the plc
+        /// </summary>
         public CpuType CPU { get; set; }
+
+        /// <summary>
+        /// Rack of the plc
+        /// </summary>
         public Int16 Rack { get; set; }
+
+        /// <summary>
+        /// Slot of the CPU of the plc
+        /// </summary>
         public Int16 Slot { get; set; }
+
+        /// <summary>
+        /// Name of the plc (optional, is not used anywhere in the driver)
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Tag of the plc (optional, is not used anywhere in the driver)
+        /// </summary>
         public object Tag { get; set; }
 
         /// <summary>
@@ -62,9 +85,21 @@ namespace S7.Net
                 catch { return false; }
             }
         }
+
+        /// <summary>
+        /// Contains the last error registered when executing a function
+        /// </summary>
         public string LastErrorString { get; private set; }
+
+        /// <summary>
+        /// Contains the last error code registered when executing a function
+        /// </summary>
         public ErrorCode LastErrorCode { get; private set; }
 
+        /// <summary>
+        /// Creates a plc with CpuType S7400 and ip: localhost. This constructor makes no sense and will be removed in future versions.
+        /// </summary>
+        [Obsolete("Use Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)")]
         public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
 
         /// <summary>
@@ -73,12 +108,13 @@ namespace S7.Net
         /// You need slot > 0 if you are connecting to external ethernet card (CP).
         /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
         /// </summary>
-        /// <param name="cpu"></param>
-        /// <param name="ip"></param>
-        /// <param name="rack"></param>
-        /// <param name="slot"></param>
-        /// <param name="name"></param>
-        /// <param name="tag"></param>
+        /// <param name="cpu">CpuType of the plc (select from the enum)</param>
+        /// <param name="ip">Ip address of the plc</param>
+        /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        ///  If you use an external ethernet card, this must be set accordingly.</param>
+        /// <param name="name">Name of the plc (optional, is not used anywhere in the driver)</param>
+        /// <param name="tag">Tag of the plc (optional, is not used anywhere in the driver)</param>
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
         {
             IP = ip;
@@ -89,6 +125,10 @@ namespace S7.Net
             Tag = tag;
         }
 
+        /// <summary>
+        /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
+        /// </summary>
+        /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
 	    {
 		    byte[] bReceive = new byte[256];
@@ -206,6 +246,9 @@ namespace S7.Net
 		    return ErrorCode.NoError;
 	    }
 
+        /// <summary>
+        /// Disonnects from the plc and close the socket
+        /// </summary>
 	    public void Close()
 	    {
 		    if (_mSocket != null && _mSocket.Connected) 
@@ -214,6 +257,15 @@ namespace S7.Net
             }
 	    }
 
+        /// <summary>
+        /// Reads up to 200 bytes from the plc and returns an array of bytes. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="DB">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>Returns the bytes in an array</returns>
         public byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
@@ -281,6 +333,17 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Read and decode a certain number of bytes of the "VarType" provided. 
+        /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="varType">Type of the variable/s that you are reading</param>
+        /// <param name="varCount">Number of the variables (NOT number of bytes) to read</param>
+        /// <returns></returns>
         public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
         {
             byte[] bytes = null;
@@ -371,6 +434,12 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+        /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
         public object Read(string variable)
         {
             DataType mDataType;
@@ -506,11 +575,24 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Reads all the bytes needed to fill a struct in C#, and return an object that can be casted to the struct.
+        /// </summary>
+        /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
+        /// <param name="db">Address of the DB.</param>
+        /// <returns>Returns a struct that must be cast.</returns>
         public object ReadStruct(Type structType, int db)
         {
             return ReadStruct(structType, db, 0);
         }
 
+        /// <summary>
+        /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+        /// </summary>
+        /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
+        /// <param name="db">Address of the DB.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>Returns a struct that must be cast.</returns>
         public object ReadStruct(Type structType, int db, int startByteAdr)
         {
             int numBytes = Types.Struct.GetStructSize(structType);
@@ -522,7 +604,8 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Read a class from plc. Only properties are readed
+        /// Reads all the bytes needed to fill a class in C#, and set all the properties values to the value that are read from the plc. 
+        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
@@ -531,6 +614,13 @@ namespace S7.Net
             ReadClass(sourceClass, db, 0);
         }
 
+        /// <summary>
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
+        /// </summary>
+        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         public void ReadClass(object sourceClass, int db, int startByteAdr)
         {
             Type classType = sourceClass.GetType();
@@ -701,7 +791,7 @@ namespace S7.Net
                                     throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                                 }
                                 byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
-                                if ((int)value == 1)
+                                if (Convert.ToInt32(value) == 1)
                                     b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
                                 else
                                     b = (byte)(b & (b ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
@@ -880,6 +970,13 @@ namespace S7.Net
             return ReadMultipleBytes(numBytes, db, 0);
         }
 
+        /// <summary>
+        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// </summary>
+        /// <param name="numBytes"></param>
+        /// <param name="db"></param>
+        /// <param name="startByteAdr"></param>
+        /// <returns></returns>
         private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr)
         {
             List<byte> resultBytes = new List<byte>();
