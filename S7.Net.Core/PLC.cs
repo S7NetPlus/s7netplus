@@ -5,21 +5,18 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using S7.Net.Interfaces;
 using Double = System.Double;
 
 namespace S7.Net
 {
-    public class Plc : IPlc
+    public class Plc 
     {
         private SocketClient _mSocket; //TCP connection to device
 
-        public string IP { get; set; }
-        public CpuType CPU { get; set; }
-        public Int16 Rack { get; set; }
-        public Int16 Slot { get; set; }
-        public string Name { get; set; }
-        public object Tag { get; set; }
+        public string IP { get; private set; }
+        public CpuType CPU { get; private set; }
+        public Int16 Rack { get; private set; }
+        public Int16 Slot { get; private set; }
 
         /// <summary>
         /// Pings the IP address and returns true if the result of the ping is Success.
@@ -64,8 +61,7 @@ namespace S7.Net
         }
         public string LastErrorString { get; private set; }
         public ErrorCode LastErrorCode { get; private set; }
-
-        public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
+        
 
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
@@ -79,14 +75,12 @@ namespace S7.Net
         /// <param name="slot"></param>
         /// <param name="name"></param>
         /// <param name="tag"></param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
             IP = ip;
             CPU = cpu;
             Rack = rack;
             Slot = slot;
-            Name = name;
-            Tag = tag;
         }
 
         public ErrorCode Open()
