@@ -403,7 +403,6 @@ namespace S7.Net.UnitTest
                     Count = 1,
                     DataType = DataType.DataBlock,
                     DB = 2,
-                    StartBitAdr = 0,
                     StartByteAdr = 16384,
                     VarType = VarType.Word
                 },
@@ -412,7 +411,6 @@ namespace S7.Net.UnitTest
                     Count = 1,
                     DataType = DataType.DataBlock,
                     DB = 2,
-                    StartBitAdr = 0,
                     StartByteAdr = 16,
                     VarType = VarType.Word
                 }

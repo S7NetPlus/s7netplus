@@ -17,22 +17,22 @@ namespace S7.Net
         /// <summary>
         /// Ip address of the plc
         /// </summary>
-        public string IP { get; set; }
+        public string IP { get; private set; }
 
         /// <summary>
         /// Cpu type of the plc
         /// </summary>
-        public CpuType CPU { get; set; }
+        public CpuType CPU { get; private set; }
 
         /// <summary>
         /// Rack of the plc
         /// </summary>
-        public Int16 Rack { get; set; }
+        public Int16 Rack { get; private set; }
 
         /// <summary>
         /// Slot of the CPU of the plc
         /// </summary>
-        public Int16 Slot { get; set; }
+        public Int16 Slot { get; private set; }
 
         /// <summary>
         /// Name of the plc (optional, is not used anywhere in the driver)
@@ -95,13 +95,7 @@ namespace S7.Net
         /// Contains the last error code registered when executing a function
         /// </summary>
         public ErrorCode LastErrorCode { get; private set; }
-
-        /// <summary>
-        /// Creates a plc with CpuType S7400 and ip: localhost. This constructor makes no sense and will be removed in future versions.
-        /// </summary>
-        [Obsolete("Use Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)")]
-        public Plc() : this(CpuType.S7400, "localhost", 0, 2) { }
-
+        
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
         /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
@@ -256,23 +250,6 @@ namespace S7.Net
 			    _mSocket.Close();
             }
 	    }
-        
-        private Types.ByteArray ReadHeaderPackage(int amount = 1)
-        {
-            //header size = 19 bytes
-            var package = new Types.ByteArray(19);
-            package.Add(new byte[] {0x03, 0x00, 0x00});
-            //complete package size
-            package.Add((byte) (19 + (12*amount)));
-            package.Add(new byte[] {0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00});
-            //data part size
-            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount*12))));
-            package.Add(new byte[] {0x00, 0x00, 0x04});
-            //amount of requests
-            package.Add((byte)amount);
-
-            return package;
-        }
 
         private Types.ByteArray ReadDataRequestPackage(DataType dataType, int DB, int startByteAdr, int count = 1)
         {
@@ -309,6 +286,12 @@ namespace S7.Net
             return package;
         }
 
+        /// <summary>
+        /// Reads multiple vars in a single request. You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+        /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+        /// </summary>
+        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        /// <returns>List of dataItem containing the values of the variables</returns>
         public List<DataItem> ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
@@ -652,24 +635,13 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a struct in C#, and return an object that can be casted to the struct.
-        /// </summary>
-        /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
-        /// <param name="db">Address of the DB.</param>
-        /// <returns>Returns a struct that must be cast.</returns>
-        public object ReadStruct(Type structType, int db)
-        {
-            return ReadStruct(structType, db, 0);
-        }
-
-        /// <summary>
         /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
         /// </summary>
         /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>Returns a struct that must be cast.</returns>
-        public object ReadStruct(Type structType, int db, int startByteAdr)
+        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
@@ -680,24 +652,13 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, and set all the properties values to the value that are read from the plc. 
-        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
-        /// </summary>
-        /// <param name="sourceClass">Instance of the class that will store the values</param>       
-        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
-        public void ReadClass(object sourceClass, int db)
-        {
-            ReadClass(sourceClass, db, 0);
-        }
-
-        /// <summary>
         /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
         /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        public void ReadClass(object sourceClass, int db, int startByteAdr)
+        public void ReadClass(object sourceClass, int db, int startByteAdr = 0)
         {
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
@@ -973,42 +934,21 @@ namespace S7.Net
             }
         }
 
-        public ErrorCode WriteStruct(object structValue, int db)
-        {
-            return WriteStruct(structValue, db, 0);
-        }
-
-        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr)
+        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
             var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
-        public ErrorCode WriteClass(object classValue, int db)
-        {
-            return WriteClass(classValue, db, 0);
-        }
-
-        public ErrorCode WriteClass(object classValue, int db, int startByteAdr)
+        public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
             var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
-        /// <summary>
-        /// Writes multiple bytes in a DB starting from index 0. This handles more than 200 bytes with multiple requests.
-        /// </summary>
-        /// <param name="bytes">The bytes to be written</param>
-        /// <param name="db">The DB number</param>
-        /// <returns>ErrorCode when writing (NoError if everything was ok)</returns>
-        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db)
-        {
-            return WriteMultipleBytes(bytes, db, 0);
-        }
-
-        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr)
+        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr = 0)
         {
             ErrorCode errCode = ErrorCode.NoError;
             int index = startByteAdr;
@@ -1036,24 +976,13 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads a number of bytes from a DB starting from index 0. This handles more than 200 bytes with multiple requests.
-        /// </summary>
-        /// <param name="numBytes"></param>
-        /// <param name="db"></param>
-        /// <returns></returns>
-        private List<byte> ReadMultipleBytes(int numBytes, int db)
-        {
-            return ReadMultipleBytes(numBytes, db, 0);
-        }
-
-        /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// </summary>
         /// <param name="numBytes"></param>
         /// <param name="db"></param>
         /// <param name="startByteAdr"></param>
         /// <returns></returns>
-        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr)
+        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr = 0)
         {
             List<byte> resultBytes = new List<byte>();
             int index = startByteAdr;
@@ -1068,6 +997,28 @@ namespace S7.Net
                 index += maxToRead;
             }
             return resultBytes;
+        }
+
+        /// <summary>
+        /// Creates the header to read bytes from the plc
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        private Types.ByteArray ReadHeaderPackage(int amount = 1)
+        {
+            //header size = 19 bytes
+            var package = new Types.ByteArray(19);
+            package.Add(new byte[] { 0x03, 0x00, 0x00 });
+            //complete package size
+            package.Add((byte)(19 + (12 * amount)));
+            package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            //data part size
+            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
+            package.Add(new byte[] { 0x00, 0x00, 0x04 });
+            //amount of requests
+            package.Add((byte)amount);
+
+            return package;
         }
 
 
