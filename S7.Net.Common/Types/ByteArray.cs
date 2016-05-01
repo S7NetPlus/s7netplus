@@ -35,5 +35,10 @@ namespace S7.Net.Types
         {
             list.AddRange(items);
         }
+
+        public void Add(ByteArray byteArray)
+        {
+            list.AddRange(byteArray.array);
+        }
     }
 }
