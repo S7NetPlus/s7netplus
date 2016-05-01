@@ -35,16 +35,6 @@ namespace S7.Net
         public Int16 Slot { get; private set; }
 
         /// <summary>
-        /// Name of the plc (optional, is not used anywhere in the driver)
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Tag of the plc (optional, is not used anywhere in the driver)
-        /// </summary>
-        public object Tag { get; set; }
-
-        /// <summary>
         /// Pings the IP address and returns true if the result of the ping is Success.
         /// </summary>
         public bool IsAvailable
@@ -107,16 +97,12 @@ namespace S7.Net
         /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        /// <param name="name">Name of the plc (optional, is not used anywhere in the driver)</param>
-        /// <param name="tag">Tag of the plc (optional, is not used anywhere in the driver)</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, string name = "", object tag = null)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
             IP = ip;
             CPU = cpu;
             Rack = rack;
             Slot = slot;
-            Name = name;
-            Tag = tag;
         }
 
         /// <summary>
