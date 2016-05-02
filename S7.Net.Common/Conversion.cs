@@ -5,6 +5,11 @@ namespace S7.Net
 {
     public static class Conversion
     {
+        /// <summary>
+        /// Converts a binary string to Int32 value
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <returns></returns>
         public static int BinStringToInt32(this string txt)
         {
             int cnt = 0;
@@ -39,6 +44,11 @@ namespace S7.Net
             return null;
         }
 
+        /// <summary>
+        /// Converts the value to a binary string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ValToBinString(this object value)
         {
             int cnt = 0;
@@ -135,6 +145,13 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Helper to get a bit value given a byte and the bit index.
+        /// Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5); 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="bitPosition"></param>
+        /// <returns></returns>
         public static bool SelectBit(this byte data, int bitPosition)
         {
             int mask = 1 << bitPosition;
