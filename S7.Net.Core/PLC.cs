@@ -5,17 +5,33 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using S7.Net.Types;
 using Double = System.Double;
 
 namespace S7.Net
 {
-    public class Plc 
+    public class Plc : IDisposable
     {
         private SocketClient _mSocket; //TCP connection to device
 
+        /// <summary>
+        /// Ip address of the plc
+        /// </summary>
         public string IP { get; private set; }
+
+        /// <summary>
+        /// Cpu type of the plc
+        /// </summary>
         public CpuType CPU { get; private set; }
+
+        /// <summary>
+        /// Rack of the plc
+        /// </summary>
         public Int16 Rack { get; private set; }
+
+        /// <summary>
+        /// Slot of the CPU of the plc
+        /// </summary>
         public Int16 Slot { get; private set; }
 
         /// <summary>
@@ -36,7 +52,7 @@ namespace S7.Net
                     //{
                     //    result = null;
                     //}
-                    return (!string.IsNullOrEmpty(IP)); // result != null && result.Status == IPStatus.Success;
+                    return (!string.IsNullOrWhiteSpace(IP)); // result != null && result.Status == IPStatus.Success;
                 //}
             }
         }
@@ -59,9 +75,16 @@ namespace S7.Net
                 catch { return false; }
             }
         }
+
+        /// <summary>
+        /// Contains the last error registered when executing a function
+        /// </summary>
         public string LastErrorString { get; private set; }
+
+        /// <summary>
+        /// Contains the last error code registered when executing a function
+        /// </summary>
         public ErrorCode LastErrorCode { get; private set; }
-        
 
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
@@ -69,12 +92,11 @@ namespace S7.Net
         /// You need slot > 0 if you are connecting to external ethernet card (CP).
         /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
         /// </summary>
-        /// <param name="cpu"></param>
-        /// <param name="ip"></param>
-        /// <param name="rack"></param>
-        /// <param name="slot"></param>
-        /// <param name="name"></param>
-        /// <param name="tag"></param>
+        /// <param name="cpu">CpuType of the plc (select from the enum)</param>
+        /// <param name="ip">Ip address of the plc</param>
+        /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        ///  If you use an external ethernet card, this must be set accordingly.</param>
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
             IP = ip;
@@ -83,85 +105,92 @@ namespace S7.Net
             Slot = slot;
         }
 
+        /// <summary>
+        /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
+        /// </summary>
+        /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
-	    {
-		    byte[] bReceive = new byte[256];
+        {
+            byte[] bReceive = new byte[256];
 
-		    try 
+            try
             {
-			    // check if available
+                // check if available
                 if (!IsAvailable)
                 {
                     throw new Exception();
                 }
             }
-		    catch  
+            catch
             {
-			    LastErrorCode = ErrorCode.IPAddressNotAvailable;
-			    LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
-			    return LastErrorCode;
-		    }
+                LastErrorCode = ErrorCode.IPAddressNotAvailable;
+                LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
+                return LastErrorCode;
+            }
 
-		    try {
-			    // open the channel
-			    _mSocket = new SocketClient(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-			    _mSocket.SetReceiveTimeout(1000);
-			    _mSocket.SetSendTimeout(1000);
-
-			    IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
-			    _mSocket.Connect(server);
-		    }
-		    catch (Exception ex) {
-			    LastErrorCode = ErrorCode.ConnectionError;
-			    LastErrorString = ex.Message;
-			    return ErrorCode.ConnectionError;
-		    }
-
-		    try 
+            try
             {
-			    byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
+                // open the channel
+                _mSocket = new SocketClient(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-			    switch (CPU) {
-				    case CpuType.S7200:
-					    //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
-					    bSend1[11] = 193;
-					    bSend1[12] = 2;
-					    bSend1[13] = 16;
-					    bSend1[14] = 0;
-					    //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
-					    bSend1[15] = 194;
-					    bSend1[16] = 2;
-					    bSend1[17] = 16;
-					    bSend1[18] = 0;
-					    break;
+                _mSocket.SetReceiveTimeout(1000);
+                _mSocket.SetSendTimeout(1000);
+
+                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+                _mSocket.Connect(server);
+            }
+            catch (Exception ex)
+            {
+                LastErrorCode = ErrorCode.ConnectionError;
+                LastErrorString = ex.Message;
+                return ErrorCode.ConnectionError;
+            }
+
+            try
+            {
+                byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
+
+                switch (CPU)
+                {
+                    case CpuType.S7200:
+                        //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
+                        bSend1[11] = 193;
+                        bSend1[12] = 2;
+                        bSend1[13] = 16;
+                        bSend1[14] = 0;
+                        //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
+                        bSend1[15] = 194;
+                        bSend1[16] = 2;
+                        bSend1[17] = 16;
+                        bSend1[18] = 0;
+                        break;
                     case CpuType.S71200:
-				    case CpuType.S7300:
-					    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-					    bSend1[11] = 193;
-					    bSend1[12] = 2;
-					    bSend1[13] = 1;
-					    bSend1[14] = 0;
-					    //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
-					    bSend1[15] = 194;
-					    bSend1[16] = 2;
-					    bSend1[17] = 3;
-					    bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
-					    break;
-				    case CpuType.S7400:
-					    //S7400: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-					    bSend1[11] = 193;
-					    bSend1[12] = 2;
-					    bSend1[13] = 1;
-					    bSend1[14] = 0;
-					    //S7400: Chr(194) & Chr(2) & Chr(3) & Chr(3)  'Fremder Tsap
-					    bSend1[15] = 194;
-					    bSend1[16] = 2;
-					    bSend1[17] = 3;
+                    case CpuType.S7300:
+                        //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
+                        bSend1[11] = 193;
+                        bSend1[12] = 2;
+                        bSend1[13] = 1;
+                        bSend1[14] = 0;
+                        //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
+                        bSend1[15] = 194;
+                        bSend1[16] = 2;
+                        bSend1[17] = 3;
+                        bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
+                        break;
+                    case CpuType.S7400:
+                        //S7400: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
+                        bSend1[11] = 193;
+                        bSend1[12] = 2;
+                        bSend1[13] = 1;
+                        bSend1[14] = 0;
+                        //S7400: Chr(194) & Chr(2) & Chr(3) & Chr(3)  'Fremder Tsap
+                        bSend1[15] = 194;
+                        bSend1[16] = 2;
+                        bSend1[17] = 3;
                         bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
                         break;
                     case CpuType.S71500:
-				        // Eigener Tsap
+                        // Eigener Tsap
                         bSend1[11] = 193;
                         bSend1[12] = 2;
                         bSend1[13] = 0x10;
@@ -172,102 +201,181 @@ namespace S7.Net
                         bSend1[17] = 0x3;
                         bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
                         break;
-				    default:
-					    return ErrorCode.WrongCPU_Type;
-			    }
+                    default:
+                        return ErrorCode.WrongCPU_Type;
+                }
 
-			    _mSocket.Send(bSend1, 22);
-			    if (_mSocket.Receive(bReceive, 22) != 22)
-			    {
-			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-			    } 
+                _mSocket.Send(bSend1, 22);
+                if (_mSocket.Receive(bReceive, 22) != 22)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
 
-			    byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
-			    _mSocket.Send(bsend2, 25);
+                byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
+                _mSocket.Send(bsend2, 25);
 
-			    if (_mSocket.Receive(bReceive, 27) != 27)
-			    {
-			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-			    } 
-		    }
-		    catch 
-            {
-			    LastErrorCode = ErrorCode.ConnectionError;
-			    LastErrorString = string.Format("Couldn't establish the connection to {0}!", IP);
-			    return ErrorCode.ConnectionError;
-		    }
-
-		    return ErrorCode.NoError;
-	    }
-
-	    public void Close()
-	    {
-		    if (_mSocket != null && _mSocket.Connected) 
-            {
-			    _mSocket.Close();
+                if (_mSocket.Receive(bReceive, 27) != 27)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
             }
-	    }
+            catch
+            {
+                LastErrorCode = ErrorCode.ConnectionError;
+                LastErrorString = string.Format("Couldn't establish the connection to {0}!", IP);
+                return ErrorCode.ConnectionError;
+            }
 
+            return ErrorCode.NoError;
+        }
+
+        /// <summary>
+        /// Disonnects from the plc and close the socket
+        /// </summary>
+	    public void Close()
+        {
+            if (_mSocket != null && _mSocket.Connected)
+            {
+                _mSocket.Close();
+            }
+        }
+
+        private Types.ByteArray ReadDataRequestPackage(DataType dataType, int DB, int startByteAdr, int count = 1)
+        {
+            //single data req = 12
+            var package = new Types.ByteArray(12);
+            package.Add(new byte[] { 0x12, 0x0a, 0x10 });
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add((byte)dataType);
+                    break;
+                default:
+                    package.Add(0x02);
+                    break;
+            }
+
+            package.Add(Types.Word.ToByteArray((ushort)(count)));
+            package.Add(Types.Word.ToByteArray((ushort)(DB)));
+            package.Add((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.Add((byte)overflow);
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    break;
+                default:
+                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    break;
+            }
+
+            return package;
+        }
+
+        /// <summary>
+        /// Reads multiple vars in a single request. 
+        /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+        /// Values are stored in the property "Value" of the dataItem and are already converted.
+        /// If you don't want the conversion, just create a dataItem of bytes. 
+        /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+        /// </summary>
+        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        public void ReadMultipleVars(List<DataItem> dataItems)
+        {
+            int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
+
+            if (dataItems.Count > 20) throw new Exception("Too many vars requested");
+            if (cntBytes > 222) throw new Exception("Too many bytes requested"); //todo, proper TDU check + split in multiple requests
+
+            try
+            {
+                // first create the header
+                int packageSize = 19 + (dataItems.Count * 12);
+                Types.ByteArray package = new ByteArray(packageSize);
+                package.Add(ReadHeaderPackage(dataItems.Count));
+                // package.Add(0x02);  // datenart
+                foreach (var dataItem in dataItems)
+                {
+                    package.Add(ReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
+                }
+
+                _mSocket.Send(package.array, package.array.Length);
+
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512);
+                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                int offset = 25;
+                foreach (var dataItem in dataItems)
+                {
+                    int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
+                    byte[] bytes = new byte[byteCnt];
+
+                    for (int i = 0; i < byteCnt; i++)
+                    {
+                        bytes[i] = bReceive[i + offset];
+                    }
+
+                    offset += byteCnt + 4;
+
+                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
+                }
+            }
+            catch (SocketException socketException)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = socketException.Message;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+            }
+        }
+
+        /// <summary>
+        /// Reads up to 200 bytes from the plc and returns an array of bytes. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="DB">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>Returns the bytes in an array</returns>
         public byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
 
-	        try
-	        {
-		        // first create the header
-		        int packageSize = 31;
-		        Types.ByteArray package = new Types.ByteArray(packageSize);
+            try
+            {
+                // first create the header
+                int packageSize = 31;
+                Types.ByteArray package = new ByteArray(packageSize);
+                package.Add(ReadHeaderPackage());
+                // package.Add(0x02);  // datenart
+                package.Add(ReadDataRequestPackage(dataType, DB, startByteAdr, count));
 
-		        package.Add(new byte[] {0x03, 0x00, 0x00});
-		        package.Add((byte) packageSize);
-		        package.Add(new byte[]
-		        {0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x04, 0x01, 0x12, 0x0a, 0x10});
-		        // package.Add(0x02);  // datenart
-		        switch (dataType)
-		        {
-			        case DataType.Timer:
-			        case DataType.Counter:
-				        package.Add((byte) dataType);
-				        break;
-			        default:
-				        package.Add(0x02);
-				        break;
-		        }
+                _mSocket.Send(package.array, package.array.Length);
 
-		        package.Add(Types.Word.ToByteArray((ushort) (count)));
-		        package.Add(Types.Word.ToByteArray((ushort) (DB)));
-		        package.Add((byte) dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                switch (dataType)
-		        {
-			        case DataType.Timer:
-			        case DataType.Counter:
-				        package.Add(Types.Word.ToByteArray((ushort) (startByteAdr)));
-				        break;
-			        default:
-				        package.Add(Types.Word.ToByteArray((ushort) ((startByteAdr)*8)));
-				        break;
-		        }
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512);
+                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-		        _mSocket.Send(package.array, package.array.Length);
+                for (int cnt = 0; cnt < count; cnt++)
+                    bytes[cnt] = bReceive[cnt + 25];
 
-		        byte[] bReceive = new byte[512];
-		        int numReceived = _mSocket.Receive(bReceive, 512);
-		        if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-
-		        for (int cnt = 0; cnt < count; cnt++)
-			        bytes[cnt] = bReceive[cnt + 25];
-
-		        return bytes;
-	        }
-	        catch (SocketException socketException)
-	        {
-				LastErrorCode = ErrorCode.WriteData;
-				LastErrorString = socketException.Message;
-				return null;
-	        }
-            catch(Exception exc)
+                return bytes;
+            }
+            catch (SocketException socketException)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = socketException.Message;
+                return null;
+            }
+            catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = exc.Message;
@@ -275,96 +383,109 @@ namespace S7.Net
             }
         }
 
-        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
+        public int VarTypeToByteLength(VarType varType, int varCount = 1)
         {
-            byte[] bytes = null;
-            int cntBytes = 0;
+            switch (varType)
+            {
+                case VarType.Bit:
+                    return varCount; //TODO
+                case VarType.Byte:
+                    return (varCount < 1) ? 1 : varCount;
+                case VarType.String:
+                    return varCount;
+                case VarType.Word:
+                case VarType.Timer:
+                case VarType.Int:
+                case VarType.Counter:
+                    return varCount * 2;
+                case VarType.DWord:
+                case VarType.DInt:
+                case VarType.Real:
+                    return varCount * 4;
+                default:
+                    return 0;
+            }
+        }
+
+        public object ParseBytes(VarType varType, byte[] bytes, int varCount)
+        {
+            if (bytes == null) return null;
 
             switch (varType)
             {
                 case VarType.Byte:
-                    cntBytes = varCount;
-                    if (cntBytes < 1) cntBytes = 1;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
                     if (varCount == 1)
                         return bytes[0];
                     else
                         return bytes;
                 case VarType.Word:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.Word.FromByteArray(bytes);
                     else
                         return Types.Word.ToArray(bytes);
                 case VarType.Int:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.Int.FromByteArray(bytes);
                     else
                         return Types.Int.ToArray(bytes);
                 case VarType.DWord:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.DWord.FromByteArray(bytes);
                     else
                         return Types.DWord.ToArray(bytes);
                 case VarType.DInt:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.DInt.FromByteArray(bytes);
                     else
                         return Types.DInt.ToArray(bytes);
                 case VarType.Real:
-                    cntBytes = varCount * 4;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.Double.FromByteArray(bytes);
                     else
                         return Types.Double.ToArray(bytes);
                 case VarType.String:
-                    cntBytes = varCount;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     return Types.String.FromByteArray(bytes);
                 case VarType.Timer:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.Timer.FromByteArray(bytes);
                     else
                         return Types.Timer.ToArray(bytes);
                 case VarType.Counter:
-                    cntBytes = varCount * 2;
-                    bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
-                    if (bytes == null) return null;
-
                     if (varCount == 1)
                         return Types.Counter.FromByteArray(bytes);
                     else
                         return Types.Counter.ToArray(bytes);
+                case VarType.Bit:
+                    return null; //TODO
                 default:
                     return null;
             }
         }
 
+        /// <summary>
+        /// Read and decode a certain number of bytes of the "VarType" provided. 
+        /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="varType">Type of the variable/s that you are reading</param>
+        /// <param name="varCount">Number of 
+        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
+        {
+            int cntBytes = VarTypeToByteLength(varType, varCount);
+            byte[] bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
+
+            return ParseBytes(varType, bytes, varCount);
+        }
+
+        /// <summary>
+        /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+        /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
         public object Read(string variable)
         {
             DataType mDataType;
@@ -400,17 +521,17 @@ namespace S7.Net
                                 byte obj = (byte)Read(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
                                 return obj;
                             case "DBW":
-								UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
+                                UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
                                 return objI;
                             case "DBD":
-								UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
+                                UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
                                 return objU;
                             case "DBX":
                                 mByte = dbIndex;
                                 mBit = int.Parse(strings[2]);
                                 if (mBit > 7) throw new Exception();
                                 byte obj2 = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
-								objBoolArray = new BitArray(new byte[] { obj2 });
+                                objBoolArray = new BitArray(new byte[] { obj2 });
                                 return objBoolArray[mBit];
                             default:
                                 throw new Exception();
@@ -488,11 +609,11 @@ namespace S7.Net
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
                         if (mBit > 7) throw new Exception();
                         var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
-						objBoolArray = new BitArray(new byte[]{obj3});
+                        objBoolArray = new BitArray(new byte[] { obj3 });
                         return objBoolArray[mBit];
                 }
             }
-            catch 
+            catch
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be read. Please check the syntax and try again.";
@@ -500,12 +621,14 @@ namespace S7.Net
             }
         }
 
-        public object ReadStruct(Type structType, int db)
-        {
-            return ReadStruct(structType, db, 0);
-        }
-
-        public object ReadStruct(Type structType, int db, int startByteAdr)
+        /// <summary>
+        /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+        /// </summary>
+        /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
+        /// <param name="db">Address of the DB.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>Returns a struct that must be cast.</returns>
+        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
@@ -516,16 +639,13 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Read a class from plc. Only properties are readed
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
-        public void ReadClass(object sourceClass, int db)
-        {
-            ReadClass(sourceClass, db, 0);
-        }
-
-        public void ReadClass(object sourceClass, int db, int startByteAdr)
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        public void ReadClass(object sourceClass, int db, int startByteAdr = 0)
         {
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
@@ -654,14 +774,14 @@ namespace S7.Net
                 switch (txt.Substring(0, 2))
                 {
                     case "DB":
-                        string[] strings = txt.Split(new char[]{'.'});
+                        string[] strings = txt.Split(new char[] { '.' });
                         if (strings.Length < 2)
                             throw new Exception();
 
                         mDB = int.Parse(strings[0].Substring(2));
                         string dbType = strings[1].Substring(0, 3);
-                        int dbIndex = int.Parse(strings[1].Substring(3));                       
-                       
+                        int dbIndex = int.Parse(strings[1].Substring(3));
+
                         switch (dbType)
                         {
                             case "DBB":
@@ -767,14 +887,14 @@ namespace S7.Net
                                 // Counter
                                 return Write(DataType.Counter, 0, int.Parse(txt.Substring(1)), (short)value);
                             default:
-                                throw new Exception(string.Format("Unknown variable type {0}.",txt.Substring(0,1)));
+                                throw new Exception(string.Format("Unknown variable type {0}.", txt.Substring(0, 1)));
                         }
 
                         addressLocation = txt.Substring(1);
                         int decimalPointIndex = addressLocation.IndexOf(".");
                         if (decimalPointIndex == -1)
                         {
-                            throw new Exception(string.Format("Cannot parse variable {0}. Input, Output, Memory Address, Timer, and Counter types require bit-level addressing (e.g. I0.1).",addressLocation));
+                            throw new Exception(string.Format("Cannot parse variable {0}. Input, Output, Memory Address, Timer, and Counter types require bit-level addressing (e.g. I0.1).", addressLocation));
                         }
 
                         mByte = int.Parse(addressLocation.Substring(0, decimalPointIndex));
@@ -793,7 +913,7 @@ namespace S7.Net
                         return Write(mDataType, 0, mByte, (byte)_byte);
                 }
             }
-            catch 
+            catch
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.";
@@ -801,42 +921,21 @@ namespace S7.Net
             }
         }
 
-        public ErrorCode WriteStruct(object structValue, int db)
-        {
-            return WriteStruct(structValue, db, 0);
-        }
-
-        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr)
+        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
             var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
-        public ErrorCode WriteClass(object classValue, int db)
-        {
-            return WriteClass(classValue, db, 0);
-        }
-
-        public ErrorCode WriteClass(object classValue, int db, int startByteAdr)
+        public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
             var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
             return errCode;
         }
 
-        /// <summary>
-        /// Writes multiple bytes in a DB starting from index 0. This handles more than 200 bytes with multiple requests.
-        /// </summary>
-        /// <param name="bytes">The bytes to be written</param>
-        /// <param name="db">The DB number</param>
-        /// <returns>ErrorCode when writing (NoError if everything was ok)</returns>
-        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db)
-        {
-            return WriteMultipleBytes(bytes, db, 0);
-        }
-
-        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr)
+        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr = 0)
         {
             ErrorCode errCode = ErrorCode.NoError;
             int index = startByteAdr;
@@ -864,17 +963,13 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads a number of bytes from a DB starting from index 0. This handles more than 200 bytes with multiple requests.
+        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// </summary>
         /// <param name="numBytes"></param>
         /// <param name="db"></param>
+        /// <param name="startByteAdr"></param>
         /// <returns></returns>
-        private List<byte> ReadMultipleBytes(int numBytes, int db)
-        {
-            return ReadMultipleBytes(numBytes, db, 0);
-        }
-
-        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr)
+        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr = 0)
         {
             List<byte> resultBytes = new List<byte>();
             int index = startByteAdr;
@@ -889,6 +984,28 @@ namespace S7.Net
                 index += maxToRead;
             }
             return resultBytes;
+        }
+
+        /// <summary>
+        /// Creates the header to read bytes from the plc
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        private Types.ByteArray ReadHeaderPackage(int amount = 1)
+        {
+            //header size = 19 bytes
+            var package = new Types.ByteArray(19);
+            package.Add(new byte[] { 0x03, 0x00, 0x00 });
+            //complete package size
+            package.Add((byte)(19 + (12 * amount)));
+            package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            //data part size
+            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
+            package.Add(new byte[] { 0x00, 0x00, 0x04 });
+            //amount of requests
+            package.Add((byte)amount);
+
+            return package;
         }
 
 
@@ -906,7 +1023,7 @@ namespace S7.Net
                 }
                 //((IDisposable)_mSocket).Dispose();
             }
-        } 
+        }
 
         #endregion
     }
