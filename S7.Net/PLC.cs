@@ -10,7 +10,7 @@ using Double = System.Double;
 
 namespace S7.Net
 {
-    public class Plc 
+    public class Plc : IDisposable
     {
         private Socket _mSocket; //TCP connection to device
 
