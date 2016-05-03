@@ -52,7 +52,7 @@ namespace S7.Net
                     //{
                     //    result = null;
                     //}
-                    return (!string.IsNullOrWhiteSpace(IP)); // result != null && result.Status == IPStatus.Success;
+				return (!string.IsNullOrWhiteSpace(IP)); // result != null && result.Status == IPStatus.Success;
                 //}
             }
         }
@@ -240,41 +240,6 @@ namespace S7.Net
             }
         }
 
-        private Types.ByteArray ReadDataRequestPackage(DataType dataType, int DB, int startByteAdr, int count = 1)
-        {
-            //single data req = 12
-            var package = new Types.ByteArray(12);
-            package.Add(new byte[] { 0x12, 0x0a, 0x10 });
-            switch (dataType)
-            {
-                case DataType.Timer:
-                case DataType.Counter:
-                    package.Add((byte)dataType);
-                    break;
-                default:
-                    package.Add(0x02);
-                    break;
-            }
-
-            package.Add(Types.Word.ToByteArray((ushort)(count)));
-            package.Add(Types.Word.ToByteArray((ushort)(DB)));
-            package.Add((byte)dataType);
-            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-            package.Add((byte)overflow);
-            switch (dataType)
-            {
-                case DataType.Timer:
-                case DataType.Counter:
-                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
-                    break;
-                default:
-                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
-                    break;
-            }
-
-            return package;
-        }
-
         /// <summary>
         /// Reads multiple vars in a single request. 
         /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
@@ -299,7 +264,7 @@ namespace S7.Net
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
                 {
-                    package.Add(ReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
+                    package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
                 _mSocket.Send(package.array, package.array.Length);
@@ -341,11 +306,11 @@ namespace S7.Net
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
-        /// <param name="DB">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>Returns the bytes in an array</returns>
-        public byte[] ReadBytes(DataType dataType, int DB, int startByteAdr, int count)
+        public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
 
@@ -356,7 +321,7 @@ namespace S7.Net
                 Types.ByteArray package = new ByteArray(packageSize);
                 package.Add(ReadHeaderPackage());
                 // package.Add(0x02);  // datenart
-                package.Add(ReadDataRequestPackage(dataType, DB, startByteAdr, count));
+                package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
                 _mSocket.Send(package.array, package.array.Length);
 
@@ -383,6 +348,12 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Given a S7 variable type (Bool, Word, DWord, etc.), it returns how many bytes to read.
+        /// </summary>
+        /// <param name="varType"></param>
+        /// <param name="varCount"></param>
+        /// <returns></returns>
         public int VarTypeToByteLength(VarType varType, int varCount = 1)
         {
             switch (varType)
@@ -407,6 +378,13 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Given a S7 variable type (Bool, Word, DWord, etc.), it converts the bytes in the appropriate C# format.
+        /// </summary>
+        /// <param name="varType"></param>
+        /// <param name="bytes"></param>
+        /// <param name="varCount"></param>
+        /// <returns></returns>
         public object ParseBytes(VarType varType, byte[] bytes, int varCount)
         {
             if (bytes == null) return null;
@@ -655,6 +633,16 @@ namespace S7.Net
             Types.Class.FromBytes(sourceClass, classType, resultBytes.ToArray());
         }
 
+
+        /// <summary>
+        /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
@@ -704,7 +692,17 @@ namespace S7.Net
             }
         }
 
-        public object Write(DataType dataType, int db, int startByteAdr, object value)
+        /// <summary>
+        /// Takes in input an object and tries to parse it to an array of values. This can be used to write many data, all of the same type.
+        /// You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value)
         {
             byte[] package = null;
 
@@ -755,7 +753,14 @@ namespace S7.Net
             return WriteBytes(dataType, db, startByteAdr, package);
         }
 
-        public object Write(string variable, object value)
+        /// <summary>
+        /// Writes a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+        /// <param name="value">Value to be written to the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode Write(string variable, object value)
         {
             DataType mDataType;
             int mDB;
@@ -921,6 +926,13 @@ namespace S7.Net
             }
         }
 
+        /// <summary>
+        /// Writes a C# struct to a DB in the plc
+        /// </summary>
+        /// <param name="structValue">The struct to be written</param>
+        /// <param name="db">Db address</param>
+        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
@@ -928,6 +940,13 @@ namespace S7.Net
             return errCode;
         }
 
+        /// <summary>
+        /// Writes a C# class to a DB in the plc
+        /// </summary>
+        /// <param name="classValue">The class to be written</param>
+        /// <param name="db">Db address</param>
+        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
@@ -935,6 +954,13 @@ namespace S7.Net
             return errCode;
         }
 
+        /// <summary>
+        /// Writes multiple bytes to the plc. This uses recursion and it's not limited to 200 bytes.
+        /// </summary>
+        /// <param name="bytes">The bytes values to be written</param>
+        /// <param name="db">Db address</param>
+        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
         private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr = 0)
         {
             ErrorCode errCode = ErrorCode.NoError;
@@ -965,10 +991,10 @@ namespace S7.Net
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// </summary>
-        /// <param name="numBytes"></param>
-        /// <param name="db"></param>
-        /// <param name="startByteAdr"></param>
-        /// <returns></returns>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="numBytes">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>Returns the bytes in a list</returns>
         private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr = 0)
         {
             List<byte> resultBytes = new List<byte>();
@@ -1004,6 +1030,50 @@ namespace S7.Net
             package.Add(new byte[] { 0x00, 0x00, 0x04 });
             //amount of requests
             package.Add((byte)amount);
+
+            return package;
+        }
+
+        /// <summary>
+        /// Create the bytes-package to request data from the plc. You have to specify the memory type (dataType), 
+        /// the address of the memory, the address of the byte and the bytes count. 
+        /// </summary>
+        /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
+        /// <param name="db">Address of the memory to be read</param>
+        /// <param name="startByteAdr">Start address of the byte</param>
+        /// <param name="count">Number of bytes to be read</param>
+        /// <returns></returns>
+        private Types.ByteArray CreateReadDataRequestPackage(DataType dataType, int db, int startByteAdr, int count = 1)
+        {
+            //single data req = 12
+            var package = new Types.ByteArray(12);
+            package.Add(new byte[] { 0x12, 0x0a, 0x10 });
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add((byte)dataType);
+                    break;
+                default:
+                    package.Add(0x02);
+                    break;
+            }
+
+            package.Add(Types.Word.ToByteArray((ushort)(count)));
+            package.Add(Types.Word.ToByteArray((ushort)(db)));
+            package.Add((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.Add((byte)overflow);
+            switch (dataType)
+            {
+                case DataType.Timer:
+                case DataType.Counter:
+                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    break;
+                default:
+                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    break;
+            }
 
             return package;
         }
