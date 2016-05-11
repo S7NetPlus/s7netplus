@@ -941,6 +941,15 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Sets the LastErrorCode to NoError and LastErrorString to String.Empty
+        /// </summary>
+        public void ClearLastError()
+        {
+            LastErrorCode = ErrorCode.NoError;
+            LastErrorString = string.Empty;
+        }
+
+        /// <summary>
         /// Writes a C# class to a DB in the plc
         /// </summary>
         /// <param name="classValue">The class to be written</param>

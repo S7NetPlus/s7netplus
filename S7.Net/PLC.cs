@@ -952,6 +952,15 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Sets the LastErrorCode to NoError and LastErrorString to String.Empty
+        /// </summary>
+        public void ClearLastError()
+        {
+            LastErrorCode = ErrorCode.NoError;
+            LastErrorString = string.Empty;
+        }
+
+        /// <summary>
         /// Writes multiple bytes to the plc. This uses recursion and it's not limited to 200 bytes.
         /// </summary>
         /// <param name="bytes">The bytes values to be written</param>
