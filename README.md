@@ -24,6 +24,10 @@ S7.Net Plus has a [User Manual](https://github.com/killnine/s7netplus/blob/maste
 
 PM> Install-Package S7netplus
 
+## Latest build (Appveyor)
+[![Build status](https://ci.appveyor.com/api/projects/status/ousjt8sn9b1w43p6?svg=true)](https://ci.appveyor.com/project/mesta1/s7netplus)
+[https://ci.appveyor.com/project/mesta1/s7netplus](https://ci.appveyor.com/project/mesta1/s7netplus)
+
 ## Running the tests
 
 Unit tests use Snap7 server, so port 102 must be not in use.
