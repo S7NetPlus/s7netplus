@@ -216,10 +216,10 @@ namespace S7.Net
 			        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 			    } 
 		    }
-		    catch 
+		    catch(Exception exc)
             {
 			    LastErrorCode = ErrorCode.ConnectionError;
-			    LastErrorString = string.Format("Couldn't establish the connection to {0}!", IP);
+			    LastErrorString = "Couldn't establish the connection to " + IP + ".\nMessage: " + exc.Message;
 			    return ErrorCode.ConnectionError;
 		    }
 
@@ -681,10 +681,10 @@ namespace S7.Net
 
                 return ErrorCode.NoError;
             }
-            catch
+            catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "";
+                LastErrorString = exc.Message;
                 return LastErrorCode;
             }
         }
@@ -915,10 +915,10 @@ namespace S7.Net
                         return Write(mDataType, 0, mByte, (byte)_byte);
                 }
             }
-            catch 
+            catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
-                LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.";
+                LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.\nException: " + exc.Message;
                 return LastErrorCode;
             }
         }
@@ -986,10 +986,10 @@ namespace S7.Net
                     }
                 }
             }
-            catch
+            catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "An error occurred while writing data.";
+                LastErrorString = "An error occurred while writing data:" + exc.Message;
             }
             return errCode;
         }
