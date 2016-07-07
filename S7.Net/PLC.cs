@@ -1008,7 +1008,7 @@ namespace S7.Net
             while (numBytes > 0)
             {
                 var maxToRead = (int)Math.Min(numBytes, 200);
-                byte[] bytes = (byte[])Read(DataType.DataBlock, db, index, VarType.Byte, (int)maxToRead);
+                byte[] bytes = ReadBytes(DataType.DataBlock, db, index, maxToRead);
                 if (bytes == null)
                     return new List<byte>();
                 resultBytes.AddRange(bytes);
