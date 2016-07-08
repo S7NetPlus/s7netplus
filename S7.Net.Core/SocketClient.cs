@@ -66,7 +66,7 @@ namespace S7.Net
             _sendTimeout = milis;
         }
 
-        public int Send(byte[] buffer, int size)
+        public int Send(byte[] buffer, int size, SocketFlags socketFlag)
         {
             var response = 0;
 
@@ -109,7 +109,7 @@ namespace S7.Net
             return response;
         }
 
-        public int Receive(byte[] buffer, int size)
+        public int Receive(byte[] buffer, int size, SocketFlags socketFlag)
         {
             var response = 0;
 
@@ -169,5 +169,55 @@ namespace S7.Net
 
         private const int TIMEOUT_MILLISECONDS = 1000;
 
+    }
+
+    //
+    // Summary:
+    //     Specifies socket send and receive behaviors.
+    [Flags]
+    public enum SocketFlags
+    {
+        //
+        // Summary:
+        //     Use no flags for this call.
+        None = 0,
+        //
+        // Summary:
+        //     Process out-of-band data.
+        OutOfBand = 1,
+        //
+        // Summary:
+        //     Peek at the incoming message.
+        Peek = 2,
+        //
+        // Summary:
+        //     Send without using routing tables.
+        DontRoute = 4,
+        //
+        // Summary:
+        //     Provides a standard value for the number of WSABUF structures that are used to
+        //     send and receive data.
+        MaxIOVectorLength = 16,
+        //
+        // Summary:
+        //     The message was too large to fit into the specified buffer and was truncated.
+        Truncated = 256,
+        //
+        // Summary:
+        //     Indicates that the control data did not fit into an internal 64-KB buffer and
+        //     was truncated.
+        ControlDataTruncated = 512,
+        //
+        // Summary:
+        //     Indicates a broadcast packet.
+        Broadcast = 1024,
+        //
+        // Summary:
+        //     Indicates a multicast packet.
+        Multicast = 2048,
+        //
+        // Summary:
+        //     Partial send or receive for message.
+        Partial = 32768
     }
 }

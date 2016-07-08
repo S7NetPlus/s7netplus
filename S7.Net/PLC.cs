@@ -12,7 +12,11 @@ namespace S7.Net
 {
     public class Plc : IDisposable
     {
+#if NETFX_CORE
+		private SocketClient _mSocket; //TCP connection to device
+#else
         private Socket _mSocket; //TCP connection to device
+#endif
 
         /// <summary>
         /// Ip address of the plc
@@ -33,7 +37,7 @@ namespace S7.Net
         /// Slot of the CPU of the plc
         /// </summary>
         public Int16 Slot { get; private set; }
-
+		
         /// <summary>
         /// Pings the IP address and returns true if the result of the ping is Success.
         /// </summary>
@@ -41,6 +45,9 @@ namespace S7.Net
         {
             get
             {
+#if NETFX_CORE
+                return (!string.IsNullOrWhiteSpace(IP));
+#else
                 using (Ping ping = new Ping())
                 {
                     PingReply result;
@@ -54,8 +61,10 @@ namespace S7.Net
                     }
                     return result != null && result.Status == IPStatus.Success;
                 }
+#endif
             }
         }
+
 
         /// <summary>
         /// Checks if the socket is connected and polls the other peer (the plc) to see if it's connected.
@@ -70,8 +79,13 @@ namespace S7.Net
                 {
                     if (_mSocket == null)
                         return false;
+					
+#if NETFX_CORE
+					return _mSocket.Connected;
+#else
                     return !((_mSocket.Poll(1000, SelectMode.SelectRead) && (_mSocket.Available == 0)) || !_mSocket.Connected);
-                }
+#endif
+				}
                 catch { return false; }
             }
         }
@@ -128,14 +142,10 @@ namespace S7.Net
 			    return LastErrorCode;
 		    }
 
-		    try {
-			    // open the channel
-			    _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
-			    _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
-
-			    IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+		    try
+            {
+                CreateSocket();
+		        IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
 			    _mSocket.Connect(server);
 		    }
 		    catch (Exception ex) {
@@ -324,7 +334,8 @@ namespace S7.Net
 
 		        byte[] bReceive = new byte[512];
 		        int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-		        if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+		        if (bReceive[21] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
 		        for (int cnt = 0; cnt < count; cnt++)
 			        bytes[cnt] = bReceive[cnt + 25];
@@ -1084,9 +1095,20 @@ namespace S7.Net
             return package;
         }
 
+        private void CreateSocket()
+        {
+#if NETFX_CORE
+            _mSocket = new SocketClient(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _mSocket.SetReceiveTimeout(1000);
+            _mSocket.SetSendTimeout(1000);
+#else
+            _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
+			_mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
+#endif
+        }
 
-
-        #region IDisposable members
+#region IDisposable members
 
         public void Dispose()
         {
@@ -1099,8 +1121,7 @@ namespace S7.Net
                 }
                 //((IDisposable)_mSocket).Dispose();
             }
-        } 
-
-        #endregion
+        }
+#endregion
     }
 }

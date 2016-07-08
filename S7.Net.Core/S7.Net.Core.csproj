@@ -107,15 +107,60 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PLC.cs" />
+    <Compile Include="..\S7.Net\Conversion.cs">
+      <Link>Conversion.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Enums.cs">
+      <Link>Enums.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\PLC.cs">
+      <Link>PLC.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Boolean.cs">
+      <Link>Types\Boolean.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Byte.cs">
+      <Link>Types\Byte.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\ByteArray.cs">
+      <Link>Types\ByteArray.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Class.cs">
+      <Link>Types\Class.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Counter.cs">
+      <Link>Types\Counter.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\DataItem.cs">
+      <Link>Types\DataItem.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\DInt.cs">
+      <Link>Types\DInt.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Double.cs">
+      <Link>Types\Double.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\DWord.cs">
+      <Link>Types\DWord.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Int.cs">
+      <Link>Types\Int.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\String.cs">
+      <Link>Types\String.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Struct.cs">
+      <Link>Types\Struct.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Timer.cs">
+      <Link>Types\Timer.cs</Link>
+    </Compile>
+    <Compile Include="..\S7.Net\Types\Word.cs">
+      <Link>Types\Word.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketClient.cs" />
     <EmbeddedResource Include="Properties\S7.Net.Core.rd.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\S7.Net.Common\**\*.*">
-      <Link>%(RecursiveDir)%(FileName)</Link>
-    </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
