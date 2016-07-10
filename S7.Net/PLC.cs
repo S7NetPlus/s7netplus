@@ -8,15 +8,12 @@ using System.Net.Sockets;
 using S7.Net.Types;
 using Double = System.Double;
 
+
 namespace S7.Net
 {
     public class Plc : IDisposable
     {
-#if NETFX_CORE
-        private SocketClient _mSocket; //TCP connection to device
-#else
         private Socket _mSocket; //TCP connection to device
-#endif
 
         /// <summary>
         /// Ip address of the plc
@@ -144,7 +141,9 @@ namespace S7.Net
 
             try
             {
-                CreateSocket();
+                _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
+                _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
                 IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
                 _mSocket.Connect(server);
             }
@@ -1093,19 +1092,6 @@ namespace S7.Net
             }
 
             return package;
-        }
-
-        private void CreateSocket()
-        {
-#if NETFX_CORE
-            _mSocket = new SocketClient(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _mSocket.SetReceiveTimeout(1000);
-            _mSocket.SetSendTimeout(1000);
-#else
-            _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
-            _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
-#endif
         }
 
 #region IDisposable members
