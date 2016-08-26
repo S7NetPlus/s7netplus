@@ -1,0 +1,862 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>S7.Net</name>
+    </assembly>
+    <members>
+        <member name="T:S7.Net.Conversion">
+            <summary>
+            Conversion methods to convert from Siemens numeric format to C# and back
+            </summary>
+        </member>
+        <member name="M:S7.Net.Conversion.BinStringToInt32(System.String)">
+            <summary>
+            Converts a binary string to Int32 value
+            </summary>
+            <param name="txt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.BinStringToByte(System.String)">
+            <summary>
+            Converts a binary string to a byte. Can return null.
+            </summary>
+            <param name="txt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ValToBinString(System.Object)">
+            <summary>
+            Converts the value to a binary string
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.SelectBit(System.Byte,System.Int32)">
+            <summary>
+            Helper to get a bit value given a byte and the bit index.
+            Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5); 
+            </summary>
+            <param name="data"></param>
+            <param name="bitPosition"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToShort(System.UInt16)">
+            <summary>
+            Converts from ushort value to short value; it's used to retrieve negative values from words
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToUshort(System.Int16)">
+            <summary>
+            Converts from short value to ushort value; it's used to pass negative values to DWs
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToInt(System.UInt32)">
+            <summary>
+            Converts from UInt32 value to Int32 value; it's used to retrieve negative values from DBDs
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToUInt(System.Int32)">
+            <summary>
+            Converts from Int32 value to UInt32 value; it's used to pass negative values to DBDs
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToUInt(System.Double)">
+            <summary>
+            Converts from double to DWord (DBD)
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Conversion.ConvertToDouble(System.UInt32)">
+            <summary>
+            Converts from DWord (DBD) to double
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="T:S7.Net.CpuType">
+            <summary>
+            Types of S7 cpu supported by the library
+            </summary>
+        </member>
+        <member name="F:S7.Net.CpuType.S7200">
+            <summary>
+            S7 200 cpu type
+            </summary>
+        </member>
+        <member name="F:S7.Net.CpuType.S7300">
+            <summary>
+            S7 300 cpu type
+            </summary>
+        </member>
+        <member name="F:S7.Net.CpuType.S7400">
+            <summary>
+            S7 400 cpu type
+            </summary>
+        </member>
+        <member name="F:S7.Net.CpuType.S71200">
+            <summary>
+            S7 1200 cpu type
+            </summary>
+        </member>
+        <member name="F:S7.Net.CpuType.S71500">
+            <summary>
+            S7 1500 cpu type
+            </summary>
+        </member>
+        <member name="T:S7.Net.ErrorCode">
+            <summary>
+            Types of error code that can be set after a function is called
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.NoError">
+            <summary>
+            The function has been executed correctly
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.WrongCPU_Type">
+            <summary>
+            Wrong type of CPU error
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.ConnectionError">
+            <summary>
+            Connection error
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.IPAddressNotAvailable">
+            <summary>
+            Ip address not available
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.WrongVarFormat">
+            <summary>
+            Wrong format of the variable
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.WrongNumberReceivedBytes">
+            <summary>
+            Wrong number of received bytes
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.SendData">
+            <summary>
+            Error on send data
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.ReadData">
+            <summary>
+            Error on read data
+            </summary>
+        </member>
+        <member name="F:S7.Net.ErrorCode.WriteData">
+            <summary>
+            Error on write data
+            </summary>
+        </member>
+        <member name="T:S7.Net.DataType">
+            <summary>
+            Types of memory area that can be read
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.Input">
+            <summary>
+            Input area memory
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.Output">
+            <summary>
+            Output area memory
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.Memory">
+            <summary>
+            Merkers area memory (M0, M0.0, ...)
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.DataBlock">
+            <summary>
+            DB area memory (DB1, DB2, ...)
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.Timer">
+            <summary>
+            Timer area memory(T1, T2, ...)
+            </summary>
+        </member>
+        <member name="F:S7.Net.DataType.Counter">
+            <summary>
+            Counter area memory (C1, C2, ...)
+            </summary>
+        </member>
+        <member name="T:S7.Net.VarType">
+            <summary>
+            Types
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Bit">
+            <summary>
+            S7 Bit variable type (bool)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Byte">
+            <summary>
+            S7 Byte variable type (8 bits)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Word">
+            <summary>
+            S7 Word variable type (16 bits, 2 bytes)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.DWord">
+            <summary>
+            S7 DWord variable type (32 bits, 4 bytes)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Int">
+            <summary>
+            S7 Int variable type (16 bits, 2 bytes)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.DInt">
+            <summary>
+            DInt variable type (32 bits, 4 bytes)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Real">
+            <summary>
+            Real variable type (32 bits, 4 bytes)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.String">
+            <summary>
+            String variable type (variable)
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Timer">
+            <summary>
+            Timer variable type
+            </summary>
+        </member>
+        <member name="F:S7.Net.VarType.Counter">
+            <summary>
+            Counter variable type
+            </summary>
+        </member>
+        <member name="T:S7.Net.Plc">
+            <summary>
+            Creates an instance of S7.Net driver
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.IP">
+            <summary>
+            Ip address of the plc
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.CPU">
+            <summary>
+            Cpu type of the plc
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.Rack">
+            <summary>
+            Rack of the plc
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.Slot">
+            <summary>
+            Slot of the CPU of the plc
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.IsAvailable">
+            <summary>
+            Pings the IP address and returns true if the result of the ping is Success.
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.IsConnected">
+            <summary>
+            Checks if the socket is connected and polls the other peer (the plc) to see if it's connected.
+            This is the variable that you should continously check to see if the communication is working
+            See also: http://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.LastErrorString">
+            <summary>
+            Contains the last error registered when executing a function
+            </summary>
+        </member>
+        <member name="P:S7.Net.Plc.LastErrorCode">
+            <summary>
+            Contains the last error code registered when executing a function
+            </summary>
+        </member>
+        <member name="M:S7.Net.Plc.#ctor(S7.Net.CpuType,System.String,System.Int16,System.Int16)">
+            <summary>
+            Creates a PLC object with all the parameters needed for connections.
+            For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+            You need slot > 0 if you are connecting to external ethernet card (CP).
+            For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+            </summary>
+            <param name="cpu">CpuType of the plc (select from the enum)</param>
+            <param name="ip">Ip address of the plc</param>
+            <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+            <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+             If you use an external ethernet card, this must be set accordingly.</param>
+        </member>
+        <member name="M:S7.Net.Plc.Open">
+            <summary>
+            Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
+            </summary>
+            <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
+        </member>
+        <member name="M:S7.Net.Plc.Close">
+            <summary>
+            Disonnects from the plc and close the socket
+            </summary>
+        </member>
+        <member name="M:S7.Net.Plc.ReadMultipleVars(System.Collections.Generic.List{S7.Net.Types.DataItem})">
+            <summary>
+            Reads multiple vars in a single request. 
+            You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+            Values are stored in the property "Value" of the dataItem and are already converted.
+            If you don't want the conversion, just create a dataItem of bytes. 
+            DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+            </summary>
+            <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        </member>
+        <member name="M:S7.Net.Plc.ReadBytes(S7.Net.DataType,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+            If the read was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+            <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+            <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
+            <returns>Returns the bytes in an array</returns>
+        </member>
+        <member name="M:S7.Net.Plc.Read(S7.Net.DataType,System.Int32,System.Int32,S7.Net.VarType,System.Int32)">
+            <summary>
+            Read and decode a certain number of bytes of the "VarType" provided. 
+            This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
+            If the read was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+            <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+            <param name="varType">Type of the variable/s that you are reading</param>
+            <param name="varCount"></param>
+        </member>
+        <member name="M:S7.Net.Plc.Read(System.String)">
+            <summary>
+            Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+            If the read was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+            <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
+        </member>
+        <member name="M:S7.Net.Plc.ReadStruct(System.Type,System.Int32,System.Int32)">
+            <summary>
+            Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+            </summary>
+            <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
+            <param name="db">Address of the DB.</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+            <returns>Returns a struct that must be cast.</returns>
+        </member>
+        <member name="M:S7.Net.Plc.ReadClass(System.Object,System.Int32,System.Int32)">
+            <summary>
+            Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+            This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
+            </summary>
+            <param name="sourceClass">Instance of the class that will store the values</param>       
+            <param name="db">Index of the DB; es.: 1 is for DB1</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        </member>
+        <member name="M:S7.Net.Plc.WriteBytes(S7.Net.DataType,System.Int32,System.Int32,System.Byte[])">
+            <summary>
+            Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
+            If the read was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+            <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+            <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.Write(S7.Net.DataType,System.Int32,System.Int32,System.Object)">
+            <summary>
+            Takes in input an object and tries to parse it to an array of values. This can be used to write many data, all of the same type.
+            You must specify the memory area type, memory are address, byte start address and bytes count.
+            If the read was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+            <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+            <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+            <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.Write(System.String,System.Object)">
+            <summary>
+            Writes a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+            If the write was not successful, check LastErrorCode or LastErrorString.
+            </summary>
+            <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+            <param name="value">Value to be written to the plc</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.WriteStruct(System.Object,System.Int32,System.Int32)">
+            <summary>
+            Writes a C# struct to a DB in the plc
+            </summary>
+            <param name="structValue">The struct to be written</param>
+            <param name="db">Db address</param>
+            <param name="startByteAdr">Start bytes on the plc</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.WriteClass(System.Object,System.Int32,System.Int32)">
+            <summary>
+            Writes a C# class to a DB in the plc
+            </summary>
+            <param name="classValue">The class to be written</param>
+            <param name="db">Db address</param>
+            <param name="startByteAdr">Start bytes on the plc</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.ClearLastError">
+            <summary>
+            Sets the LastErrorCode to NoError and LastErrorString to String.Empty
+            </summary>
+        </member>
+        <member name="M:S7.Net.Plc.WriteMultipleBytes(System.Collections.Generic.List{System.Byte},System.Int32,System.Int32)">
+            <summary>
+            Writes multiple bytes to the plc. This uses recursion and it's not limited to 200 bytes.
+            </summary>
+            <param name="bytes">The bytes values to be written</param>
+            <param name="db">Db address</param>
+            <param name="startByteAdr">Start bytes on the plc</param>
+            <returns>NoError if it was successful, or the error is specified</returns>
+        </member>
+        <member name="M:S7.Net.Plc.ReadHeaderPackage(System.Int32)">
+            <summary>
+            Creates the header to read bytes from the plc
+            </summary>
+            <param name="amount"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Plc.CreateReadDataRequestPackage(S7.Net.DataType,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Create the bytes-package to request data from the plc. You have to specify the memory type (dataType), 
+            the address of the memory, the address of the byte and the bytes count. 
+            </summary>
+            <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
+            <param name="db">Address of the memory to be read</param>
+            <param name="startByteAdr">Start address of the byte</param>
+            <param name="count">Number of bytes to be read</param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Plc.ParseBytes(S7.Net.VarType,System.Byte[],System.Int32)">
+            <summary>
+            Given a S7 variable type (Bool, Word, DWord, etc.), it converts the bytes in the appropriate C# format.
+            </summary>
+            <param name="varType"></param>
+            <param name="bytes"></param>
+            <param name="varCount"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Plc.VarTypeToByteLength(S7.Net.VarType,System.Int32)">
+            <summary>
+            Given a S7 variable type (Bool, Word, DWord, etc.), it returns how many bytes to read.
+            </summary>
+            <param name="varType"></param>
+            <param name="varCount"></param>
+            <returns></returns>
+        </member>
+        <member name="M:S7.Net.Plc.Dispose">
+            <summary>
+            Releases all resources, disonnects from the plc and closes the socket
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.Boolean">
+            <summary>
+            Contains the methods to read, set and reset bits inside bytes
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Boolean.GetValue(System.Byte,System.Int32)">
+            <summary>
+            Returns the value of a bit in a bit, given the address of the bit
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Boolean.SetBit(System.Byte,System.Int32)">
+            <summary>
+            Sets the value of a bit to 1 (true), given the address of the bit
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Boolean.ClearBit(System.Byte,System.Int32)">
+            <summary>
+            Resets the value of a bit to 0 (false), given the address of the bit
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.Byte">
+            <summary>
+            Contains the methods to convert from bytes to byte arrays
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Byte.ToByteArray(System.Byte)">
+            <summary>
+            Converts a byte to byte array
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Byte.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a byte array to byte
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:S7.Net.Types.Class">
+            <summary>
+            Contains the methods to convert a C# class to S7 data types
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Class.GetClassSize(System.Type)">
+            <summary>
+            Gets the size of the struct in bytes.
+            </summary>
+            <param name="classType">the type of the class</param>
+            <returns>the number of bytes</returns>
+        </member>
+        <member name="M:S7.Net.Types.Class.FromBytes(System.Object,System.Type,System.Byte[])">
+            <summary>
+            Creates a struct of a specified type by an array of bytes.
+            </summary>
+            <param name="sourceClass"></param>
+            <param name="classType">The struct type</param>
+            <param name="bytes">The array of bytes</param>
+            <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
+        </member>
+        <member name="M:S7.Net.Types.Class.ToBytes(System.Object)">
+            <summary>
+            Creates a byte array depending on the struct type.
+            </summary>
+            <param name="sourceClass">The struct object</param>
+            <returns>A byte array or null if fails.</returns>
+        </member>
+        <member name="T:S7.Net.Types.Counter">
+            <summary>
+            Contains the conversion methods to convert Counter from S7 plc to C# ushort (UInt16).
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Counter.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a Counter (2 bytes) to ushort (UInt16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Counter.FromBytes(System.Byte,System.Byte)">
+            <summary>
+            Converts a Counter (2 bytes) to ushort (UInt16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Counter.ToByteArray(System.UInt16)">
+            <summary>
+            Converts a ushort (UInt16) to word (2 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Counter.ToByteArray(System.UInt16[])">
+            <summary>
+            Converts an array of ushort (UInt16) to an array of bytes
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Counter.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of bytes to an array of ushort
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.DataItem">
+            <summary>
+            Create an instance of a memory block that can be read by using ReadMultipleVars
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.DataType">
+            <summary>
+            Memory area to read 
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.VarType">
+            <summary>
+            Type of data to be read (default is bytes)
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.DB">
+            <summary>
+            Address of memory area to read (example: for DB1 this value is 1, for T45 this value is 45)
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.StartByteAdr">
+            <summary>
+            Address of the first byte to read
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.Count">
+            <summary>
+            Number of variables to read
+            </summary>
+        </member>
+        <member name="P:S7.Net.Types.DataItem.Value">
+            <summary>
+            Contains the value of the memory area after the read has been executed
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DataItem.#ctor">
+            <summary>
+            Create an instance of DataItem
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.DInt">
+            <summary>
+            Contains the conversion methods to convert DInt from S7 plc to C# int (Int32).
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a S7 DInt (4 bytes) to int (Int32)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.FromBytes(System.Byte,System.Byte,System.Byte,System.Byte)">
+            <summary>
+            Converts a S7 DInt (4 bytes) to int (Int32)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.ToByteArray(System.Int32)">
+            <summary>
+            Converts a int (Int32) to S7 DInt (4 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.ToByteArray(System.Int32[])">
+            <summary>
+            Converts an array of int (Int32) to an array of bytes
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of S7 DInt to an array of int (Int32)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DInt.CDWord(System.Int64)">
+            <summary>
+            Converts from C# long (Int64) to C# int (Int32)
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.Double">
+            <summary>
+            Contains the conversion methods to convert Real from S7 plc to C# double.
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a S7 Real (4 bytes) to double
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.FromDWord(System.Int32)">
+            <summary>
+            Converts a S7 DInt to double
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.FromDWord(System.UInt32)">
+            <summary>
+            Converts a S7 DWord to double
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.ToByteArray(System.Double)">
+            <summary>
+            Converts a double to S7 Real (4 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.ToByteArray(System.Double[])">
+            <summary>
+            Converts an array of double to an array of bytes 
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Double.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of S7 Real to an array of double
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.DWord">
+            <summary>
+            Contains the conversion methods to convert DWord from S7 plc to C#.
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DWord.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a S7 DWord (4 bytes) to uint (UInt32)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DWord.FromBytes(System.Byte,System.Byte,System.Byte,System.Byte)">
+            <summary>
+            Converts a S7 DWord (4 bytes) to uint (UInt32)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DWord.ToByteArray(System.UInt32)">
+            <summary>
+            Converts a uint (UInt32) to S7 DWord (4 bytes) 
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DWord.ToByteArray(System.UInt32[])">
+            <summary>
+            Converts an array of uint (UInt32) to an array of S7 DWord (4 bytes) 
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.DWord.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of S7 DWord to an array of uint (UInt32)
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.Int">
+            <summary>
+            Contains the conversion methods to convert Int from S7 plc to C#.
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a S7 Int (2 bytes) to short (Int16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.FromBytes(System.Byte,System.Byte)">
+            <summary>
+            Converts a S7 Int (2 bytes) to short (Int16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.ToByteArray(System.Int16)">
+            <summary>
+            Converts a short (Int16) to a S7 Int byte array (2 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.ToByteArray(System.Int16[])">
+            <summary>
+            Converts an array of short (Int16) to a S7 Int byte array (2 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of S7 Int to an array of short (Int16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Int.CWord(System.Int32)">
+            <summary>
+            Converts a C# int value to a C# short value, to be used as word.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="T:S7.Net.Types.String">
+            <summary>
+            Contains the methods to convert from S7 strings to C# strings
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.String.ToByteArray(System.String)">
+            <summary>
+            Converts a string to S7 bytes
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.String.FromByteArray(System.Byte[])">
+            <summary>
+            Converts S7 bytes to a string
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:S7.Net.Types.Struct">
+            <summary>
+            Contains the method to convert a C# struct to S7 data types
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Struct.GetStructSize(System.Type)">
+            <summary>
+            Gets the size of the struct in bytes.
+            </summary>
+            <param name="structType">the type of the struct</param>
+            <returns>the number of bytes</returns>
+        </member>
+        <member name="M:S7.Net.Types.Struct.FromBytes(System.Type,System.Byte[])">
+            <summary>
+            Creates a struct of a specified type by an array of bytes.
+            </summary>
+            <param name="structType">The struct type</param>
+            <param name="bytes">The array of bytes</param>
+            <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
+        </member>
+        <member name="M:S7.Net.Types.Struct.ToBytes(System.Object)">
+            <summary>
+            Creates a byte array depending on the struct type.
+            </summary>
+            <param name="structValue">The struct object</param>
+            <returns>A byte array or null if fails.</returns>
+        </member>
+        <member name="T:S7.Net.Types.Timer">
+            <summary>
+            Converts the Timer data type to C# data type
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Timer.FromByteArray(System.Byte[])">
+            <summary>
+            Converts the timer bytes to a double
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Timer.ToByteArray(System.UInt16)">
+            <summary>
+            Converts a ushort (UInt16) to an array of bytes formatted as time
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Timer.ToByteArray(System.UInt16[])">
+            <summary>
+            Converts an array of ushorts (Uint16) to an array of bytes formatted as time
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Timer.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of bytes formatted as time to an array of doubles
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:S7.Net.Types.Word">
+            <summary>
+            Contains the conversion methods to convert Words from S7 plc to C#.
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Word.FromByteArray(System.Byte[])">
+            <summary>
+            Converts a word (2 bytes) to ushort (UInt16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Word.FromBytes(System.Byte,System.Byte)">
+            <summary>
+            Converts a word (2 bytes) to ushort (UInt16)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Word.ToByteArray(System.UInt16)">
+            <summary>
+            Converts a ushort (UInt16) to word (2 bytes)
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Word.ToByteArray(System.UInt16[])">
+            <summary>
+            Converts an array of ushort (UInt16) to an array of bytes
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Word.ToArray(System.Byte[])">
+            <summary>
+            Converts an array of bytes to an array of ushort
+            </summary>
+        </member>
+    </members>
+</doc>
