@@ -306,53 +306,31 @@ namespace S7.Net
                 LastErrorString = exc.Message;
             }
         }
-
+        
         /// <summary>
-        /// Reads up to 200 bytes from the plc and returns an array of bytes. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
         /// <returns>Returns the bytes in an array</returns>
         public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
         {
-            byte[] bytes = new byte[count];
-
-            try
+            List<byte> resultBytes = new List<byte>();
+            int index = startByteAdr;
+            while (count > 0)
             {
-                // first create the header
-                int packageSize = 31;
-                Types.ByteArray package = new ByteArray(packageSize);
-                package.Add(ReadHeaderPackage());
-                // package.Add(0x02);  // datenart
-                package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
-
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
-
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-
-                for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = bReceive[cnt + 25];
-
-                return bytes;
+                var maxToRead = (int)Math.Min(count, 200);
+                byte[] bytes = ReadBytesWithASingleRequest(dataType, db, index, maxToRead);
+                if (bytes == null)
+                    return resultBytes.ToArray();
+                resultBytes.AddRange(bytes);
+                count -= maxToRead;
+                index += maxToRead;
             }
-            catch (SocketException socketException)
-            {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = socketException.Message;
-                return null;
-            }
-            catch(Exception exc)
-            {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return null;
-            }
+            return resultBytes.ToArray();
         }
 
         /// <summary>
@@ -617,10 +595,10 @@ namespace S7.Net
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            List<byte> resultBytes = ReadMultipleBytes(numBytes, db, startByteAdr);
+            var resultBytes = ReadBytes(DataType.DataBlock, db, startByteAdr, numBytes);
 
             // and decode it
-            return Types.Struct.FromBytes(structType, resultBytes.ToArray());
+            return Types.Struct.FromBytes(structType, resultBytes);
         }
 
         /// <summary>
@@ -635,9 +613,9 @@ namespace S7.Net
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
             // now read the package
-            List<byte> resultBytes = ReadMultipleBytes(numBytes, db, startByteAdr);
+            var resultBytes = ReadBytes(DataType.DataBlock, db, startByteAdr, numBytes);
             // and decode it
-            Types.Class.FromBytes(sourceClass, classType, resultBytes.ToArray());
+            Types.Class.FromBytes(sourceClass, classType, resultBytes);
         }
 
 
@@ -1005,30 +983,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
-        /// </summary>
-        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
-        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <param name="numBytes">Byte count, if you want to read 120 bytes, set this to 120. This parameter can't be higher than 200. If you need more, use recursion.</param>
-        /// <returns>Returns the bytes in a list</returns>
-        private List<byte> ReadMultipleBytes(int numBytes, int db, int startByteAdr = 0)
-        {
-            List<byte> resultBytes = new List<byte>();
-            int index = startByteAdr;
-            while (numBytes > 0)
-            {
-                var maxToRead = (int)Math.Min(numBytes, 200);
-                byte[] bytes = ReadBytes(DataType.DataBlock, db, index, maxToRead);
-                if (bytes == null)
-                    return new List<byte>();
-                resultBytes.AddRange(bytes);
-                numBytes -= maxToRead;
-                index += maxToRead;
-            }
-            return resultBytes;
-        }
-
-        /// <summary>
         /// Creates the header to read bytes from the plc
         /// </summary>
         /// <param name="amount"></param>
@@ -1092,6 +1046,45 @@ namespace S7.Net
             }
 
             return package;
+        }
+
+        private byte[] ReadBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, int count)
+        {
+            byte[] bytes = new byte[count];
+
+            try
+            {
+                // first create the header
+                int packageSize = 31;
+                Types.ByteArray package = new ByteArray(packageSize);
+                package.Add(ReadHeaderPackage());
+                // package.Add(0x02);  // datenart
+                package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
+
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                for (int cnt = 0; cnt < count; cnt++)
+                    bytes[cnt] = bReceive[cnt + 25];
+
+                return bytes;
+            }
+            catch (SocketException socketException)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = socketException.Message;
+                return null;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return null;
+            }
         }
 
 #region IDisposable members
