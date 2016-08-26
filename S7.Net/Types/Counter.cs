@@ -2,10 +2,14 @@
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the conversion methods to convert Counter from S7 plc to C# ushort (UInt16).
+    /// </summary>
     public static class Counter
     {
-        // publics
-        #region FromByteArray
+        /// <summary>
+        /// Converts a Counter (2 bytes) to ushort (UInt16)
+        /// </summary>
         public static UInt16 FromByteArray(byte[] bytes)
         {
             if (bytes.Length != 2)
@@ -16,15 +20,18 @@ namespace S7.Net.Types
             // bytes[1] -> LowByte
             return FromBytes(bytes[1], bytes[0]);
         }
-        #endregion
-        #region FromBytes
+
+        /// <summary>
+        /// Converts a Counter (2 bytes) to ushort (UInt16)
+        /// </summary>
         public static UInt16 FromBytes(byte LoVal, byte HiVal)
         {
             return (UInt16)(HiVal * 256 + LoVal);
         }
-        #endregion
 
-        #region ToByteArray
+        /// <summary>
+        /// Converts a ushort (UInt16) to word (2 bytes)
+        /// </summary>
         public static byte[] ToByteArray(UInt16 value)
         {
             byte[] bytes = new byte[2];
@@ -41,6 +48,9 @@ namespace S7.Net.Types
             return bytes;
         }
 
+        /// <summary>
+        /// Converts an array of ushort (UInt16) to an array of bytes
+        /// </summary>
         public static byte[] ToByteArray(UInt16[] value)
         {
             ByteArray arr = new ByteArray();
@@ -48,8 +58,10 @@ namespace S7.Net.Types
                 arr.Add(ToByteArray(val));
             return arr.array;
         }
-        #endregion
-        #region ToArray
+
+        /// <summary>
+        /// Converts an array of bytes to an array of ushort
+        /// </summary>
         public static UInt16[] ToArray(byte[] bytes)
         {
             UInt16[] values = new UInt16[bytes.Length / 2];
@@ -60,6 +72,5 @@ namespace S7.Net.Types
 
             return values;
         }
-        #endregion
     }
 }

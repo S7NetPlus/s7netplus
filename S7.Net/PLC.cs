@@ -11,6 +11,9 @@ using Double = System.Double;
 
 namespace S7.Net
 {
+    /// <summary>
+    /// Creates an instance of S7.Net driver
+    /// </summary>
     public class Plc : IDisposable
     {
         private Socket _mSocket; //TCP connection to device
@@ -343,7 +346,7 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="varType">Type of the variable/s that you are reading</param>
-        /// <param name="varCount">Number of 
+        /// <param name="varCount"></param>
         public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
@@ -1090,19 +1093,21 @@ namespace S7.Net
 
         #region IDisposable members
 
+        /// <summary>
+        /// Releases all resources, disonnects from the plc and closes the socket
+        /// </summary>
         public void Dispose()
         {
             if (_mSocket != null)
             {
                 if (_mSocket.Connected)
                 {
-                    //Close() performs a Dispose on the socket.
                     _mSocket.Shutdown(SocketShutdown.Both);
                     _mSocket.Close();
                 }
-                //((IDisposable)_mSocket).Dispose();
             }
         }
-#endregion
+
+        #endregion
     }
 }

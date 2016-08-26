@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the method to convert a C# struct to S7 data types
+    /// </summary>
     public static class Struct
     {
         /// <summary>

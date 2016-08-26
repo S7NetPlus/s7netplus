@@ -2,10 +2,14 @@
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Converts the Timer data type to C# data type
+    /// </summary>
     public static class Timer
     {
-        // publics
-        #region FromByteArray
+        /// <summary>
+        /// Converts the timer bytes to a double
+        /// </summary>
         public static double FromByteArray(byte[] bytes)
         {
             double wert = 0;
@@ -31,9 +35,10 @@ namespace S7.Net.Types
             }
             return wert;
         }
-        #endregion
 
-        #region ToByteArray
+        /// <summary>
+        /// Converts a ushort (UInt16) to an array of bytes formatted as time
+        /// </summary>
         public static byte[] ToByteArray(UInt16 value)
         {
             byte[] bytes = new byte[2];
@@ -50,6 +55,9 @@ namespace S7.Net.Types
             return bytes;
         }
 
+        /// <summary>
+        /// Converts an array of ushorts (Uint16) to an array of bytes formatted as time
+        /// </summary>
         public static byte[] ToByteArray(UInt16[] value)
         {
             ByteArray arr = new ByteArray();
@@ -57,8 +65,12 @@ namespace S7.Net.Types
                 arr.Add(ToByteArray(val));
             return arr.array;
         }
-        #endregion
-        #region ToArray
+
+        /// <summary>
+        /// Converts an array of bytes formatted as time to an array of doubles
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         public static double[] ToArray(byte[] bytes)
         {
             double[] values = new double[bytes.Length / 2];
@@ -69,6 +81,5 @@ namespace S7.Net.Types
 
             return values;
         }
-        #endregion
     }
 }

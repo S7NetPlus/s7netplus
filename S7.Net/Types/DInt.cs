@@ -2,10 +2,14 @@
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the conversion methods to convert DInt from S7 plc to C# int (Int32).
+    /// </summary>
     public static class DInt
     {
-        // publics
-        #region FromByteArray
+        /// <summary>
+        /// Converts a S7 DInt (4 bytes) to int (Int32)
+        /// </summary>
         public static Int32 FromByteArray(byte[] bytes)
         {
             if (bytes.Length != 4)
@@ -14,15 +18,18 @@ namespace S7.Net.Types
             }
             return FromBytes(bytes[3], bytes[2], bytes[1], bytes[0]);
         }
-        #endregion
-        #region FromBytes
+
+        /// <summary>
+        /// Converts a S7 DInt (4 bytes) to int (Int32)
+        /// </summary>
         public static Int32 FromBytes(byte v1, byte v2, byte v3, byte v4)
         {
             return (Int32)(v1 + v2 * Math.Pow(2, 8) + v3 * Math.Pow(2, 16) + v4 * Math.Pow(2, 24));
         }
-        #endregion
 
-        #region ToByteArray
+        /// <summary>
+        /// Converts a int (Int32) to S7 DInt (4 bytes)
+        /// </summary>
         public static byte[] ToByteArray(Int32 value)
         {
             byte[] bytes = new byte[4];
@@ -39,6 +46,9 @@ namespace S7.Net.Types
             return bytes;
         }
 
+        /// <summary>
+        /// Converts an array of int (Int32) to an array of bytes
+        /// </summary>
         public static byte[] ToByteArray(Int32[] value)
         {
             ByteArray arr = new ByteArray();
@@ -46,8 +56,10 @@ namespace S7.Net.Types
                 arr.Add(ToByteArray(val));
             return arr.array;
         }
-        #endregion
-        #region ToArray
+
+        /// <summary>
+        /// Converts an array of S7 DInt to an array of int (Int32)
+        /// </summary>
         public static Int32[] ToArray(byte[] bytes)
         {
             Int32[] values = new Int32[bytes.Length / 4];
@@ -58,9 +70,10 @@ namespace S7.Net.Types
 
             return values;
         }
-        #endregion
-
-        // conversion
+        
+        /// <summary>
+        /// Converts from C# long (Int64) to C# int (Int32)
+        /// </summary>
         public static Int32 CDWord(Int64 value)
         {
             if (value > Int32.MaxValue)

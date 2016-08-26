@@ -2,10 +2,14 @@
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the conversion methods to convert Int from S7 plc to C#.
+    /// </summary>
     public static class Int
     {
-        // publics
-        #region FromByteArray
+        /// <summary>
+        /// Converts a S7 Int (2 bytes) to short (Int16)
+        /// </summary>
         public static Int16 FromByteArray(byte[] bytes)
         {
             if (bytes.Length != 2)
@@ -16,15 +20,18 @@ namespace S7.Net.Types
             // bytes[1] -> LowByte
             return FromBytes(bytes[1], bytes[0]);
         }
-        #endregion
-        #region FromBytes
+
+        /// <summary>
+        /// Converts a S7 Int (2 bytes) to short (Int16)
+        /// </summary>
         public static Int16 FromBytes(byte LoVal, byte HiVal)
         {
             return (Int16)(HiVal * 256 + LoVal);
         }
-        #endregion
 
-        #region ToByteArray
+        /// <summary>
+        /// Converts a short (Int16) to a S7 Int byte array (2 bytes)
+        /// </summary>
         public static byte[] ToByteArray(Int16 value)
         {
             byte[] bytes = new byte[2];
@@ -41,6 +48,9 @@ namespace S7.Net.Types
             return bytes;
         }
 
+        /// <summary>
+        /// Converts an array of short (Int16) to a S7 Int byte array (2 bytes)
+        /// </summary>
         public static byte[] ToByteArray(Int16[] value)
         {
             ByteArray arr = new ByteArray();
@@ -48,8 +58,10 @@ namespace S7.Net.Types
                 arr.Add(ToByteArray(val));
             return arr.array;
         }
-        #endregion
-        #region ToArray
+
+        /// <summary>
+        /// Converts an array of S7 Int to an array of short (Int16)
+        /// </summary>
         public static Int16[] ToArray(byte[] bytes)
         {
             Int16[] values = new Int16[bytes.Length / 2];
@@ -60,9 +72,12 @@ namespace S7.Net.Types
 
             return values;
         }
-        #endregion
-
-        // conversion
+        
+        /// <summary>
+        /// Converts a C# int value to a C# short value, to be used as word.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static Int16 CWord(int value)
         {
             if (value > 32767)

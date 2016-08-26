@@ -3,6 +3,9 @@ using System.Globalization;
 
 namespace S7.Net
 {
+    /// <summary>
+    /// Conversion methods to convert from Siemens numeric format to C# and back
+    /// </summary>
     public static class Conversion
     {
         /// <summary>
@@ -25,6 +28,11 @@ namespace S7.Net
             return ret;
         }
 
+        /// <summary>
+        /// Converts a binary string to a byte. Can return null.
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <returns></returns>
         public static byte? BinStringToByte(this string txt)
         {
             int cnt = 0;

@@ -3,6 +3,9 @@ using System.Reflection;
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the methods to convert a C# class to S7 data types
+    /// </summary>
     public static class Class
     {
         /// <summary>

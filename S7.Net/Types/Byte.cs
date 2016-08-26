@@ -1,16 +1,26 @@
-﻿namespace S7.Net.Types
+﻿using System;
+
+namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the methods to convert from bytes to byte arrays
+    /// </summary>
     public static class Byte
     {
-        // publics
-        #region ToByteArray
+        /// <summary>
+        /// Converts a byte to byte array
+        /// </summary>
         public static byte[] ToByteArray(byte value)
         {
             byte[] bytes = new byte[] { value};
             return bytes;
         }
-        #endregion
-        #region FromByteArray
+       
+        /// <summary>
+        /// Converts a byte array to byte
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         public static byte FromByteArray(byte[] bytes)
         {
             if (bytes.Length != 1)
@@ -19,6 +29,6 @@
             }
             return bytes[0];
         }
-        #endregion
+        
     }
 }

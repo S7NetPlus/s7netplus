@@ -2,23 +2,30 @@
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the conversion methods to convert DWord from S7 plc to C#.
+    /// </summary>
     public static class DWord
     {
-        // publics
-        #region FromByteArray
+        /// <summary>
+        /// Converts a S7 DWord (4 bytes) to uint (UInt32)
+        /// </summary>
         public static UInt32 FromByteArray(byte[] bytes)
         {
             return FromBytes(bytes[3], bytes[2], bytes[1], bytes[0]);
         }
-        #endregion
-        #region FromBytes
+
+        /// <summary>
+        /// Converts a S7 DWord (4 bytes) to uint (UInt32)
+        /// </summary>
         public static UInt32 FromBytes(byte v1, byte v2, byte v3, byte v4)
         {
             return (UInt32)(v1 + v2 * Math.Pow(2, 8) + v3 * Math.Pow(2, 16) + v4 * Math.Pow(2, 24));
         }
-        #endregion
 
-        #region ToByteArray
+        /// <summary>
+        /// Converts a uint (UInt32) to S7 DWord (4 bytes) 
+        /// </summary>
         public static byte[] ToByteArray(UInt32 value)
         {
             byte[] bytes = new byte[4];
@@ -35,6 +42,9 @@ namespace S7.Net.Types
             return bytes;
         }
 
+        /// <summary>
+        /// Converts an array of uint (UInt32) to an array of S7 DWord (4 bytes) 
+        /// </summary>
         public static byte[] ToByteArray(UInt32[] value)
         {
             ByteArray arr = new ByteArray();
@@ -42,8 +52,10 @@ namespace S7.Net.Types
                 arr.Add(ToByteArray(val));
             return arr.array;
         }
-        #endregion
-        #region ToArray
+
+        /// <summary>
+        /// Converts an array of S7 DWord to an array of uint (UInt32)
+        /// </summary>
         public static UInt32[] ToArray(byte[] bytes)
         {
             UInt32[] values = new UInt32[bytes.Length / 4];
@@ -54,6 +66,5 @@ namespace S7.Net.Types
 
             return values;
         }
-        #endregion
     }
 }
