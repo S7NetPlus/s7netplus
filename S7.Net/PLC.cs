@@ -335,98 +335,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Given a S7 variable type (Bool, Word, DWord, etc.), it returns how many bytes to read.
-        /// </summary>
-        /// <param name="varType"></param>
-        /// <param name="varCount"></param>
-        /// <returns></returns>
-        public int VarTypeToByteLength(VarType varType, int varCount = 1)
-        {
-            switch (varType)
-            {
-                case VarType.Bit:
-                    return varCount; //TODO
-                case VarType.Byte:
-                    return (varCount < 1) ? 1 : varCount;
-                case VarType.String:
-                    return varCount;
-                case VarType.Word:
-                case VarType.Timer:
-                case VarType.Int:
-                case VarType.Counter:
-                    return varCount * 2;
-                case VarType.DWord:
-                case VarType.DInt:
-                case VarType.Real:
-                    return varCount * 4;
-                default:
-                    return 0;
-            }
-        }
-
-        /// <summary>
-        /// Given a S7 variable type (Bool, Word, DWord, etc.), it converts the bytes in the appropriate C# format.
-        /// </summary>
-        /// <param name="varType"></param>
-        /// <param name="bytes"></param>
-        /// <param name="varCount"></param>
-        /// <returns></returns>
-        public object ParseBytes(VarType varType, byte[] bytes, int varCount)
-        {
-            if (bytes == null) return null;
-
-            switch (varType)
-            {
-                case VarType.Byte:
-                    if (varCount == 1)
-                        return bytes[0];
-                    else
-                        return bytes;
-                case VarType.Word:
-                    if (varCount == 1)
-                        return Types.Word.FromByteArray(bytes);
-                    else
-                        return Types.Word.ToArray(bytes);
-                case VarType.Int:
-                    if (varCount == 1)
-                        return Types.Int.FromByteArray(bytes);
-                    else
-                        return Types.Int.ToArray(bytes);
-                case VarType.DWord:
-                    if (varCount == 1)
-                        return Types.DWord.FromByteArray(bytes);
-                    else
-                        return Types.DWord.ToArray(bytes);
-                case VarType.DInt:
-                    if (varCount == 1)
-                        return Types.DInt.FromByteArray(bytes);
-                    else
-                        return Types.DInt.ToArray(bytes);
-                case VarType.Real:
-                    if (varCount == 1)
-                        return Types.Double.FromByteArray(bytes);
-                    else
-                        return Types.Double.ToArray(bytes);
-                case VarType.String:
-                    return Types.String.FromByteArray(bytes);
-                case VarType.Timer:
-                    if (varCount == 1)
-                        return Types.Timer.FromByteArray(bytes);
-                    else
-                        return Types.Timer.ToArray(bytes);
-                case VarType.Counter:
-                    if (varCount == 1)
-                        return Types.Counter.FromByteArray(bytes);
-                    else
-                        return Types.Counter.ToArray(bytes);
-                case VarType.Bit:
-                    return null; //TODO
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided. 
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -1088,7 +996,99 @@ namespace S7.Net
             }
         }
 
-#region IDisposable members
+        /// <summary>
+        /// Given a S7 variable type (Bool, Word, DWord, etc.), it converts the bytes in the appropriate C# format.
+        /// </summary>
+        /// <param name="varType"></param>
+        /// <param name="bytes"></param>
+        /// <param name="varCount"></param>
+        /// <returns></returns>
+        private object ParseBytes(VarType varType, byte[] bytes, int varCount)
+        {
+            if (bytes == null) return null;
+
+            switch (varType)
+            {
+                case VarType.Byte:
+                    if (varCount == 1)
+                        return bytes[0];
+                    else
+                        return bytes;
+                case VarType.Word:
+                    if (varCount == 1)
+                        return Types.Word.FromByteArray(bytes);
+                    else
+                        return Types.Word.ToArray(bytes);
+                case VarType.Int:
+                    if (varCount == 1)
+                        return Types.Int.FromByteArray(bytes);
+                    else
+                        return Types.Int.ToArray(bytes);
+                case VarType.DWord:
+                    if (varCount == 1)
+                        return Types.DWord.FromByteArray(bytes);
+                    else
+                        return Types.DWord.ToArray(bytes);
+                case VarType.DInt:
+                    if (varCount == 1)
+                        return Types.DInt.FromByteArray(bytes);
+                    else
+                        return Types.DInt.ToArray(bytes);
+                case VarType.Real:
+                    if (varCount == 1)
+                        return Types.Double.FromByteArray(bytes);
+                    else
+                        return Types.Double.ToArray(bytes);
+                case VarType.String:
+                    return Types.String.FromByteArray(bytes);
+                case VarType.Timer:
+                    if (varCount == 1)
+                        return Types.Timer.FromByteArray(bytes);
+                    else
+                        return Types.Timer.ToArray(bytes);
+                case VarType.Counter:
+                    if (varCount == 1)
+                        return Types.Counter.FromByteArray(bytes);
+                    else
+                        return Types.Counter.ToArray(bytes);
+                case VarType.Bit:
+                    return null; //TODO
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Given a S7 variable type (Bool, Word, DWord, etc.), it returns how many bytes to read.
+        /// </summary>
+        /// <param name="varType"></param>
+        /// <param name="varCount"></param>
+        /// <returns></returns>
+        private int VarTypeToByteLength(VarType varType, int varCount = 1)
+        {
+            switch (varType)
+            {
+                case VarType.Bit:
+                    return varCount; //TODO
+                case VarType.Byte:
+                    return (varCount < 1) ? 1 : varCount;
+                case VarType.String:
+                    return varCount;
+                case VarType.Word:
+                case VarType.Timer:
+                case VarType.Int:
+                case VarType.Counter:
+                    return varCount * 2;
+                case VarType.DWord:
+                case VarType.DInt:
+                case VarType.Real:
+                    return varCount * 4;
+                default:
+                    return 0;
+            }
+        }
+
+        #region IDisposable members
 
         public void Dispose()
         {
