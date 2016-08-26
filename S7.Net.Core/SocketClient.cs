@@ -143,11 +143,15 @@ namespace S7.Net
             return response;
         }
 
+        public void Shutdown(SocketShutdown how)
+        {
+            _socket.Shutdown(how);
+        }
+
         public void Close()
         {
             if (_socket != null)
             {
-                _socket.Shutdown(SocketShutdown.Both);
                 _socket.Dispose();
                 _socket = null;
             }

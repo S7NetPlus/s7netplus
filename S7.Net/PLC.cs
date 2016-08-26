@@ -242,6 +242,7 @@ namespace S7.Net
         {
             if (_mSocket != null && _mSocket.Connected) 
             {
+                _mSocket.Shutdown(SocketShutdown.Both);
                 _mSocket.Close();
             }
         }
@@ -1096,6 +1097,7 @@ namespace S7.Net
                 if (_mSocket.Connected)
                 {
                     //Close() performs a Dispose on the socket.
+                    _mSocket.Shutdown(SocketShutdown.Both);
                     _mSocket.Close();
                 }
                 //((IDisposable)_mSocket).Dispose();
