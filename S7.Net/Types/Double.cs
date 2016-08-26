@@ -8,6 +8,10 @@ namespace S7.Net.Types
         #region FromByteArray
         public static double FromByteArray(byte[] bytes)
         {
+            if (bytes.Length != 4)
+            {
+                throw new ArgumentException("Wrong number of bytes. Bytes array must contain 4 bytes.");
+            }
             byte v1 = bytes[0];
             byte v2 = bytes[1];
             byte v3 = bytes[2];
