@@ -560,64 +560,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
-        /// If the write was not successful, check LastErrorCode or LastErrorString.
-        /// </summary>
-        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
-        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
-        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
-        {
-            byte[] bReceive = new byte[513];
-            int varCount = 0;
-
-            try
-            {
-                varCount = value.Length;
-                // first create the header
-                int packageSize = 35 + value.Length;
-                Types.ByteArray package = new Types.ByteArray(packageSize);
-
-                package.Add(new byte[] { 3, 0, 0 });
-                package.Add((byte)packageSize);
-                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
-                package.Add(Types.Word.ToByteArray((ushort)(varCount - 1)));
-                package.Add(new byte[] { 0, 0x0e });
-                package.Add(Types.Word.ToByteArray((ushort)(varCount + 4)));
-                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
-                package.Add(Types.Word.ToByteArray((ushort)varCount));
-                package.Add(Types.Word.ToByteArray((ushort)(db)));
-                package.Add((byte)dataType);
-                var overflow = (int) (startByteAdr*8/0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
-                package.Add(new byte[] { 0, 4 });
-                package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
-
-                // now join the header and the data
-                package.Add(value);
-
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
-
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
-                {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                }
-
-                return ErrorCode.NoError;
-            }
-            catch(Exception exc)
-            {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return LastErrorCode;
-            }
-        }
-
-        /// <summary>
         /// Takes in input an object and tries to parse it to an array of values. This can be used to write many data, all of the same type.
         /// You must specify the memory area type, memory are address, byte start address and bytes count.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -1024,6 +966,64 @@ namespace S7.Net
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = exc.Message;
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        {
+            byte[] bReceive = new byte[513];
+            int varCount = 0;
+
+            try
+            {
+                varCount = value.Length;
+                // first create the header
+                int packageSize = 35 + value.Length;
+                Types.ByteArray package = new Types.ByteArray(packageSize);
+
+                package.Add(new byte[] { 3, 0, 0 });
+                package.Add((byte)packageSize);
+                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount - 1)));
+                package.Add(new byte[] { 0, 0x0e });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount + 4)));
+                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+                package.Add(Types.Word.ToByteArray((ushort)varCount));
+                package.Add(Types.Word.ToByteArray((ushort)(db)));
+                package.Add((byte)dataType);
+                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
+                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
+                package.Add(new byte[] { 0, 4 });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
+
+                // now join the header and the data
+                package.Add(value);
+
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
+
+                return ErrorCode.NoError;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return LastErrorCode;
             }
         }
 
