@@ -532,15 +532,43 @@ namespace S7.Net
 
 
         /// <summary>
+        /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        {
+            int index = startByteAdr;
+            int localIndex = 0;
+            int count = value.Length;
+            while (count > 0)
+            {
+                var maxToWrite = (int)Math.Min(count, 200);
+                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, index, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                if (lastError != ErrorCode.NoError)
+                {
+                    return lastError;
+                }
+                count -= maxToWrite;
+                localIndex += maxToWrite;
+            }
+            return ErrorCode.NoError;
+        }
+
+        /// <summary>
         /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
-        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        public ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
