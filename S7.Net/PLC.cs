@@ -548,7 +548,7 @@ namespace S7.Net
             while (count > 0)
             {
                 var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, index, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, index + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
                     return lastError;
