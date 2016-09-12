@@ -803,7 +803,7 @@ namespace S7.Net
         public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
-            var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
+            var errCode = WriteBytes(DataType.DataBlock ,db, startByteAdr, bytes.ToArray());
             return errCode;
         }
 
@@ -817,7 +817,7 @@ namespace S7.Net
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
-            var errCode = WriteMultipleBytes(bytes, db, startByteAdr);
+            var errCode = WriteBytes(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
             return errCode;
         }
 
@@ -828,40 +828,6 @@ namespace S7.Net
         {
             LastErrorCode = ErrorCode.NoError;
             LastErrorString = string.Empty;
-        }
-
-        /// <summary>
-        /// Writes multiple bytes to the plc. This uses recursion and it's not limited to 200 bytes.
-        /// </summary>
-        /// <param name="bytes">The bytes values to be written</param>
-        /// <param name="db">Db address</param>
-        /// <param name="startByteAdr">Start bytes on the plc</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        private ErrorCode WriteMultipleBytes(List<byte> bytes, int db, int startByteAdr = 0)
-        {
-            ErrorCode errCode = ErrorCode.NoError;
-            int index = startByteAdr;
-            try
-            {
-                while (bytes.Count > 0)
-                {
-                    var maxToWrite = Math.Min(bytes.Count, 200);
-                    var part = bytes.ToList().GetRange(0, maxToWrite);
-                    errCode = WriteBytes(DataType.DataBlock, db, index, part.ToArray());
-                    bytes.RemoveRange(0, maxToWrite);
-                    index += maxToWrite;
-                    if (errCode != ErrorCode.NoError)
-                    {
-                        break;
-                    }
-                }
-            }
-            catch(Exception exc)
-            {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = "An error occurred while writing data:" + exc.Message;
-            }
-            return errCode;
         }
 
         /// <summary>
