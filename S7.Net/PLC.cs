@@ -538,17 +538,16 @@ namespace S7.Net
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
-        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
         {
-            int index = startByteAdr;
             int localIndex = 0;
             int count = value.Length;
             while (count > 0)
             {
                 var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, index + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
                     return lastError;
