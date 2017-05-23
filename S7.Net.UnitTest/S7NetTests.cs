@@ -15,20 +15,20 @@ using S7.UnitTest.Helpers;
 /**
  * About the tests:
  * ---------------------------------------------------------------------------
- * The tests were written to show how to use this library to read and write 
- * different types of values, how to box and unbox values and of course to 
+ * The tests were written to show how to use this library to read and write
+ * different types of values, how to box and unbox values and of course to
  * address some of the bugs of the library.
- * These tests are not meant to cover 100% the code, but to check that once a 
+ * These tests are not meant to cover 100% the code, but to check that once a
  * variable is written, it stores the correct value.
  * ----------------------------------------------------------------------------
- * The plc used for the tests is the S7 "server" provided by Snap7 opensource 
+ * The plc used for the tests is the S7 "server" provided by Snap7 opensource
  * library, that you can get for free here:http://snap7.sourceforge.net/
- * The implementation of the server will not be discussed here, but there are 
- * some issues with the interop that cause the server, and unit test, to fail 
+ * The implementation of the server will not be discussed here, but there are
+ * some issues with the interop that cause the server, and unit test, to fail
  * under some circumstances, like "click on Run all tests" too much.
- * This doesn't mean that S7.Net has bugs, but that the implementation of the 
+ * This doesn't mean that S7.Net has bugs, but that the implementation of the
  * server has problems.
- * 
+ *
  */
 namespace S7.Net.UnitTest
 {
@@ -36,11 +36,11 @@ namespace S7.Net.UnitTest
     public class S7NetTests
     {
         #region Constants
-        const int DB2 = 2; 
+        const int DB2 = 2;
         #endregion
 
         #region Private fields
-        Plc plc; 
+        Plc plc;
         #endregion
 
         #region Constructor
@@ -52,7 +52,7 @@ namespace S7.Net.UnitTest
             plc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
             //ConsoleManager.Show();
             ShutDownServiceS7oiehsx64();
-            
+
         }
 
         [TestInitialize]
@@ -68,13 +68,13 @@ namespace S7.Net.UnitTest
             plc.Close();
             S7TestServer.Stop();
         }
-        
+
         #endregion
 
         #region Tests
 
         [TestMethod]
-        public void T00_TestConnection() 
+        public void T00_TestConnection()
         {
             if (plc.IsConnected == false)
             {
@@ -136,7 +136,7 @@ namespace S7.Net.UnitTest
 
         /// <summary>
         /// Read/Write a single REAL with a single request.
-        /// Test that writing a double and reading it gives the correct value.        
+        /// Test that writing a double and reading it gives the correct value.
         /// </summary>
         [TestMethod]
         public void T03_WriteAndReadRealVariables()
@@ -395,7 +395,7 @@ namespace S7.Net.UnitTest
             plc.Write("DB2.DBW16", val2);
             ushort result2 = (ushort)plc.Read("DB2.DBW16");
             Assert.AreEqual(val2, result2, "A ushort goes from 0 to 64512");
-            
+
             var dataItems = new List<DataItem>()
             {
                 new DataItem
@@ -420,6 +420,41 @@ namespace S7.Net.UnitTest
 
             Assert.AreEqual(dataItems[0].Value, val);
             Assert.AreEqual(dataItems[1].Value, val2);
+        }
+
+        /// <summary>
+        /// Tests that a read and a write on addresses bigger than 8192 are executed correctly
+        /// </summary>
+        [TestMethod]
+        public void T11_WriteAndReadBooleanVariable()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            // tests when writing true/false
+            plc.Write("DB1.DBX0.0", false);
+            var boolVariable = (bool)plc.Read("DB1.DBX0.0");
+            Assert.IsFalse(boolVariable);
+
+            plc.Write("DB1.DBX0.0", true);
+            boolVariable = (bool)plc.Read("DB1.DBX0.0");
+            Assert.IsTrue(boolVariable);
+
+            // tests when writing 0/1
+            plc.Write("DB1.DBX0.0", 0);
+            boolVariable = (bool)plc.Read("DB1.DBX0.0");
+            Assert.IsFalse(boolVariable);
+
+            plc.Write("DB1.DBX0.0", 1);
+            boolVariable = (bool)plc.Read("DB1.DBX0.0");
+            Assert.IsTrue(boolVariable);
+
+            plc.Write("DB1.DBX0.7", 1);
+            boolVariable = (bool)plc.Read("DB1.DBX0.7");
+            Assert.IsTrue(boolVariable);
+
+            plc.Write("DB1.DBX0.7", 0);
+            boolVariable = (bool)plc.Read("DB1.DBX0.7");
+            Assert.IsFalse(boolVariable);
         }
 
         #endregion
