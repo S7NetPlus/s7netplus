@@ -457,31 +457,37 @@ namespace S7.Net.UnitTest
             Assert.IsFalse(boolVariable);
         }
 
-        /// <summary>
-        /// Tests that the method ReadClass returns the number of bytes read from the plc
-        /// </summary>
         [TestMethod]
-        public void T12_ReadClassReturnsNumberOfReadBytesFromThePlc()
+        public void T12_ReadClassIgnoresNonPublicSetters()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
-            TestClass tc = new TestClass();
+            TestClassWithPrivateSetters tc = new TestClassWithPrivateSetters();
             tc.BitVariable00 = true;
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
             tc.RealVariable = -154.789;
             tc.DWordVariable = 850;
+
             plc.WriteClass(tc, DB2);
 
-            int expectedReadBytes = Types.Class.GetClassSize(tc.GetType());
-
-            TestClass tc2 = new TestClass();
+            TestClassWithPrivateSetters tc2 = new TestClassWithPrivateSetters();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            int actualReadBytes = plc.ReadClass(tc2, DB2);
+            plc.ReadClass(tc2, DB2);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
+            Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
+            Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
+            Assert.AreEqual(tc.RealVariable, Math.Round(tc2.RealVariable, 3));
+            Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
 
-            Assert.AreEqual(expectedReadBytes, actualReadBytes);
+            Assert.AreEqual(TestClassWithPrivateSetters.PRIVATE_SETTER_VALUE, tc2.PrivateSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.PROTECTED_SETTER_VALUE, tc2.ProtectedSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.INTERNAL_SETTER_VALUE, tc2.InternalSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.JUST_A_GETTER_VALUE, tc2.JustAGetterProperty);
         }
+
 
         [TestMethod]
         public void T13_ReadBytesReturnsEmptyArrayIfPlcIsNotConnected()
@@ -631,6 +637,32 @@ namespace S7.Net.UnitTest
 
                 Assert.IsNull(tsObj);
             }
+        }
+
+        /// <summary>
+        /// Tests that the method ReadClass returns the number of bytes read from the plc
+        /// </summary>
+        [TestMethod]
+        public void T21_ReadClassReturnsNumberOfReadBytesFromThePlc()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClass tc = new TestClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariable = -154.789;
+            tc.DWordVariable = 850;
+            plc.WriteClass(tc, DB2);
+
+            int expectedReadBytes = Types.Class.GetClassSize(tc.GetType());
+
+            TestClass tc2 = new TestClass();
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            int actualReadBytes = plc.ReadClass(tc2, DB2);
+
+            Assert.AreEqual(expectedReadBytes, actualReadBytes);
         }
 
         #endregion
