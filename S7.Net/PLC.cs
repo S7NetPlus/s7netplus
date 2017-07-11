@@ -7,7 +7,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Types;
 using Double = System.Double;
-
+using System.Threading.Tasks;
 
 namespace S7.Net
 {
@@ -119,15 +119,37 @@ namespace S7.Net
             Slot = slot;
         }
 
+        private async Task SendAsync(byte[] buffer, int offset, int size, SocketFlags flags)
+        {
+            await Task.Factory.FromAsync(_mSocket.BeginSend(buffer, offset, size, flags, null, null), _mSocket.EndSend);
+        }
+
+        private async Task<int> ReceiveAsync(byte[] buffer, int offset, int size, SocketFlags flags)
+        {
+            return await Task.Factory.FromAsync(_mSocket.BeginReceive(buffer, offset, size, SocketFlags.None, null, null), _mSocket.EndReceive);
+        }
+
         /// <summary>
         /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
         /// </summary>
         /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
         {
+            var t = Task.Factory.StartNew(OpenAsync).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
+        /// </summary>
+        /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
+        public async Task<ErrorCode> OpenAsync()
+        {
             byte[] bReceive = new byte[256];
 
-            try 
+            try
             {
                 // check if available
                 if (!IsAvailable)
@@ -135,7 +157,7 @@ namespace S7.Net
                     throw new Exception();
                 }
             }
-            catch  
+            catch
             {
                 LastErrorCode = ErrorCode.IPAddressNotAvailable;
                 LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
@@ -148,19 +170,21 @@ namespace S7.Net
                 _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
                 _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
                 IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
-                _mSocket.Connect(server);
+                await Task.Factory.FromAsync(_mSocket.BeginConnect(server, null, null), _mSocket.EndConnect);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 LastErrorCode = ErrorCode.ConnectionError;
                 LastErrorString = ex.Message;
                 return ErrorCode.ConnectionError;
             }
 
-            try 
+            try
             {
                 byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
 
-                switch (CPU) {
+                switch (CPU)
+                {
                     case CpuType.S7200:
                         //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
                         bSend1[11] = 193;
@@ -214,21 +238,22 @@ namespace S7.Net
                         return ErrorCode.WrongCPU_Type;
                 }
 
-                _mSocket.Send(bSend1, 22, SocketFlags.None);
-                if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
+                await SendAsync(bSend1, 0, 22, SocketFlags.None);
+                int receivedBytes = await ReceiveAsync(bReceive, 0, 22, SocketFlags.None);
+                if (receivedBytes != 22)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                }
 
                 byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
-                _mSocket.Send(bsend2, 25, SocketFlags.None);
-
-                if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
+                await SendAsync(bsend2, 0, 25, SocketFlags.None);
+                receivedBytes = await ReceiveAsync(bReceive, 0, 27, SocketFlags.None);
+                if (receivedBytes != 27)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                }
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
                 LastErrorString = "Couldn't establish the connection to " + IP + ".\nMessage: " + exc.Message;
@@ -258,17 +283,17 @@ namespace S7.Net
         /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
-        public void ReadMultipleVars(List<DataItem> dataItems)
+        public async Task ReadMultipleVarsAsync(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-            
+
             if (dataItems.Count > 20) throw new Exception("Too many vars requested");
             if (cntBytes > 222) throw new Exception("Too many bytes requested"); //todo, proper TDU check + split in multiple requests
 
             try
             {
                 // first create the header
-                int packageSize = 19 + (dataItems.Count*12);
+                int packageSize = 19 + (dataItems.Count * 12);
                 Types.ByteArray package = new ByteArray(packageSize);
                 package.Add(ReadHeaderPackage(dataItems.Count));
                 // package.Add(0x02);  // datenart
@@ -277,11 +302,12 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                await SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
                 byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                int numReceived = await ReceiveAsync(bReceive, 0, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 int offset = 25;
                 foreach (var dataItem in dataItems)
@@ -310,7 +336,7 @@ namespace S7.Net
                 LastErrorString = exc.Message;
             }
         }
-        
+
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -320,14 +346,14 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
         /// <returns>Returns the bytes in an array</returns>
-        public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
+        public async Task<byte[]> ReadBytesAsync(DataType dataType, int db, int startByteAdr, int count)
         {
             List<byte> resultBytes = new List<byte>();
             int index = startByteAdr;
             while (count > 0)
             {
                 var maxToRead = (int)Math.Min(count, 200);
-                byte[] bytes = ReadBytesWithASingleRequest(dataType, db, index, maxToRead);
+                byte[] bytes = await ReadBytesWithASingleRequestAsync(dataType, db, index, maxToRead);
                 if (bytes == null)
                     return resultBytes.ToArray();
                 resultBytes.AddRange(bytes);
@@ -347,21 +373,21 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="varType">Type of the variable/s that you are reading</param>
         /// <param name="varCount"></param>
-        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
+        public async Task<object> ReadAsync(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
-            byte[] bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
+            byte[] bytes = await ReadBytesAsync(dataType, db, startByteAdr, cntBytes);
 
             return ParseBytes(varType, bytes, varCount);
         }
-        
+
         /// <summary>
         /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
-        public object Read(string variable)
+        public async Task<object> ReadAsync(string variable)
         {
             DataType mDataType;
             int mDB;
@@ -393,19 +419,19 @@ namespace S7.Net
                         switch (dbType)
                         {
                             case "DBB":
-                                byte obj = (byte)Read(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
+                                byte obj = (byte)await ReadAsync(DataType.DataBlock, mDB, dbIndex, VarType.Byte, 1);
                                 return obj;
                             case "DBW":
-                                UInt16 objI = (UInt16)Read(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
+                                UInt16 objI = (UInt16)await ReadAsync(DataType.DataBlock, mDB, dbIndex, VarType.Word, 1);
                                 return objI;
                             case "DBD":
-                                UInt32 objU = (UInt32)Read(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
+                                UInt32 objU = (UInt32)await ReadAsync(DataType.DataBlock, mDB, dbIndex, VarType.DWord, 1);
                                 return objU;
                             case "DBX":
                                 mByte = dbIndex;
                                 mBit = int.Parse(strings[2]);
                                 if (mBit > 7) throw new Exception();
-                                byte obj2 = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
+                                byte obj2 = (byte)await ReadAsync(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
                                 objBoolArray = new BitArray(new byte[] { obj2 });
                                 return objBoolArray[mBit];
                             default:
@@ -413,39 +439,39 @@ namespace S7.Net
                         }
                     case "EB":
                         // Input byte
-                        objByte = (byte)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
+                        objByte = (byte)await ReadAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "EW":
                         // Input word
-                        objUInt16 = (UInt16)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
+                        objUInt16 = (UInt16)await ReadAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "ED":
                         // Input double-word
-                        objUInt32 = (UInt32)Read(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
+                        objUInt32 = (UInt32)await ReadAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     case "AB":
                         // Output byte
-                        objByte = (byte)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
+                        objByte = (byte)await ReadAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "AW":
                         // Output word
-                        objUInt16 = (UInt16)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
+                        objUInt16 = (UInt16)await ReadAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "AD":
                         // Output double-word
-                        objUInt32 = (UInt32)Read(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
+                        objUInt32 = (UInt32)await ReadAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     case "MB":
                         // Memory byte
-                        objByte = (byte)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
+                        objByte = (byte)await ReadAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Byte, 1);
                         return objByte;
                     case "MW":
                         // Memory word
-                        objUInt16 = (UInt16)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
+                        objUInt16 = (UInt16)await ReadAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.Word, 1);
                         return objUInt16;
                     case "MD":
                         // Memory double-word
-                        objUInt32 = (UInt32)Read(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
+                        objUInt32 = (UInt32)await ReadAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), VarType.DWord, 1);
                         return objUInt32;
                     default:
                         switch (txt.Substring(0, 1))
@@ -466,12 +492,12 @@ namespace S7.Net
                                 break;
                             case "T":
                                 // Timer
-                                objDouble = (double)Read(DataType.Timer, 0, int.Parse(txt.Substring(1)), VarType.Timer, 1);
+                                objDouble = (double)await ReadAsync(DataType.Timer, 0, int.Parse(txt.Substring(1)), VarType.Timer, 1);
                                 return objDouble;
                             case "Z":
                             case "C":
                                 // Counter
-                                objUInt16 = (UInt16)Read(DataType.Counter, 0, int.Parse(txt.Substring(1)), VarType.Counter, 1);
+                                objUInt16 = (UInt16)await ReadAsync(DataType.Counter, 0, int.Parse(txt.Substring(1)), VarType.Counter, 1);
                                 return objUInt16;
                             default:
                                 throw new Exception();
@@ -483,12 +509,12 @@ namespace S7.Net
                         mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
                         if (mBit > 7) throw new Exception();
-                        var obj3 = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
-                        objBoolArray = new BitArray(new byte[]{obj3});
+                        var obj3 = (byte)await ReadAsync(mDataType, 0, mByte, VarType.Byte, 1);
+                        objBoolArray = new BitArray(new byte[] { obj3 });
                         return objBoolArray[mBit];
                 }
             }
-            catch 
+            catch
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be read. Please check the syntax and try again.";
@@ -503,11 +529,11 @@ namespace S7.Net
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>Returns a struct that must be cast.</returns>
-        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
+        public async Task<object> ReadStructAsync(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            var resultBytes = ReadBytes(DataType.DataBlock, db, startByteAdr, numBytes);
+            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes);
 
             // and decode it
             return Types.Struct.FromBytes(structType, resultBytes);
@@ -520,16 +546,106 @@ namespace S7.Net
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        public void ReadClass(object sourceClass, int db, int startByteAdr = 0)
+        public async Task ReadClassAsync(object sourceClass, int db, int startByteAdr = 0)
         {
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
             // now read the package
-            var resultBytes = ReadBytes(DataType.DataBlock, db, startByteAdr, numBytes);
+            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes);
             // and decode it
             Types.Class.FromBytes(sourceClass, classType, resultBytes);
         }
 
+        /// <summary>
+        /// Reads multiple vars in a single request. 
+        /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
+        /// Values are stored in the property "Value" of the dataItem and are already converted.
+        /// If you don't want the conversion, just create a dataItem of bytes. 
+        /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+        /// </summary>
+        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        public void ReadMultipleVars(List<DataItem> dataItems)
+        {
+            var t = Task.Factory.StartNew(() => ReadMultipleVarsAsync(dataItems)).Unwrap();
+            t.Wait();
+        }
+        
+        /// <summary>
+        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
+        /// <returns>Returns the bytes in an array</returns>
+        public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
+        {
+            var t = Task.Factory.StartNew(() => ReadBytesAsync(dataType, db, startByteAdr, count)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Read and decode a certain number of bytes of the "VarType" provided. 
+        /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="varType">Type of the variable/s that you are reading</param>
+        /// <param name="varCount"></param>
+        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount)
+        {
+            var t = Task.Factory.StartNew(() => ReadAsync(dataType, db, startByteAdr, varType, varCount)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+        
+        /// <summary>
+        /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+        /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
+        public object Read(string variable)
+        {
+            var t = Task.Factory.StartNew(() => ReadAsync(variable)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+        /// </summary>
+        /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
+        /// <param name="db">Address of the DB.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>Returns a struct that must be cast.</returns>
+        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
+        {
+            var t = Task.Factory.StartNew(() => ReadStructAsync(structType, db, startByteAdr)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
+        /// </summary>
+        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        public void ReadClass(object sourceClass, int db, int startByteAdr = 0)
+        {
+            var t = Task.Factory.StartNew(() => ReadClassAsync(sourceClass, db, startByteAdr)).Unwrap();
+            t.Wait();
+        }
 
         /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
@@ -540,14 +656,14 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        public async Task<ErrorCode> WriteBytesAsync(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             int localIndex = 0;
             int count = value.Length;
             while (count > 0)
             {
                 var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                ErrorCode lastError = await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
                     return lastError;
@@ -568,7 +684,7 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value)
+        public async Task<ErrorCode> WriteAsync(DataType dataType, int db, int startByteAdr, object value)
         {
             byte[] package = null;
 
@@ -616,7 +732,7 @@ namespace S7.Net
                 default:
                     return ErrorCode.WrongVarFormat;
             }
-            return WriteBytes(dataType, db, startByteAdr, package);
+            return await WriteBytesAsync(dataType, db, startByteAdr, package);
         }
 
         /// <summary>
@@ -626,7 +742,7 @@ namespace S7.Net
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <param name="value">Value to be written to the plc</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(string variable, object value)
+        public async Task<ErrorCode> WriteAsync(string variable, object value)
         {
             DataType mDataType;
             int mDB;
@@ -645,19 +761,19 @@ namespace S7.Net
                 switch (txt.Substring(0, 2))
                 {
                     case "DB":
-                        string[] strings = txt.Split(new char[]{'.'});
+                        string[] strings = txt.Split(new char[] { '.' });
                         if (strings.Length < 2)
                             throw new Exception();
 
                         mDB = int.Parse(strings[0].Substring(2));
                         string dbType = strings[1].Substring(0, 3);
-                        int dbIndex = int.Parse(strings[1].Substring(3));                       
-                       
+                        int dbIndex = int.Parse(strings[1].Substring(3));
+
                         switch (dbType)
                         {
                             case "DBB":
                                 objValue = Convert.ChangeType(value, typeof(byte));
-                                return Write(DataType.DataBlock, mDB, dbIndex, (byte)objValue);
+                                return await WriteAsync(DataType.DataBlock, mDB, dbIndex, (byte)objValue);
                             case "DBW":
                                 if (value is short)
                                 {
@@ -667,17 +783,17 @@ namespace S7.Net
                                 {
                                     objValue = Convert.ChangeType(value, typeof(UInt16));
                                 }
-                                return Write(DataType.DataBlock, mDB, dbIndex, (UInt16)objValue);
+                                return await WriteAsync(DataType.DataBlock, mDB, dbIndex, (UInt16)objValue);
                             case "DBD":
                                 if (value is int)
                                 {
-                                    return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
+                                    return await WriteAsync(DataType.DataBlock, mDB, dbIndex, (Int32)value);
                                 }
                                 else
                                 {
                                     objValue = Convert.ChangeType(value, typeof(UInt32));
                                 }
-                                return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
+                                return await WriteAsync(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
                                 mBit = int.Parse(strings[2]);
@@ -685,54 +801,54 @@ namespace S7.Net
                                 {
                                     throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                                 }
-                                byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
+                                byte b = (byte)await ReadAsync(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
                                 if (Convert.ToInt32(value) == 1)
                                     b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
                                 else
                                     b = (byte)(b & (b ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
 
-                                return Write(DataType.DataBlock, mDB, mByte, (byte)b);
+                                return await WriteAsync(DataType.DataBlock, mDB, mByte, (byte)b);
                             case "DBS":
                                 // DB-String
-                                return Write(DataType.DataBlock, mDB, dbIndex, (string)value);
+                                return await WriteAsync(DataType.DataBlock, mDB, dbIndex, (string)value);
                             default:
                                 throw new Exception(string.Format("Addressing Error: Unable to parse address {0}. Supported formats include DBB (byte), DBW (word), DBD (dword), DBX (bitwise), DBS (string).", dbType));
                         }
                     case "EB":
                         // Input Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
-                        return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (byte)objValue);
+                        return await WriteAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "EW":
                         // Input Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
-                        return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
+                        return await WriteAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "ED":
                         // Input Double-Word
                         objValue = Convert.ChangeType(value, typeof(UInt32));
-                        return Write(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
+                        return await WriteAsync(DataType.Input, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
                     case "AB":
                         // Output Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
-                        return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (byte)objValue);
+                        return await WriteAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "AW":
                         // Output Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
-                        return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
+                        return await WriteAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "AD":
                         // Output Double-Word
                         objValue = Convert.ChangeType(value, typeof(UInt32));
-                        return Write(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
+                        return await WriteAsync(DataType.Output, 0, int.Parse(txt.Substring(2)), (UInt32)objValue);
                     case "MB":
                         // Memory Byte
                         objValue = Convert.ChangeType(value, typeof(byte));
-                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), (byte)objValue);
+                        return await WriteAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), (byte)objValue);
                     case "MW":
                         // Memory Word
                         objValue = Convert.ChangeType(value, typeof(UInt16));
-                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
+                        return await WriteAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), (UInt16)objValue);
                     case "MD":
                         // Memory Double-Word
-                        return Write(DataType.Memory, 0, int.Parse(txt.Substring(2)), value);
+                        return await WriteAsync(DataType.Memory, 0, int.Parse(txt.Substring(2)), value);
                     default:
                         switch (txt.Substring(0, 1))
                         {
@@ -752,20 +868,20 @@ namespace S7.Net
                                 break;
                             case "T":
                                 // Timer
-                                return Write(DataType.Timer, 0, int.Parse(txt.Substring(1)), (double)value);
+                                return await WriteAsync(DataType.Timer, 0, int.Parse(txt.Substring(1)), (double)value);
                             case "Z":
                             case "C":
                                 // Counter
-                                return Write(DataType.Counter, 0, int.Parse(txt.Substring(1)), (short)value);
+                                return await WriteAsync(DataType.Counter, 0, int.Parse(txt.Substring(1)), (short)value);
                             default:
-                                throw new Exception(string.Format("Unknown variable type {0}.",txt.Substring(0,1)));
+                                throw new Exception(string.Format("Unknown variable type {0}.", txt.Substring(0, 1)));
                         }
 
                         addressLocation = txt.Substring(1);
                         int decimalPointIndex = addressLocation.IndexOf(".");
                         if (decimalPointIndex == -1)
                         {
-                            throw new Exception(string.Format("Cannot parse variable {0}. Input, Output, Memory Address, Timer, and Counter types require bit-level addressing (e.g. I0.1).",addressLocation));
+                            throw new Exception(string.Format("Cannot parse variable {0}. Input, Output, Memory Address, Timer, and Counter types require bit-level addressing (e.g. I0.1).", addressLocation));
                         }
 
                         mByte = int.Parse(addressLocation.Substring(0, decimalPointIndex));
@@ -775,16 +891,16 @@ namespace S7.Net
                             throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                         }
 
-                        _byte = (byte)Read(mDataType, 0, mByte, VarType.Byte, 1);
+                        _byte = (byte)await ReadAsync(mDataType, 0, mByte, VarType.Byte, 1);
                         if ((int)value == 1)
                             _byte = (byte)(_byte | (byte)Math.Pow(2, mBit));      // Set bit
                         else
                             _byte = (byte)(_byte & (_byte ^ (byte)Math.Pow(2, mBit))); // Reset bit
 
-                        return Write(mDataType, 0, mByte, (byte)_byte);
+                        return await WriteAsync(mDataType, 0, mByte, (byte)_byte);
                 }
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
                 LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.\nException: " + exc.Message;
@@ -799,11 +915,90 @@ namespace S7.Net
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the plc</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
+        public async Task<ErrorCode> WriteStructAsync(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
-            var errCode = WriteBytes(DataType.DataBlock ,db, startByteAdr, bytes.ToArray());
+            var errCode = await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
             return errCode;
+        }
+
+        /// <summary>
+        /// Writes a C# class to a DB in the plc
+        /// </summary>
+        /// <param name="classValue">The class to be written</param>
+        /// <param name="db">Db address</param>
+        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public async Task<ErrorCode> WriteClassAsync(object classValue, int db, int startByteAdr = 0)
+        {
+            var bytes = Types.Class.ToBytes(classValue).ToList();
+            var errCode = await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            return errCode;
+        }
+
+        /// <summary>
+        /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        {
+            var t = Task.Factory.StartNew(() => WriteBytesAsync(dataType, db, startByteAdr, value)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Takes in input an object and tries to parse it to an array of values. This can be used to write many data, all of the same type.
+        /// You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value)
+        {
+            var t = Task.Factory.StartNew(() => WriteAsync(dataType, db, startByteAdr, value)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Writes a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
+        /// <param name="value">Value to be written to the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode Write(string variable, object value)
+        {
+            var t = Task.Factory.StartNew(() => WriteAsync(variable, value)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Writes a C# struct to a DB in the plc
+        /// </summary>
+        /// <param name="structValue">The struct to be written</param>
+        /// <param name="db">Db address</param>
+        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
+        {
+            var t = Task.Factory.StartNew(() => WriteStructAsync(structValue, db, startByteAdr)).Unwrap();
+            t.Wait();
+
+            return t.Result;
         }
 
         /// <summary>
@@ -815,9 +1010,10 @@ namespace S7.Net
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
-            var bytes = Types.Class.ToBytes(classValue).ToList();
-            var errCode = WriteBytes(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
-            return errCode;
+            var t = Task.Factory.StartNew(() => WriteClassAsync(classValue, db, startByteAdr)).Unwrap();
+            t.Wait();
+
+            return t.Result;
         }
 
         /// <summary>
@@ -895,7 +1091,7 @@ namespace S7.Net
             return package;
         }
 
-        private byte[] ReadBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, int count)
+        private async Task<byte[]> ReadBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
 
@@ -908,10 +1104,10 @@ namespace S7.Net
                 // package.Add(0x02);  // datenart
                 package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                await SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
                 byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                int numReceived = await ReceiveAsync(bReceive, 0, 512, SocketFlags.None);
                 if (bReceive[21] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
@@ -943,7 +1139,7 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        private async Task<ErrorCode> WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
@@ -974,9 +1170,9 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+                await SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                int numReceived = await ReceiveAsync(bReceive, 0, 512, SocketFlags.None);
                 if (bReceive[21] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
@@ -990,6 +1186,31 @@ namespace S7.Net
                 LastErrorString = exc.Message;
                 return LastErrorCode;
             }
+        }
+
+        private byte[] ReadBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, int count)
+        {
+            var t = Task.Factory.StartNew(() => ReadBytesWithASingleRequestAsync(dataType, db, startByteAdr, count)).Unwrap();
+            t.Wait();
+
+            return t.Result;
+        }
+
+        /// <summary>
+        /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        {
+            var t = Task.Factory.StartNew(() => WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr, value)).Unwrap();
+            t.Wait();
+
+            return t.Result;
         }
 
         /// <summary>

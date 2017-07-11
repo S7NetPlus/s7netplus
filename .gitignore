@@ -12,3 +12,4 @@ S7.Net.UnitTest/obj
 *.lock.json
 obj/
 bin/
+/packages
