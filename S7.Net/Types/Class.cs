@@ -13,11 +13,16 @@ namespace S7.Net.Types
         private static IEnumerable<PropertyInfo> GetAccessableProperties(Type classType)
         {
             return classType
+#if NETFX_CORE
+                .GetProperties().Where(p => p.GetSetMethod() != null);
+#else
                 .GetProperties(
                     BindingFlags.SetProperty |
                     BindingFlags.Public |
                     BindingFlags.Instance)
                 .Where(p => p.GetSetMethod() != null);
+#endif
+
         }
 
         /// <summary>
