@@ -514,13 +514,26 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and returns the struct or null if nothing was read.
+        /// </summary>
+        /// <typeparam name="T">The struct type</typeparam>
+        /// <param name="db">Address of the DB.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>Returns a nulable struct. If nothing was read null will be returned.</returns>
+        public T? ReadStruct<T>(int db, int startByteAdr = 0) where T : struct
+        {
+            return ReadStruct(typeof(T), db, startByteAdr) as T?;
+        }
+
+        /// <summary>
         /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
-        /// This reads ony properties, it doesn't read private variable or public variable without {get;set;} specified.
+        /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        public void ReadClass(object sourceClass, int db, int startByteAdr = 0)
+        /// <returns>The number of read bytes</returns>
+        public int ReadClass(object sourceClass, int db, int startByteAdr = 0)
         {
             Type classType = sourceClass.GetType();
             int numBytes = Types.Class.GetClassSize(classType);
@@ -528,6 +541,43 @@ namespace S7.Net
             var resultBytes = ReadBytes(DataType.DataBlock, db, startByteAdr, numBytes);
             // and decode it
             Types.Class.FromBytes(sourceClass, classType, resultBytes);
+
+            return resultBytes.Length;
+        }
+
+        /// <summary>
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified. To instantiate the class defined by the generic
+        /// type, the class needs a default constructor.
+        /// </summary>
+        /// <typeparam name="T">The class that will be instantiated. Requires a default constructor</typeparam>
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>An instance of the class with the values read from the plc. If no data has been read, null will be returned</returns>
+        public T ReadClass<T>(int db, int startByteAdr = 0) where T : class
+        {
+            return ReadClass(() => Activator.CreateInstance<T>(), db, startByteAdr);
+        }
+
+        /// <summary>
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
+        /// </summary>
+        /// <typeparam name="T">The class that will be instantiated</typeparam>
+        /// <param name="classFactory">Function to instantiate the class</param>
+        /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>An instance of the class with the values read from the plc. If no data has been read, null will be returned</returns>
+        public T ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
+        {
+            var instance = classFactory();
+            int readBytes = ReadClass(instance, db, startByteAdr);
+            if (readBytes <= 0)
+            {
+                return null;
+            }
+
+            return instance;
         }
 
 
