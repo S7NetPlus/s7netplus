@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace S7.Net.Types
@@ -8,16 +10,26 @@ namespace S7.Net.Types
     /// </summary>
     public static class Class
     {
+        private static IEnumerable<PropertyInfo> GetAccessableProperties(Type classType)
+        {
+            return classType
+                .GetProperties(
+                    BindingFlags.SetProperty |
+                    BindingFlags.Public |
+                    BindingFlags.Instance)
+                .Where(p => p.GetSetMethod() != null);
+        }
+
         /// <summary>
-        /// Gets the size of the struct in bytes.
+        /// Gets the size of the class in bytes.
         /// </summary>
         /// <param name="classType">the type of the class</param>
         /// <returns>the number of bytes</returns>
         public static int GetClassSize(Type classType)
         {
-            double numBytes = 0.0;       
-                            
-            var properties = classType.GetProperties();
+            double numBytes = 0.0;
+
+            var properties = GetAccessableProperties(classType);
             foreach (var property in properties)
             {
                 switch (property.PropertyType.Name)
@@ -59,12 +71,11 @@ namespace S7.Net.Types
         }
 
         /// <summary>
-        /// Creates a struct of a specified type by an array of bytes.
+        /// Sets the object's values with the given array of bytes
         /// </summary>
-        /// <param name="sourceClass"></param>
-        /// <param name="classType">The struct type</param>
+        /// <param name="sourceClass">The object to fill in the given array of bytes</param>
+        /// <param name="classType">The class type</param>
         /// <param name="bytes">The array of bytes</param>
-        /// <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
         public static void FromBytes(object sourceClass, Type classType, byte[] bytes)
         {
             if (bytes == null)
@@ -79,7 +90,7 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
 
-            var properties = sourceClass.GetType().GetProperties();
+            var properties = GetAccessableProperties(classType);
             foreach (var property in properties)
             {
                 switch (property.PropertyType.Name)
@@ -181,7 +192,7 @@ namespace S7.Net.Types
             int bitPos = 0;
             double numBytes = 0.0;
 
-            var properties = sourceClass.GetType().GetProperties();
+            var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
                 bytes2 = null;
