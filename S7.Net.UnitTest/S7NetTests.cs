@@ -457,6 +457,214 @@ namespace S7.Net.UnitTest
             Assert.IsFalse(boolVariable);
         }
 
+        [TestMethod]
+        public void T12_ReadClassIgnoresNonPublicSetters()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClassWithPrivateSetters tc = new TestClassWithPrivateSetters();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariable = -154.789;
+            tc.DWordVariable = 850;
+
+            plc.WriteClass(tc, DB2);
+
+            TestClassWithPrivateSetters tc2 = new TestClassWithPrivateSetters();
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            plc.ReadClass(tc2, DB2);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
+            Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
+            Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
+            Assert.AreEqual(tc.RealVariable, Math.Round(tc2.RealVariable, 3));
+            Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+
+            Assert.AreEqual(TestClassWithPrivateSetters.PRIVATE_SETTER_VALUE, tc2.PrivateSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.PROTECTED_SETTER_VALUE, tc2.ProtectedSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.INTERNAL_SETTER_VALUE, tc2.InternalSetterProperty);
+            Assert.AreEqual(TestClassWithPrivateSetters.JUST_A_GETTER_VALUE, tc2.JustAGetterProperty);
+        }
+
+
+        [TestMethod]
+        public void T13_ReadBytesReturnsEmptyArrayIfPlcIsNotConnected()
+        {
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            {
+                Assert.IsFalse(notConnectedPlc.IsConnected);
+
+                int expectedReadBytes = 0; // 0 bytes, because no connection was established
+
+                TestClass tc = new TestClass();
+                int actualReadBytes = notConnectedPlc.ReadClass(tc, DB2);
+
+                Assert.AreEqual(expectedReadBytes, actualReadBytes);
+            }
+        }
+
+        [TestMethod]
+        public void T14_ReadClassWithGenericReturnsSameResultAsReadClassWithoutGeneric()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClass tc = new TestClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariable = -154.789;
+            tc.DWordVariable = 850;
+
+            plc.WriteClass(tc, DB2);
+
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            TestClass tc2 = new TestClass();
+            plc.ReadClass(tc2, DB2);
+            TestClass tc2Generic = plc.ReadClass<TestClass>(DB2);
+
+            Assert.AreEqual(tc2.BitVariable00, tc2Generic.BitVariable00);
+            Assert.AreEqual(tc2.BitVariable10, tc2Generic.BitVariable10);
+            Assert.AreEqual(tc2.DIntVariable, tc2Generic.DIntVariable);
+            Assert.AreEqual(tc2.IntVariable, tc2Generic.IntVariable);
+            Assert.AreEqual(Math.Round(tc2.RealVariable, 3), Math.Round(tc2Generic.RealVariable, 3));
+            Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
+        }
+
+        [TestMethod]
+        public void T15_ReadClassWithGenericReturnsNullIfPlcIsNotConnected()
+        {
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            {
+                Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+                TestClass tc = notConnectedPlc.ReadClass<TestClass>(DB2);
+
+                Assert.IsNull(tc);
+            }
+        }
+
+        [TestMethod]
+        public void T16_ReadClassWithGenericAndClassFactoryReturnsSameResultAsReadClassWithoutGeneric()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClass tc = new TestClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariable = -154.789;
+            tc.DWordVariable = 850;
+
+            plc.WriteClass(tc, DB2);
+
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            TestClass tc2Generic = plc.ReadClass<TestClass>(DB2);
+            TestClass tc2GenericWithClassFactory = plc.ReadClass(() => new TestClass(), DB2);
+
+            Assert.AreEqual(tc2Generic.BitVariable00, tc2GenericWithClassFactory.BitVariable00);
+            Assert.AreEqual(tc2Generic.BitVariable10, tc2GenericWithClassFactory.BitVariable10);
+            Assert.AreEqual(tc2Generic.DIntVariable, tc2GenericWithClassFactory.DIntVariable);
+            Assert.AreEqual(tc2Generic.IntVariable, tc2GenericWithClassFactory.IntVariable);
+            Assert.AreEqual(Math.Round(tc2Generic.RealVariable, 3), Math.Round(tc2GenericWithClassFactory.RealVariable, 3));
+            Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
+        }
+
+        [TestMethod]
+        public void T17_ReadClassWithGenericAndClassFactoryReturnsNullIfPlcIsNotConnected()
+        {
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            {
+                Assert.IsFalse(notConnectedPlc.IsConnected);
+
+                TestClass tc = notConnectedPlc.ReadClass(() => new TestClass(), DB2);
+
+                Assert.IsNull(tc);
+            }
+        }
+
+        [TestMethod]
+        public void T18_ReadStructReturnsNullIfPlcIsNotConnected()
+        {
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            {
+                Assert.IsFalse(notConnectedPlc.IsConnected);
+
+                object tsObj = notConnectedPlc.ReadStruct(typeof(TestStruct), DB2);
+
+                Assert.IsNull(tsObj);
+            }
+        }
+
+        [TestMethod]
+        public void T19_ReadStructWithGenericReturnsSameResultAsReadStructWithoutGeneric()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestStruct ts = new TestStruct();
+            ts.BitVariable00 = true;
+            ts.BitVariable10 = true;
+            ts.DIntVariable = -100000;
+            ts.IntVariable = -15000;
+            ts.RealVariable = -154.789;
+            ts.DWordVariable = 850;
+
+            plc.WriteStruct(ts, DB2);
+
+            // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
+            TestStruct ts2 = (TestStruct)plc.ReadStruct(typeof(TestStruct), DB2);
+            TestStruct ts2Generic = plc.ReadStruct<TestStruct>(DB2).Value;
+
+            Assert.AreEqual(ts2.BitVariable00, ts2Generic.BitVariable00);
+            Assert.AreEqual(ts2.BitVariable10, ts2Generic.BitVariable10);
+            Assert.AreEqual(ts2.DIntVariable, ts2Generic.DIntVariable);
+            Assert.AreEqual(ts2.IntVariable, ts2Generic.IntVariable);
+            Assert.AreEqual(Math.Round(ts2.RealVariable, 3), Math.Round(ts2Generic.RealVariable, 3));
+            Assert.AreEqual(ts2.DWordVariable, ts2Generic.DWordVariable);
+        }
+
+        [TestMethod]
+        public void T20_ReadStructWithGenericReturnsNullIfPlcIsNotConnected()
+        {
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            {
+                Assert.IsFalse(notConnectedPlc.IsConnected);
+
+                object tsObj = notConnectedPlc.ReadStruct<TestStruct>(DB2);
+
+                Assert.IsNull(tsObj);
+            }
+        }
+
+        /// <summary>
+        /// Tests that the method ReadClass returns the number of bytes read from the plc
+        /// </summary>
+        [TestMethod]
+        public void T21_ReadClassReturnsNumberOfReadBytesFromThePlc()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClass tc = new TestClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariable = -154.789;
+            tc.DWordVariable = 850;
+            plc.WriteClass(tc, DB2);
+
+            int expectedReadBytes = Types.Class.GetClassSize(tc.GetType());
+
+            TestClass tc2 = new TestClass();
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            int actualReadBytes = plc.ReadClass(tc2, DB2);
+
+            Assert.AreEqual(expectedReadBytes, actualReadBytes);
+        }
+
         #endregion
 
         #region Private methods

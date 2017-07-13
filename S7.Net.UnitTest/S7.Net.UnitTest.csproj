@@ -65,6 +65,7 @@
     <Compile Include="Helpers\ConsoleManager.cs" />
     <Compile Include="Helpers\NativeMethods.cs" />
     <Compile Include="Helpers\S7TestServer.cs" />
+    <Compile Include="Helpers\TestClassWithPrivateSetters.cs" />
     <Compile Include="Helpers\TestLongClass.cs" />
     <Compile Include="S7NetAsyncTests.cs" />
     <Compile Include="Snap7\snap7.net.cs" />
