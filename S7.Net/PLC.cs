@@ -21,7 +21,12 @@ namespace S7.Net
         /// <summary>
         /// Ip address of the plc
         /// </summary>
-        public string IP { get; private set; }
+        public string Host { get; private set; }
+        
+        /// <summary>
+        /// Port address of the plc
+        /// </summary>
+        public int Port { get; private set; }
 
         /// <summary>
         /// Cpu type of the plc
@@ -39,6 +44,11 @@ namespace S7.Net
         public Int16 Slot { get; private set; }
         
         /// <summary>
+        /// Do ping test when open
+        /// </summary>
+        public bool PingTest { get; private set; }
+
+        /// <summary>
         /// Pings the IP address and returns true if the result of the ping is Success.
         /// </summary>
         public bool IsAvailable
@@ -53,7 +63,7 @@ namespace S7.Net
                     PingReply result;
                     try
                     {
-                        result = ping.Send(IP);
+                        result = ping.Send(Host);
                     }
                     catch (PingException)
                     {
@@ -99,7 +109,7 @@ namespace S7.Net
         /// Contains the last error code registered when executing a function
         /// </summary>
         public ErrorCode LastErrorCode { get; private set; }
-        
+
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
         /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
@@ -107,16 +117,35 @@ namespace S7.Net
         /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
         /// </summary>
         /// <param name="cpu">CpuType of the plc (select from the enum)</param>
-        /// <param name="ip">Ip address of the plc</param>
+        /// <param name="host">Ip address of the plc</param>
         /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string host, Int16 rack, Int16 slot) : this(cpu, host, 102, rack, slot, true)
         {
-            IP = ip;
+
+        }
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="cpu">CpuType of the plc (select from the enum)</param>
+        /// <param name="host">Ip address/host of the plc</param>
+        /// <param name="port">port of the plc</param>
+        /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        /// <param name="pingTest">Do ping test before connecting the PLC</param>
+        public Plc(CpuType cpu, string host, int port, Int16 rack, Int16 slot, bool pingTest)
+        {
+            Host = host;
+            Port = port;
             CPU = cpu;
             Rack = rack;
             Slot = slot;
+            PingTest = pingTest;
         }
 
         /// <summary>
@@ -126,7 +155,7 @@ namespace S7.Net
         public ErrorCode Open()
         {
             byte[] bReceive = new byte[256];
-
+            
             try 
             {
                 // check if available
@@ -138,7 +167,7 @@ namespace S7.Net
             catch  
             {
                 LastErrorCode = ErrorCode.IPAddressNotAvailable;
-                LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
+                LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", Host);
                 return LastErrorCode;
             }
 
@@ -147,8 +176,7 @@ namespace S7.Net
                 _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
                 _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
-                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
-                _mSocket.Connect(server);
+                _mSocket.Connect(Host, Port);
             }
             catch (Exception ex) {
                 LastErrorCode = ErrorCode.ConnectionError;
@@ -231,7 +259,7 @@ namespace S7.Net
             catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
-                LastErrorString = "Couldn't establish the connection to " + IP + ".\nMessage: " + exc.Message;
+                LastErrorString = "Couldn't establish the connection to " + Host + ".\nMessage: " + exc.Message;
                 return ErrorCode.ConnectionError;
             }
 
