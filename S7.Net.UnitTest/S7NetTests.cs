@@ -656,13 +656,84 @@ namespace S7.Net.UnitTest
             tc.DWordVariable = 850;
             plc.WriteClass(tc, DB2);
 
-            int expectedReadBytes = Types.Class.GetClassSize(tc.GetType());
+            int expectedReadBytes = Types.Class.GetClassSize(tc);
 
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             int actualReadBytes = plc.ReadClass(tc2, DB2);
 
             Assert.AreEqual(expectedReadBytes, actualReadBytes);
+        }
+		
+		[TestMethod]
+        public void T22_ReadClassWithArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClassWithArrays tc = new TestClassWithArrays();
+            tc.Bool = true;
+            tc.BoolValues[1] = true;
+            tc.Int = int.MinValue;
+            tc.Ints[0] = int.MinValue;
+            tc.Ints[1] = int.MaxValue;
+            tc.Short = short.MinValue;
+            tc.Shorts[0] = short.MinValue;
+            tc.Shorts[1] = short.MaxValue;
+            tc.Double = float.MinValue;
+            tc.Doubles[0] = float.MinValue + 1;
+            tc.Doubles[1] = float.MaxValue;
+            tc.UShort = ushort.MinValue + 1;
+            tc.UShorts[0] = ushort.MinValue + 1;
+            tc.UShorts[1] = ushort.MaxValue;
+
+            plc.WriteClass(tc, DB2);
+            TestClassWithArrays tc2 = plc.ReadClass<TestClassWithArrays>(DB2);
+
+            Assert.AreEqual(tc.Bool, tc2.Bool);
+            Assert.AreEqual(tc.BoolValues[0], tc2.BoolValues[0]);
+            Assert.AreEqual(tc.BoolValues[1], tc2.BoolValues[1]);
+
+            Assert.AreEqual(tc.Int, tc2.Int);
+            Assert.AreEqual(tc.Ints[0], tc2.Ints[0]);
+            Assert.AreEqual(tc.Ints[1], tc.Ints[1]);
+
+            Assert.AreEqual(tc.Short, tc2.Short);
+            Assert.AreEqual(tc.Shorts[0], tc2.Shorts[0]);
+            Assert.AreEqual(tc.Shorts[1], tc2.Shorts[1]);
+
+            Assert.AreEqual(tc.Double, tc2.Double);
+            Assert.AreEqual(tc.Doubles[0], tc2.Doubles[0]);
+            Assert.AreEqual(tc.Doubles[1], tc2.Doubles[1]);
+
+            Assert.AreEqual(tc.UShort, tc2.UShort);
+            Assert.AreEqual(tc.UShorts[0], tc2.UShorts[0]);
+            Assert.AreEqual(tc.UShorts[1], tc2.UShorts[1]);
+        }
+
+        [TestMethod]
+        public void T22_ReadClassWithArrayAndCustomType()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClassWithCustomType tc = new TestClassWithCustomType();
+            tc.Int = int.MinValue;
+            tc.CustomType = new CustomType();
+            tc.CustomType.Bools[1] = true;
+            tc.CustomTypes[0] = new CustomType();
+            tc.CustomTypes[1] = new CustomType();
+            tc.CustomTypes[0].Bools[0] = true;
+            tc.CustomTypes[1].Bools[1] = true;
+
+            plc.WriteClass(tc, DB2);
+            TestClassWithCustomType tc2 = plc.ReadClass<TestClassWithCustomType>(DB2);
+
+            Assert.AreEqual(tc.Int, tc2.Int);
+            Assert.AreEqual(tc.CustomType.Bools[0], tc2.CustomType.Bools[0]);
+            Assert.AreEqual(tc.CustomType.Bools[1], tc2.CustomType.Bools[1]);
+            Assert.AreEqual(tc.CustomTypes[0].Bools[0], tc2.CustomTypes[0].Bools[0]);
+            Assert.AreEqual(tc.CustomTypes[0].Bools[1], tc2.CustomTypes[0].Bools[1]);
+            Assert.AreEqual(tc.CustomTypes[1].Bools[0], tc2.CustomTypes[1].Bools[0]);
+            Assert.AreEqual(tc.CustomTypes[1].Bools[1], tc2.CustomTypes[1].Bools[1]);
         }
 
         #endregion
