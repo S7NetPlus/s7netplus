@@ -233,13 +233,13 @@ namespace S7.Net.Types
             }
         }
 
-        private static void ToBytes(Type propertyType, object propertyValue, byte[] bytes, ref double numBytes)
+        private static void ToBytes(object propertyValue, byte[] bytes, ref double numBytes)
         {
             int bytePos = 0;
             int bitPos = 0;
             byte[] bytes2 = null;
 
-            switch (propertyType.Name)
+            switch (propertyValue.GetType().Name)
             {
                 case "Boolean":
                     // get the value
@@ -310,12 +310,12 @@ namespace S7.Net.Types
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        ToBytes(elementType, array.GetValue(i), bytes, ref numBytes);
+                        ToBytes(array.GetValue(i), bytes, ref numBytes);
                     }
                 }
                 else
                 {
-                    ToBytes(property.PropertyType, property.GetValue(sourceClass, null), bytes, ref numBytes);
+                    ToBytes(property.GetValue(sourceClass, null), bytes, ref numBytes);
                 }
             }
             return bytes;

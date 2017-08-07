@@ -711,7 +711,7 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        public void T22_ReadClassWithArrayAndCustomType()
+        public void T23_ReadClassWithArrayAndCustomType()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
