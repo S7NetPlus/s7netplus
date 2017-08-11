@@ -16,6 +16,8 @@ namespace S7.Net
     /// </summary>
     public class Plc : IDisposable
     {
+        private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
+
         private Socket _mSocket; //TCP connection to device
 
         /// <summary>
@@ -39,27 +41,19 @@ namespace S7.Net
         public Int16 Slot { get; private set; }
         
         /// <summary>
-        /// Pings the IP address and returns true if the result of the ping is Success.
+        /// Returns true if a connection to the plc can be established
         /// </summary>
         public bool IsAvailable
         {
             get
             {
+
 #if NETFX_CORE
                 return (!string.IsNullOrWhiteSpace(IP));
 #else
-                using (Ping ping = new Ping())
+                using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    PingReply result;
-                    try
-                    {
-                        result = ping.Send(IP);
-                    }
-                    catch (PingException)
-                    {
-                        result = null;
-                    }
-                    return result != null && result.Status == IPStatus.Success;
+                    return Connect(socket) == ErrorCode.NoError;
                 }
 #endif
             }
@@ -119,6 +113,38 @@ namespace S7.Net
             Slot = slot;
         }
 
+        private ErrorCode Connect(Socket socket)
+        {
+            try
+            {
+                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+                socket.Connect(server);
+
+                return ErrorCode.NoError;
+            }
+            catch (SocketException sex)
+            {
+                // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
+                if (sex.ErrorCode == CONNECTION_TIMED_OUT_ERROR_CODE)
+                {
+                    LastErrorCode = ErrorCode.IPAddressNotAvailable;
+                }
+                else
+                {
+                    LastErrorCode = ErrorCode.ConnectionError;
+                }
+
+                LastErrorString = sex.Message;
+            }
+            catch (Exception ex)
+            {
+                LastErrorCode = ErrorCode.ConnectionError;
+                LastErrorString = ex.Message;
+            }
+
+            return LastErrorCode;
+        }
+
         /// <summary>
         /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
         /// </summary>
@@ -127,33 +153,13 @@ namespace S7.Net
         {
             byte[] bReceive = new byte[256];
 
-            try 
-            {
-                // check if available
-                if (!IsAvailable)
-                {
-                    throw new Exception();
-                }
-            }
-            catch  
-            {
-                LastErrorCode = ErrorCode.IPAddressNotAvailable;
-                LastErrorString = string.Format("Destination IP-Address '{0}' is not available!", IP);
-                return LastErrorCode;
-            }
+            _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
+            _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
 
-            try
+            if (Connect(_mSocket) != ErrorCode.NoError)
             {
-                _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
-                _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
-                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
-                _mSocket.Connect(server);
-            }
-            catch (Exception ex) {
-                LastErrorCode = ErrorCode.ConnectionError;
-                LastErrorString = ex.Message;
-                return ErrorCode.ConnectionError;
+                return LastErrorCode;
             }
 
             try 

@@ -736,6 +736,27 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.CustomTypes[1].Bools[1], tc2.CustomTypes[1].Bools[1]);
         }
 
+        [TestMethod]
+        public void T24_IsAvailableReturnsFalseIfIPAddressIsNotReachable()
+        {
+            plc.Close();
+            S7TestServer.Stop();
+
+            var unreachablePlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 2);
+            Assert.IsFalse(unreachablePlc.IsAvailable);
+        }
+
+        [TestMethod]
+        public void T25_IsAvailableReturnsTrueIfIPAddressIsReachable()
+        {
+            plc.Close();
+            S7TestServer.Stop();
+            S7TestServer.Start();
+
+            var reachablePlc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
+            Assert.IsTrue(reachablePlc.IsAvailable);
+        }
+
         #endregion
 
         #region Private methods
