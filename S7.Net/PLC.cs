@@ -600,14 +600,19 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        public ErrorCode WriteBytes(DataType dataType, int db, bool bitMode, int startByteAdr, int bitAdr, byte[] value)
         {
             int localIndex = 0;
             int count = value.Length;
+            if (bitMode && value.Length != 1)
+            {
+                // The code does not handle multiple-bit writing yet
+                throw new Exception(string.Format("Addressing Error: Multi-bit writing is not supported yet"));
+            }
             while (count > 0)
             {
                 var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, bitMode, startByteAdr + localIndex, bitAdr, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
                     return lastError;
@@ -627,13 +632,18 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <param name="bitAdr">Bit address. This is used for addressing in DBX (boolean) writing.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value)
+        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value, int bitAdr = 0)
         {
             byte[] package = null;
-
+            bool bitMode = false;
             switch (value.GetType().Name)
             {
+                case "Boolean":
+                    bitMode = true;
+                    package = Types.Boolean.ToByteArray((bool)value);
+                    break;
                 case "Byte":
                     package = Types.Byte.ToByteArray((byte)value);
                     break;
@@ -676,7 +686,7 @@ namespace S7.Net
                 default:
                     return ErrorCode.WrongVarFormat;
             }
-            return WriteBytes(dataType, db, startByteAdr, package);
+            return WriteBytes(dataType, db, bitMode, startByteAdr, bitAdr, package);
         }
 
         /// <summary>
@@ -745,13 +755,7 @@ namespace S7.Net
                                 {
                                     throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                                 }
-                                byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
-                                if (Convert.ToInt32(value) == 1)
-                                    b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
-                                else
-                                    b = (byte)(b & (b ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
-
-                                return Write(DataType.DataBlock, mDB, mByte, (byte)b);
+                                return Write(DataType.DataBlock, mDB, mByte, (bool)value, mBit);
                             case "DBS":
                                 // DB-String
                                 return Write(DataType.DataBlock, mDB, dbIndex, (string)value);
@@ -862,7 +866,7 @@ namespace S7.Net
         public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Struct.ToBytes(structValue).ToList();
-            var errCode = WriteBytes(DataType.DataBlock ,db, startByteAdr, bytes.ToArray());
+            var errCode = WriteBytes(DataType.DataBlock, db, false, startByteAdr, 0, bytes.ToArray());
             return errCode;
         }
 
@@ -876,7 +880,7 @@ namespace S7.Net
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
-            var errCode = WriteBytes(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            var errCode = WriteBytes(DataType.DataBlock, db, false, startByteAdr, 0, bytes.ToArray());
             return errCode;
         }
 
@@ -1000,10 +1004,12 @@ namespace S7.Net
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="bitMode">If true, the payload in bit mode, otherwise, byte mode.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <param name="bitAdr">Bit address. This is used for addressing in DBX (boolean) writing.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, bool bitMode, int startByteAdr, int bitAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
@@ -1021,15 +1027,15 @@ namespace S7.Net
                 package.Add(Types.Word.ToByteArray((ushort)(varCount - 1)));
                 package.Add(new byte[] { 0, 0x0e });
                 package.Add(Types.Word.ToByteArray((ushort)(varCount + 4)));
-                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, (bitMode ? (byte)0x01 : (byte)0x02) });
                 package.Add(Types.Word.ToByteArray((ushort)varCount));
                 package.Add(Types.Word.ToByteArray((ushort)(db)));
                 package.Add((byte)dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                var overflow = (int)((startByteAdr * 8 + bitAdr) / 0xffffU); // handles words with address bigger than 8191
                 package.Add((byte)overflow);
-                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
-                package.Add(new byte[] { 0, 4 });
-                package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
+                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
+                package.Add(new byte[] { 0, (bitMode ? (byte)0x03 : (byte)0x04) });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount * (bitMode ? 1 : 8))));
 
                 // now join the header and the data
                 package.Add(value);
