@@ -619,6 +619,46 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Write a single bit from a DB with the specified index.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="bitAdr">The address of the bit. (0-7)</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
+        {
+            if (bitAdr < 0 || bitAdr > 7)
+                throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
+
+            ErrorCode lastError = WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
+            if (lastError != ErrorCode.NoError)
+            {
+                return lastError;
+            }
+
+            return ErrorCode.NoError;
+        }
+
+        /// <summary>
+        /// Write a single bit from a DB with the specified index.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="bitAdr">The address of the bit. (0-7)</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
+        /// <returns>NoError if it was successful, or the error is specified</returns>
+        public ErrorCode WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, int value)
+        {
+            if (value < 0 || value > 1)
+                throw new ArgumentException("Value must be 0 or 1", nameof(value));
+
+            return WriteBit(dataType, db, startByteAdr, bitAdr, value == 1);
+        }
+
+        /// <summary>
         /// Takes in input an object and tries to parse it to an array of values. This can be used to write many data, all of the same type.
         /// You must specify the memory area type, memory are address, byte start address and bytes count.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -627,10 +667,35 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <param name="bitAdr">The address of the bit. (0-7)</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value)
+        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value, int bitAdr = -1)
         {
             byte[] package = null;
+
+            if (bitAdr != -1)
+            {
+                //Must be writing a bit value as bitAdr is specified
+                bool bitValue = false;
+                if (value is bool)
+                {
+                    bitValue = (bool) value;
+                }
+                else if (value is int)
+                {
+                    var intValue = (int) value;
+                    if (intValue < 0 || intValue > 7)
+                        throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
+
+                    bitValue = intValue == 1;
+                }
+                else
+                {
+                    throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
+                }
+
+                return WriteBit(dataType, db, startByteAdr, bitAdr, bitValue);
+            }
 
             switch (value.GetType().Name)
             {
@@ -676,6 +741,7 @@ namespace S7.Net
                 default:
                     return ErrorCode.WrongVarFormat;
             }
+
             return WriteBytes(dataType, db, startByteAdr, package);
         }
 
@@ -745,13 +811,8 @@ namespace S7.Net
                                 {
                                     throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", mBit));
                                 }
-                                byte b = (byte)Read(DataType.DataBlock, mDB, mByte, VarType.Byte, 1);
-                                if (Convert.ToInt32(value) == 1)
-                                    b = (byte)(b | (byte)Math.Pow(2, mBit)); // Bit setzen
-                                else
-                                    b = (byte)(b & (b ^ (byte)Math.Pow(2, mBit))); // Bit rücksetzen
 
-                                return Write(DataType.DataBlock, mDB, mByte, (byte)b);
+                                return Write(DataType.DataBlock, mDB, mByte, value, mBit);
                             case "DBS":
                                 // DB-String
                                 return Write(DataType.DataBlock, mDB, dbIndex, (string)value);
@@ -1030,6 +1091,56 @@ namespace S7.Net
                 package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8)));
                 package.Add(new byte[] { 0, 4 });
                 package.Add(Types.Word.ToByteArray((ushort)(varCount * 8)));
+
+                // now join the header and the data
+                package.Add(value);
+
+                _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
+
+                return ErrorCode.NoError;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return LastErrorCode;
+            }
+        }
+
+        private ErrorCode WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
+        {
+            byte[] bReceive = new byte[513];
+            int varCount = 0;
+
+            try
+            {
+                var value = new[] { bitValue ? (byte)1 : (byte)0};
+                varCount = value.Length;
+                // first create the header
+                int packageSize = 35 + value.Length;
+                Types.ByteArray package = new Types.ByteArray(packageSize);
+
+                package.Add(new byte[] { 3, 0, 0 });
+                package.Add((byte)packageSize);
+                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount - 1)));
+                package.Add(new byte[] { 0, 0x0e });
+                package.Add(Types.Word.ToByteArray((ushort)(varCount + 4)));
+                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x01 }); //ending 0x01 is used for writing a sinlge bit
+                package.Add(Types.Word.ToByteArray((ushort)varCount));
+                package.Add(Types.Word.ToByteArray((ushort)(db)));
+                package.Add((byte)dataType);
+                var overflow = (int)(startByteAdr * 8 + bitAdr / 0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
+                package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
+                package.Add(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit
+                package.Add(Types.Word.ToByteArray((ushort)(varCount)));
 
                 // now join the header and the data
                 package.Add(value);
