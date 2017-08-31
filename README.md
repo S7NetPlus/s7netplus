@@ -10,6 +10,7 @@ I was doing some automation work already and saw a few places where the code bas
 to my request for committing code, I decided to pick up where he left off here on GitHub.
 
 ## Documentation
+Check the Wiki and feel free to edit it: https://github.com/killnine/s7netplus/wiki
 S7.Net Plus has a [User Manual](https://github.com/killnine/s7netplus/blob/master/Documentation/Documentation.pdf), check it out.
 
 ## Supported PLC
@@ -19,6 +20,9 @@ S7.Net Plus has a [User Manual](https://github.com/killnine/s7netplus/blob/maste
 ## Target framework
 + .NET Framework 3.5 or higher
 + Universal Windows Application (.Net Core) - see S7.UniversalWindowsApp.sln
+
+## Compile
+You need at least Visual Studio 2015 (you can download the Community Edition for free).
 
 ## Nuget
 
