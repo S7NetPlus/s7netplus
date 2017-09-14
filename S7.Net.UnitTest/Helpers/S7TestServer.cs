@@ -6,7 +6,7 @@ namespace S7.Net.UnitTest.Helpers
     class S7TestServer
     {
         static S7Server Server;
-        static private byte[] DB1 = new byte[512];  // Our DB1
+        static private byte[] DB1 = new byte[1024];  // Our DB1
         static private byte[] DB2 = new byte[64000]; // Our DB2
         static private byte[] DB3 = new byte[1024]; // Our DB3
 

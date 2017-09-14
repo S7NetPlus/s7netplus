@@ -1136,7 +1136,7 @@ namespace S7.Net
                 package.Add(Types.Word.ToByteArray((ushort)varCount));
                 package.Add(Types.Word.ToByteArray((ushort)(db)));
                 package.Add((byte)dataType);
-                var overflow = (int)(startByteAdr * 8 + bitAdr / 0xffffU); // handles words with address bigger than 8191
+                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
                 package.Add((byte)overflow);
                 package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
                 package.Add(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit

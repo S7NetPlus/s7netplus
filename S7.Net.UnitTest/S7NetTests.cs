@@ -455,6 +455,14 @@ namespace S7.Net.UnitTest
             plc.Write("DB1.DBX0.7", 0);
             boolVariable = (bool)plc.Read("DB1.DBX0.7");
             Assert.IsFalse(boolVariable);
+
+            plc.Write("DB1.DBX658.0", 1);
+            boolVariable = (bool)plc.Read("DB1.DBX658.0");
+            Assert.IsTrue(boolVariable);
+
+            plc.Write("DB2.DBX9658.0", 1);
+            boolVariable = (bool)plc.Read("DB2.DBX9658.0");
+            Assert.IsTrue(boolVariable);
         }
 
         [TestMethod]
@@ -664,8 +672,8 @@ namespace S7.Net.UnitTest
 
             Assert.AreEqual(expectedReadBytes, actualReadBytes);
         }
-		
-		[TestMethod]
+        
+        [TestMethod]
         public void T22_ReadClassWithArray()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
