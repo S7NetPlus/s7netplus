@@ -125,7 +125,7 @@ namespace S7.Net
             catch (SocketException sex)
             {
                 // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
-                if (sex.ErrorCode == CONNECTION_TIMED_OUT_ERROR_CODE)
+                if (sex.SocketErrorCode == SocketError.TimedOut)
                 {
                     LastErrorCode = ErrorCode.IPAddressNotAvailable;
                 }
