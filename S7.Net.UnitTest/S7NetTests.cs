@@ -460,6 +460,10 @@ namespace S7.Net.UnitTest
             boolVariable = (bool)plc.Read("DB1.DBX658.0");
             Assert.IsTrue(boolVariable);
 
+            plc.Write("DB1.DBX658.7", 1);
+            boolVariable = (bool)plc.Read("DB1.DBX658.7");
+            Assert.IsTrue(boolVariable);
+
             plc.Write("DB2.DBX9658.0", 1);
             boolVariable = (bool)plc.Read("DB2.DBX9658.0");
             Assert.IsTrue(boolVariable);
