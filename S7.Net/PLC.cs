@@ -1221,13 +1221,13 @@ namespace S7.Net
                     else
                         return Types.Counter.ToArray(bytes);
                 case VarType.Bit:
-                    if (varCount == 1 && bitAdr <= 7)
-                    {
-                        BitArray bitArr = new BitArray(new byte[] { bytes[0] });
-                        return bitArr[bitAdr];
-                    }
+                    if (varCount == 1)
+                        if (bitAdr > 7)
+                            return null;
+                        else
+                            return Types.Bit.FromByte(bytes[0], bitAdr);
                     else
-                        return null;
+                        return Types.Bit.ToBitArray(bytes);
                 default:
                     return null;
             }
