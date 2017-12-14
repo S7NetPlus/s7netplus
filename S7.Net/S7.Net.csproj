@@ -80,6 +80,7 @@
     <Compile Include="Enums.cs" />
     <Compile Include="PLC.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Types\Bit.cs" />
     <Compile Include="Types\Boolean.cs" />
     <Compile Include="Types\Byte.cs" />
     <Compile Include="Types\ByteArray.cs" />
