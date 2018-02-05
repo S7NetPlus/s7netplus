@@ -343,7 +343,7 @@
             <param name="count">Byte count, if you want to read 120 bytes, set this to 120.</param>
             <returns>Returns the bytes in an array</returns>
         </member>
-        <member name="M:S7.Net.Plc.Read(S7.Net.DataType,System.Int32,System.Int32,S7.Net.VarType,System.Int32)">
+        <member name="M:S7.Net.Plc.Read(S7.Net.DataType,System.Int32,System.Int32,S7.Net.VarType,System.Int32,System.Byte)">
             <summary>
             Read and decode a certain number of bytes of the "VarType" provided. 
             This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
@@ -353,6 +353,7 @@
             <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
             <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
             <param name="varType">Type of the variable/s that you are reading</param>
+            <param name="bitAdr">Address of bit. If you want to read DB1.DBX200.6, set 6 to this parameter.</param>
             <param name="varCount"></param>
         </member>
         <member name="M:S7.Net.Plc.Read(System.String)">
@@ -520,13 +521,14 @@
             <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
             <returns>NoError if it was successful, or the error is specified</returns>
         </member>
-        <member name="M:S7.Net.Plc.ParseBytes(S7.Net.VarType,System.Byte[],System.Int32)">
+        <member name="M:S7.Net.Plc.ParseBytes(S7.Net.VarType,System.Byte[],System.Int32,System.Byte)">
             <summary>
             Given a S7 variable type (Bool, Word, DWord, etc.), it converts the bytes in the appropriate C# format.
             </summary>
             <param name="varType"></param>
             <param name="bytes"></param>
             <param name="varCount"></param>
+            <param name="bitAdr"></param>
             <returns></returns>
         </member>
         <member name="M:S7.Net.Plc.VarTypeToByteLength(S7.Net.VarType,System.Int32)">
@@ -540,6 +542,21 @@
         <member name="M:S7.Net.Plc.Dispose">
             <summary>
             Releases all resources, disonnects from the plc and closes the socket
+            </summary>
+        </member>
+        <member name="T:S7.Net.Types.Bit">
+            <summary>
+            Contains the conversion methods to convert Bit from S7 plc to C#.
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Bit.FromByte(System.Byte,System.Byte)">
+            <summary>
+            Converts a Bit to bool
+            </summary>
+        </member>
+        <member name="M:S7.Net.Types.Bit.ToBitArray(System.Byte[])">
+            <summary>
+            Converts an array of bytes to a BitArray
             </summary>
         </member>
         <member name="T:S7.Net.Types.Boolean">
