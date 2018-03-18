@@ -13,8 +13,7 @@ namespace S7.Net.Types
         /// </summary>
         public static bool FromByte(byte v, byte bitAdr)
         {
-            BitArray bitArr = new BitArray(new byte[] { v });
-            return bitArr[bitAdr];
+            return (((int)v & (1 << bitAdr)) != 0);
         }
 
         /// <summary>

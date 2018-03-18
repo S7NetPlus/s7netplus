@@ -13,26 +13,30 @@ namespace S7.Net.Types
         public static double FromByteArray(byte[] bytes)
         {
             double wert = 0;
-            Int16 value = (Int16)Types.Word.FromBytes(bytes[1], bytes[0]);
-            string txt = Conversion.ValToBinString(value);
-            wert = Conversion.BinStringToInt32(txt.Substring(4, 4)) * 100.0;
-            wert += Conversion.BinStringToInt32(txt.Substring(8, 4)) * 10.0;
-            wert += Conversion.BinStringToInt32(txt.Substring(12, 4));
-            switch (txt.Substring(2, 2))
+
+            wert = ((bytes[0]) & 0x0F) * 100.0;
+            wert += ((bytes[1] >> 4) & 0x0F) * 10.0;
+            wert += ((bytes[1]) & 0x0F) * 1.0;
+
+            /// this value is not used... may for a nother exponation
+            ///int unknown = (bytes[0] >> 6) & 0x03;
+
+            switch ((bytes[0] >> 4) & 0x03)
             {
-                case "00":
+                case 0:
                     wert *= 0.01;
                     break;
-                case "01":
+                case 1:
                     wert *= 0.1;
                     break;
-                case "10":
+                case 2:
                     wert *= 1.0;
                     break;
-                case "11":
+                case 3:
                     wert *= 10.0;
                     break;
             }
+
             return wert;
         }
 
@@ -42,16 +46,9 @@ namespace S7.Net.Types
         public static byte[] ToByteArray(UInt16 value)
         {
             byte[] bytes = new byte[2];
-            int x = 2;
-            long valLong = (long)((UInt16)value);
-            for (int cnt = 0; cnt < x; cnt++)
-            {
-                Int64 x1 = (Int64)Math.Pow(256, (cnt));
+            bytes[1] = (byte)((int)value & 0xFF);
+            bytes[0] = (byte)((int)value >> 8 & 0xFF);
 
-                Int64 x3 = (Int64)(valLong / x1);
-                bytes[x - cnt - 1] = (byte)(x3 & 255);
-                valLong -= bytes[x - cnt - 1] * x1;
-            }
             return bytes;
         }
 

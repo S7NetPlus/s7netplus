@@ -18,16 +18,9 @@ namespace S7.Net.Types
             }
             // bytes[0] -> HighByte
             // bytes[1] -> LowByte
-            return FromBytes(bytes[1], bytes[0]);
+            return (UInt16)((bytes[0] << 8) | bytes[1]);
         }
 
-        /// <summary>
-        /// Converts a Counter (2 bytes) to ushort (UInt16)
-        /// </summary>
-        public static UInt16 FromBytes(byte LoVal, byte HiVal)
-        {
-            return (UInt16)(HiVal * 256 + LoVal);
-        }
 
         /// <summary>
         /// Converts a ushort (UInt16) to word (2 bytes)
@@ -35,16 +28,10 @@ namespace S7.Net.Types
         public static byte[] ToByteArray(UInt16 value)
         {
             byte[] bytes = new byte[2];
-            int x = 2;
-            long valLong = (long)((UInt16)value);
-            for (int cnt = 0; cnt < x; cnt++)
-            {
-                Int64 x1 = (Int64)Math.Pow(256, (cnt));
 
-                Int64 x3 = (Int64)(valLong / x1);
-                bytes[x - cnt - 1] = (byte)(x3 & 255);
-                valLong -= bytes[x - cnt - 1] * x1;
-            }
+            bytes[0] = (byte)((value << 8) & 0xFF);
+            bytes[1] = (byte)((value) & 0xFF);
+            
             return bytes;
         }
 

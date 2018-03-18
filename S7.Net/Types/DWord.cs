@@ -12,16 +12,18 @@ namespace S7.Net.Types
         /// </summary>
         public static UInt32 FromByteArray(byte[] bytes)
         {
-            return FromBytes(bytes[3], bytes[2], bytes[1], bytes[0]);
+            return (UInt32)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
         }
 
+
         /// <summary>
-        /// Converts a S7 DWord (4 bytes) to uint (UInt32)
+        /// Converts 4 bytes to DWord (UInt32)
         /// </summary>
-        public static UInt32 FromBytes(byte v1, byte v2, byte v3, byte v4)
+        public static UInt32 FromBytes(byte b1, byte b2, byte b3, byte b4)
         {
-            return (UInt32)(v1 + v2 * Math.Pow(2, 8) + v3 * Math.Pow(2, 16) + v4 * Math.Pow(2, 24));
+            return (UInt32)((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
         }
+
 
         /// <summary>
         /// Converts a uint (UInt32) to S7 DWord (4 bytes) 
@@ -29,18 +31,19 @@ namespace S7.Net.Types
         public static byte[] ToByteArray(UInt32 value)
         {
             byte[] bytes = new byte[4];
-            int x = 4;
-            long valLong = (long)((UInt32)value);
-            for (int cnt = 0; cnt < x; cnt++)
-            {
-                Int64 x1 = (Int64)Math.Pow(256, (cnt));
 
-                Int64 x3 = (Int64)(valLong / x1);
-                bytes[x - cnt - 1] = (byte)(x3 & 255);
-                valLong -= bytes[x - cnt - 1] * x1;
-            }
+            bytes[0] = (byte)((value >> 24) & 0xFF);
+            bytes[1] = (byte)((value >> 16) & 0xFF);
+            bytes[2] = (byte)((value >> 8) & 0xFF);
+            bytes[3] = (byte)((value) & 0xFF);
+
             return bytes;
         }
+
+
+
+
+
 
         /// <summary>
         /// Converts an array of uint (UInt32) to an array of S7 DWord (4 bytes) 

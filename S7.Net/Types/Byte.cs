@@ -12,8 +12,7 @@ namespace S7.Net.Types
         /// </summary>
         public static byte[] ToByteArray(byte value)
         {
-            byte[] bytes = new byte[] { value};
-            return bytes;
+            return new byte[] { value }; ;
         }
        
         /// <summary>

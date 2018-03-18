@@ -164,6 +164,11 @@
         String,
 
         /// <summary>
+        /// String variable type (variable)
+        /// </summary>
+        StringEx,
+
+        /// <summary>
         /// Timer variable type
         /// </summary>
         Timer,

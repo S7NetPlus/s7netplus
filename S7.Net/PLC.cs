@@ -343,6 +343,8 @@ namespace S7.Net
             return resultBytes.ToArray();
         }
 
+
+
         /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided. 
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
@@ -1208,8 +1210,12 @@ namespace S7.Net
                         return Types.Double.FromByteArray(bytes);
                     else
                         return Types.Double.ToArray(bytes);
+
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
+                case VarType.StringEx:
+                    return Types.StringEx.FromByteArray(bytes);
+
                 case VarType.Timer:
                     if (varCount == 1)
                         return Types.Timer.FromByteArray(bytes);
@@ -1252,6 +1258,8 @@ namespace S7.Net
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:
+                case VarType.StringEx:
+                    return varCount + 2;
                 case VarType.Counter:
                     return varCount * 2;
                 case VarType.DWord:

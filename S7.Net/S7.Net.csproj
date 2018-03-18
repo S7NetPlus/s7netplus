@@ -91,6 +91,7 @@
     <Compile Include="Types\Double.cs" />
     <Compile Include="Types\DWord.cs" />
     <Compile Include="Types\Int.cs" />
+    <Compile Include="Types\StringEx.cs" />
     <Compile Include="Types\String.cs" />
     <Compile Include="Types\Struct.cs" />
     <Compile Include="Types\Timer.cs" />
