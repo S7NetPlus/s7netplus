@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -1255,11 +1255,11 @@ namespace S7.Net
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
                     return varCount;
+                case VarType.StringEx:
+                    return varCount + 2;
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:
-                case VarType.StringEx:
-                    return varCount + 2;
                 case VarType.Counter:
                     return varCount * 2;
                 case VarType.DWord:
