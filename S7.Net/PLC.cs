@@ -108,8 +108,14 @@ namespace S7.Net
         ///  If you use an external ethernet card, this must be set accordingly.</param>
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
-            IP = ip;
+            if (!Enum.IsDefined(typeof(CpuType), cpu))
+                throw new InvalidEnumArgumentException(nameof(cpu), (int) cpu, typeof(CpuType));
+
+            if (string.IsNullOrEmpty(ip))
+                throw new ArgumentException("IP address must valid.", nameof(ip));
+
             CPU = cpu;
+            IP = ip;
             Rack = rack;
             Slot = slot;
         }
