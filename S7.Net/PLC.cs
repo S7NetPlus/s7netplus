@@ -17,31 +17,32 @@ namespace S7.Net
     public class Plc : IDisposable
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-
-        private Socket _mSocket; //TCP connection to device
+        
+        //TCP connection to device
+        private Socket _mSocket;
 
         /// <summary>
-        /// Ip address of the plc
+        /// IP address of the PLC
         /// </summary>
         public string IP { get; private set; }
 
         /// <summary>
-        /// Cpu type of the plc
+        /// CPU type of the PLC
         /// </summary>
         public CpuType CPU { get; private set; }
 
         /// <summary>
-        /// Rack of the plc
+        /// Rack of the PLC
         /// </summary>
         public Int16 Rack { get; private set; }
 
         /// <summary>
-        /// Slot of the CPU of the plc
+        /// Slot of the CPU of the PLC
         /// </summary>
         public Int16 Slot { get; private set; }
         
         /// <summary>
-        /// Returns true if a connection to the plc can be established
+        /// Returns true if a connection to the PLC can be established
         /// </summary>
         public bool IsAvailable
         {
@@ -61,7 +62,7 @@ namespace S7.Net
 
 
         /// <summary>
-        /// Checks if the socket is connected and polls the other peer (the plc) to see if it's connected.
+        /// Checks if the socket is connected and polls the other peer (the PLC) to see if it's connected.
         /// This is the variable that you should continously check to see if the communication is working
         /// See also: http://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
         /// </summary>
@@ -100,10 +101,10 @@ namespace S7.Net
         /// You need slot > 0 if you are connecting to external ethernet card (CP).
         /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
         /// </summary>
-        /// <param name="cpu">CpuType of the plc (select from the enum)</param>
-        /// <param name="ip">Ip address of the plc</param>
-        /// <param name="rack">rack of the plc, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
-        /// <param name="slot">slot of the CPU of the plc, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
@@ -146,7 +147,8 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Open a socket and connects to the plc, sending all the corrected package and returning if the connection was successful (ErroreCode.NoError) of it was wrong.
+        /// Open a <see cref="Socket"/> and connects to the PLC, sending all the corrected package
+        /// and returning if the connection was successful (<see cref="ErrorCode.NoError"/>) of it was wrong.
         /// </summary>
         /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
@@ -245,7 +247,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Disonnects from the plc and close the socket
+        /// Disonnects from the PLC and close the socket
         /// </summary>
         public void Close()
         {
@@ -269,7 +271,7 @@ namespace S7.Net
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
             
             if (dataItems.Count > 20) throw new Exception("Too many vars requested");
-            if (cntBytes > 222) throw new Exception("Too many bytes requested"); //todo, proper TDU check + split in multiple requests
+            if (cntBytes > 222) throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
 
             try
             {
@@ -363,7 +365,7 @@ namespace S7.Net
         }
         
         /// <summary>
-        /// Reads a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// Reads a single variable from the PLC, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
@@ -533,7 +535,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <param name="sourceClass">Instance of the class that will store the values</param>       
@@ -557,28 +559,28 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified. To instantiate the class defined by the generic
         /// type, the class needs a default constructor.
         /// </summary>
         /// <typeparam name="T">The class that will be instantiated. Requires a default constructor</typeparam>
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <returns>An instance of the class with the values read from the plc. If no data has been read, null will be returned</returns>
+        /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
         public T ReadClass<T>(int db, int startByteAdr = 0) where T : class
         {
             return ReadClass(() => Activator.CreateInstance<T>(), db, startByteAdr);
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the plc. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <typeparam name="T">The class that will be instantiated</typeparam>
         /// <param name="classFactory">Function to instantiate the class</param>
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <returns>An instance of the class with the values read from the plc. If no data has been read, null will be returned</returns>
+        /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
         public T ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
         {
             var instance = classFactory();
@@ -747,11 +749,11 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes a single variable from the plc, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
-        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// Writes a single variable from the PLC, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
+        /// If the write was not successful, check <see cref="LastErrorCode"/> or <see cref="LastErrorString"/>.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
-        /// <param name="value">Value to be written to the plc</param>
+        /// <param name="value">Value to be written to the PLC</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode Write(string variable, object value)
         {
@@ -915,11 +917,11 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes a C# struct to a DB in the plc
+        /// Writes a C# struct to a DB in the PLC
         /// </summary>
         /// <param name="structValue">The struct to be written</param>
         /// <param name="db">Db address</param>
-        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <param name="startByteAdr">Start bytes on the PLC</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
@@ -929,11 +931,11 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes a C# class to a DB in the plc
+        /// Writes a C# class to a DB in the PLC
         /// </summary>
         /// <param name="classValue">The class to be written</param>
         /// <param name="db">Db address</param>
-        /// <param name="startByteAdr">Start bytes on the plc</param>
+        /// <param name="startByteAdr">Start bytes on the PLC</param>
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
@@ -943,7 +945,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Sets the LastErrorCode to NoError and LastErrorString to String.Empty
+        /// Sets the <see cref="LastErrorCode"/> to <see cref="ErrorCode.NoError"/> and <see cref="LastErrorString"/> to <see cref="string.Empty"/>.
         /// </summary>
         public void ClearLastError()
         {
@@ -952,7 +954,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Creates the header to read bytes from the plc
+        /// Creates the header to read bytes from the PLC
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
@@ -974,7 +976,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Create the bytes-package to request data from the plc. You have to specify the memory type (dataType), 
+        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType), 
         /// the address of the memory, the address of the byte and the bytes count. 
         /// </summary>
         /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
@@ -1057,7 +1059,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes up to 200 bytes to the plc and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
+        /// Writes up to 200 bytes to the PLC and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
         /// If the write was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
@@ -1234,11 +1236,11 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Given a S7 variable type (Bool, Word, DWord, etc.), it returns how many bytes to read.
+        /// Given a S7 <see cref="VarType"/> (Bool, Word, DWord, etc.), it returns how many bytes to read.
         /// </summary>
         /// <param name="varType"></param>
         /// <param name="varCount"></param>
-        /// <returns></returns>
+        /// <returns>Byte lenght of variable</returns>
         private int VarTypeToByteLength(VarType varType, int varCount = 1)
         {
             switch (varType)
@@ -1266,7 +1268,7 @@ namespace S7.Net
         #region IDisposable members
 
         /// <summary>
-        /// Releases all resources, disonnects from the plc and closes the socket
+        /// Releases all resources, disonnects from the PLC and closes the <see cref="Socket"/>
         /// </summary>
         public void Dispose()
         {
