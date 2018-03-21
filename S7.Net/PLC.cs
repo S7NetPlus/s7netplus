@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -245,7 +246,7 @@ namespace S7.Net
             catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
-                LastErrorString = "Couldn't establish the connection to " + IP + ".\nMessage: " + exc.Message;
+                LastErrorString = string.Format("Couldn't establish the connection to {0}.\nMessage: {1}", IP, exc.Message);
                 return ErrorCode.ConnectionError;
             }
 
@@ -276,8 +277,10 @@ namespace S7.Net
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
             
-            if (dataItems.Count > 20) throw new Exception("Too many vars requested");
-            if (cntBytes > 222) throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
+            if (dataItems.Count > 20)
+                throw new Exception("Too many vars requested");
+            if (cntBytes > 222)
+                throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
 
             try
             {
@@ -295,7 +298,8 @@ namespace S7.Net
 
                 byte[] bReceive = new byte[512];
                 int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                if (bReceive[21] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 int offset = 25;
                 foreach (var dataItem in dataItems)
@@ -493,7 +497,8 @@ namespace S7.Net
                         }
 
                         string txt2 = txt.Substring(1);
-                        if (txt2.IndexOf(".") == -1) throw new Exception();
+                        if (txt2.IndexOf(".") == -1)
+                            throw new Exception();
 
                         mByte = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
                         mBit = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
@@ -694,7 +699,7 @@ namespace S7.Net
                 {
                     var intValue = (int) value;
                     if (intValue < 0 || intValue > 7)
-                        throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
+                        throw new ArgumentOutOfRangeException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr), nameof(bitAdr));
 
                     bitValue = intValue == 1;
                 }
@@ -917,7 +922,7 @@ namespace S7.Net
             catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.WrongVarFormat;
-                LastErrorString = "The variable'" + variable + "' could not be parsed. Please check the syntax and try again.\nException: " + exc.Message;
+                LastErrorString = string.Format("The variable'{0}' could not be parsed. Please check the syntax and try again.\nException: {1}", variable, exc.Message);
                 return LastErrorCode;
             }
         }
@@ -1145,7 +1150,7 @@ namespace S7.Net
                 package.Add(Types.Word.ToByteArray((ushort)varCount));
                 package.Add(Types.Word.ToByteArray((ushort)(db)));
                 package.Add((byte)dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                int overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
                 package.Add((byte)overflow);
                 package.Add(Types.Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
                 package.Add(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit
@@ -1182,7 +1187,8 @@ namespace S7.Net
         /// <returns></returns>
         private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
         {
-            if (bytes == null) return null;
+            if (bytes == null)
+                return null;
 
             switch (varType)
             {
@@ -1230,12 +1236,16 @@ namespace S7.Net
                         return Types.Counter.ToArray(bytes);
                 case VarType.Bit:
                     if (varCount == 1)
+                    {
                         if (bitAdr > 7)
                             return null;
                         else
                             return Types.Bit.FromByte(bytes[0], bitAdr);
+                    }
                     else
+                    {
                         return Types.Bit.ToBitArray(bytes);
+                    }
                 default:
                     return null;
             }
