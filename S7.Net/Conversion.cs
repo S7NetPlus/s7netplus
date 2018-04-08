@@ -15,15 +15,11 @@ namespace S7.Net
         /// <returns></returns>
         public static int BinStringToInt32(this string txt)
         {
-            int cnt = 0;
             int ret = 0;
 
-            for (cnt = txt.Length - 1; cnt >= 0; cnt += -1)
+            for (int i = 0; i < txt.Length; i++)
             {
-                if (int.Parse(txt.Substring(cnt, 1)) == 1)
-                {
-                    ret += (int)(Math.Pow(2, (txt.Length - 1 - cnt)));
-                }
+                ret = (ret << 1) | ((txt[i] == '1') ? 1 : 0);
             }
             return ret;
         }
@@ -35,20 +31,7 @@ namespace S7.Net
         /// <returns></returns>
         public static byte? BinStringToByte(this string txt)
         {
-            int cnt = 0;
-            int ret = 0;
-
-            if (txt.Length == 8)
-            {
-                for (cnt = 7; cnt >= 0; cnt += -1)
-                {
-                    if (int.Parse(txt.Substring(cnt, 1)) == 1)
-                    {
-                        ret += (int)(Math.Pow(2, (txt.Length - 1 - cnt)));
-                    }
-                }
-                return (byte)ret;
-            }
+            if (txt.Length == 8) return (byte)BinStringToInt32(txt);
             return null;
         }
 

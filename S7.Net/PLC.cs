@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -342,6 +342,8 @@ namespace S7.Net
             }
             return resultBytes.ToArray();
         }
+
+
 
         /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided. 
@@ -1208,8 +1210,12 @@ namespace S7.Net
                         return Types.Double.FromByteArray(bytes);
                     else
                         return Types.Double.ToArray(bytes);
+
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
+                case VarType.StringEx:
+                    return Types.StringEx.FromByteArray(bytes);
+
                 case VarType.Timer:
                     if (varCount == 1)
                         return Types.Timer.FromByteArray(bytes);
@@ -1249,6 +1255,8 @@ namespace S7.Net
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
                     return varCount;
+                case VarType.StringEx:
+                    return varCount + 2;
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:
