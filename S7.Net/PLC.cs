@@ -169,11 +169,27 @@ namespace S7.Net
                 return LastErrorCode;
             }
 
-            try 
+            try
             {
-                byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
+                byte[] bSend1 = { 3, 0, 0, 22, //TPKT
+                    17,     //COTP Header Length
+                    224,    //Connect Request 
+                    0, 0,   //Destination Reference
+                    0, 46,  //Source Reference
+                    0,      //Flags
+                    193,    //Parameter Code (src-tasp)
+                    2,      //Parameter Length
+                    1, 0,   //Source TASP
+                    194,    //Parameter Code (dst-tasp)
+                    2,      //Parameter Length
+                    3, 0,   //Destination TASP
+                    192,    //Parameter Code (tpdu-size)
+                    1,      //Parameter Length
+                    9       //TPDU Size (2^9 = 512)
+                };
 
-                switch (CPU) {
+                switch (CPU)
+                {
                     case CpuType.S7200:
                         //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
                         bSend1[11] = 193;
