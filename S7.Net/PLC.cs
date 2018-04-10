@@ -39,6 +39,11 @@ namespace S7.Net
         /// Slot of the CPU of the PLC
         /// </summary>
         public Int16 Slot { get; private set; }
+
+        /// <summary>
+        /// Max PDU size this cpu supports
+        /// </summary>
+        public Int16 MaxPDUSize { get; private set; }
         
         /// <summary>
         /// Returns true if a connection to the PLC can be established
@@ -158,7 +163,6 @@ namespace S7.Net
         /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
         {
-            byte[] bReceive = new byte[256];
 
             _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
@@ -243,28 +247,33 @@ namespace S7.Net
                         return ErrorCode.WrongCPU_Type;
                 }
 
+                //COTP Setup
                 _mSocket.Send(bSend1, 22, SocketFlags.None);
-                if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
+                var response = COTP.TPDU.Read(_mSocket);
+                if (response.PDUType != 0xd0) //Connect Confirm
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                }
 
+                //S7ComSetup
                 byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
                 _mSocket.Send(bsend2, 25, SocketFlags.None);
 
-                if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data.Length >= 2 && s7data[1] == 0x03) //Check for S7 Ack Data
                 {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                    MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
+                    return ErrorCode.NoError;
+                }
+
+                throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
                 LastErrorString = string.Format("Couldn't establish the connection to {0}.\nMessage: {1}", IP, exc.Message);
                 return ErrorCode.ConnectionError;
             }
-
-            return ErrorCode.NoError;
         }
 
         /// <summary>
@@ -290,11 +299,12 @@ namespace S7.Net
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-            
-            if (dataItems.Count > 20)
-                throw new Exception("Too many vars requested");
-            if (cntBytes > 222)
-                throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
+
+            //Is this really a limit?
+            //if (dataItems.Count > 20) 
+            //    throw new Exception("Too many vars requested");
+            if (cntBytes > MaxPDUSize - 18)
+                throw new Exception(string.Format("Too many bytes requested Requested: {0} Max {1}", cntBytes, MaxPDUSize)); //TODO: split in multiple requests
 
             try
             {
@@ -310,12 +320,10 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data[14] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 25;
+                int offset = 18;
                 foreach (var dataItem in dataItems)
                 {
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
@@ -323,7 +331,7 @@ namespace S7.Net
 
                     for (int i = 0; i < byteCnt; i++)
                     {
-                        bytes[i] = bReceive[i + offset];
+                        bytes[i] = s7data[i + offset];
                     }
 
                     offset += byteCnt + 4;
@@ -358,7 +366,7 @@ namespace S7.Net
             int index = startByteAdr;
             while (count > 0)
             {
-                var maxToRead = (int)Math.Min(count, 200);
+                var maxToRead = (int)Math.Min(count, MaxPDUSize);
                 byte[] bytes = ReadBytesWithASingleRequest(dataType, db, index, maxToRead);
                 if (bytes == null)
                     return resultBytes.ToArray();
@@ -636,7 +644,7 @@ namespace S7.Net
             int count = value.Length;
             while (count > 0)
             {
-                var maxToWrite = (int)Math.Min(count, 200);
+                var maxToWrite = (int)Math.Min(count, MaxPDUSize);
                 ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
@@ -1063,13 +1071,12 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = bReceive[cnt + 25];
+                    bytes[cnt] = s7data[cnt + 25];
 
                 return bytes;
             }
@@ -1129,8 +1136,8 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data[14] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
                 }
@@ -1179,11 +1186,9 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
-                {
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (bReceive[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                }
 
                 return ErrorCode.NoError;
             }
