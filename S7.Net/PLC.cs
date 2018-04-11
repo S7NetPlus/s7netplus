@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Types;
+using Double = System.Double;
 
 
 namespace S7.Net
@@ -39,11 +41,6 @@ namespace S7.Net
         /// Slot of the CPU of the PLC
         /// </summary>
         public Int16 Slot { get; private set; }
-
-        /// <summary>
-        /// Max PDU size this cpu supports
-        /// </summary>
-        public Int16 MaxPDUSize { get; private set; }
         
         /// <summary>
         /// Returns true if a connection to the PLC can be established
@@ -163,6 +160,7 @@ namespace S7.Net
         /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
         {
+            byte[] bReceive = new byte[256];
 
             _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
@@ -173,27 +171,11 @@ namespace S7.Net
                 return LastErrorCode;
             }
 
-            try
+            try 
             {
-                byte[] bSend1 = { 3, 0, 0, 22, //TPKT
-                    17,     //COTP Header Length
-                    224,    //Connect Request 
-                    0, 0,   //Destination Reference
-                    0, 46,  //Source Reference
-                    0,      //Flags
-                    193,    //Parameter Code (src-tasp)
-                    2,      //Parameter Length
-                    1, 0,   //Source TASP
-                    194,    //Parameter Code (dst-tasp)
-                    2,      //Parameter Length
-                    3, 0,   //Destination TASP
-                    192,    //Parameter Code (tpdu-size)
-                    1,      //Parameter Length
-                    9       //TPDU Size (2^9 = 512)
-                };
+                byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
 
-                switch (CPU)
-                {
+                switch (CPU) {
                     case CpuType.S7200:
                         //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
                         bSend1[11] = 193;
@@ -247,33 +229,28 @@ namespace S7.Net
                         return ErrorCode.WrongCPU_Type;
                 }
 
-                //COTP Setup
                 _mSocket.Send(bSend1, 22, SocketFlags.None);
-                var response = COTP.TPDU.Read(_mSocket);
-                if (response.PDUType != 0xd0) //Connect Confirm
+                if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                }
+                } 
 
-                //S7ComSetup
                 byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
                 _mSocket.Send(bsend2, 25, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(_mSocket);
-                if (s7data.Length >= 2 && s7data[1] == 0x03) //Check for S7 Ack Data
+                if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
                 {
-                    MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
-                    return ErrorCode.NoError;
-                }
-
-                throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                } 
             }
-            catch (Exception exc)
+            catch(Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
                 LastErrorString = string.Format("Couldn't establish the connection to {0}.\nMessage: {1}", IP, exc.Message);
                 return ErrorCode.ConnectionError;
             }
+
+            return ErrorCode.NoError;
         }
 
         /// <summary>
@@ -299,12 +276,11 @@ namespace S7.Net
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-
-            //Is this really a limit?
-            //if (dataItems.Count > 20) 
-            //    throw new Exception("Too many vars requested");
-            if (cntBytes > MaxPDUSize - 18)
-                throw new Exception(string.Format("Too many bytes requested Requested: {0} Max {1}", cntBytes, MaxPDUSize)); //TODO: split in multiple requests
+            
+            if (dataItems.Count > 20)
+                throw new Exception("Too many vars requested");
+            if (cntBytes > 222)
+                throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
 
             try
             {
@@ -320,10 +296,12 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(_mSocket);
-                if (s7data[14] != 0xff) throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 18;
+                int offset = 25;
                 foreach (var dataItem in dataItems)
                 {
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
@@ -331,7 +309,7 @@ namespace S7.Net
 
                     for (int i = 0; i < byteCnt; i++)
                     {
-                        bytes[i] = s7data[i + offset];
+                        bytes[i] = bReceive[i + offset];
                     }
 
                     offset += byteCnt + 4;
@@ -366,7 +344,7 @@ namespace S7.Net
             int index = startByteAdr;
             while (count > 0)
             {
-                var maxToRead = (int)Math.Min(count, MaxPDUSize);
+                var maxToRead = (int)Math.Min(count, 200);
                 byte[] bytes = ReadBytesWithASingleRequest(dataType, db, index, maxToRead);
                 if (bytes == null)
                     return resultBytes.ToArray();
@@ -644,7 +622,7 @@ namespace S7.Net
             int count = value.Length;
             while (count > 0)
             {
-                var maxToWrite = (int)Math.Min(count, MaxPDUSize);
+                var maxToWrite = (int)Math.Min(count, 200);
                 ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
                 {
@@ -753,7 +731,7 @@ namespace S7.Net
                     package = Types.DWord.ToByteArray((UInt32)value);
                     break;
                 case "Double":
-                    package = Types.Double.ToByteArray((double)value);
+                    package = Types.Double.ToByteArray((Double)value);
                     break;
                 case "Byte[]":
                     package = (byte[])value;
@@ -837,12 +815,10 @@ namespace S7.Net
                                 {
                                     return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
                                 }
-                                else if (value is double)
+                                else
                                 {
-                                    return Write(DataType.DataBlock, mDB, dbIndex, value);
+                                    objValue = Convert.ChangeType(value, typeof(UInt32));
                                 }
-
-                                objValue = Convert.ChangeType(value, typeof(UInt32));                                
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
@@ -1071,12 +1047,13 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(_mSocket);
-                if (s7data[14] != 0xff)
+                byte[] bReceive = new byte[512];
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
                 for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = s7data[cnt + 25];
+                    bytes[cnt] = bReceive[cnt + 25];
 
                 return bytes;
             }
@@ -1136,8 +1113,8 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(_mSocket);
-                if (s7data[14] != 0xff)
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
                 }
@@ -1186,9 +1163,11 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(_mSocket);
-                if (bReceive[14] != 0xff)
+                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
+                if (bReceive[21] != 0xff)
+                {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
 
                 return ErrorCode.NoError;
             }
