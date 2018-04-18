@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Types;
-using Double = System.Double;
-
 
 namespace S7.Net
 {
@@ -731,7 +728,7 @@ namespace S7.Net
                     package = Types.DWord.ToByteArray((UInt32)value);
                     break;
                 case "Double":
-                    package = Types.Double.ToByteArray((Double)value);
+                    package = Types.Double.ToByteArray((double)value);
                     break;
                 case "Byte[]":
                     package = (byte[])value;
@@ -815,10 +812,11 @@ namespace S7.Net
                                 {
                                     return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
                                 }
-                                else
+                                else if (value is double)
                                 {
-                                    objValue = Convert.ChangeType(value, typeof(UInt32));
+                                    return Write(DataType.DataBlock, mDB, dbIndex, value);
                                 }
+                                objValue = Convert.ChangeType(value, typeof(UInt32));                                
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
