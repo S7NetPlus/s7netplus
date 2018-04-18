@@ -1289,23 +1289,53 @@ namespace S7.Net
             }
         }
 
-        #region IDisposable members
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Releases all resources, disonnects from the PLC and closes the <see cref="Socket"/>
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    if (_mSocket != null)
+                    {
+                        if (_mSocket.Connected)
+                        {
+                            _mSocket.Shutdown(SocketShutdown.Both);
+                            _mSocket.Close();
+                        }
+                    }
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~Plc() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
         /// <summary>
         /// Releases all resources, disonnects from the PLC and closes the <see cref="Socket"/>
         /// </summary>
         public void Dispose()
         {
-            if (_mSocket != null)
-            {
-                if (_mSocket.Connected)
-                {
-                    _mSocket.Shutdown(SocketShutdown.Both);
-                    _mSocket.Close();
-                }
-            }
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
         }
-
         #endregion
     }
 }
