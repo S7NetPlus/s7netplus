@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>S7.Net</RootNamespace>
     <AssemblyName>S7.Net</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
@@ -79,7 +79,11 @@
     <Compile Include="Conversion.cs" />
     <Compile Include="COTP.cs" />
     <Compile Include="Enums.cs" />
-    <Compile Include="PLC.cs" />
+    <Compile Include="Plc.cs" />
+    <Compile Include="PlcAsynchronous.cs" />
+    <Compile Include="PLCExceptions.cs" />
+    <Compile Include="PlcHelpers.cs" />
+    <Compile Include="PlcSynchronous.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TPKT.cs" />
     <Compile Include="Types\Bit.cs" />
