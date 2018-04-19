@@ -42,6 +42,18 @@ namespace S7.Net.UnitTest
             var t = await TPKT.ReadAsync(m);
          }
 
+        [TestMethod]
+        public void COTP_ReadTSDU()
+        {
+            var expected = StringToByteArray("320700000400000800080001120411440100ff09000400000000");
+            var m = new MemoryStream(StringToByteArray("0300000702f0000300000702f0000300002102f080320700000400000800080001120411440100ff09000400000000"));
+            var t = COTP.TSDU.Read(m);
+            Assert.IsTrue(expected.SequenceEqual(t));
+            m.Position = 0;
+            t = COTP.TSDU.ReadAsync(m).Result;
+            Assert.IsTrue(expected.SequenceEqual(t));
+        }
+
         private static byte[] StringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)
