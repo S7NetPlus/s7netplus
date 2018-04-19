@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace S7.Net
 {
@@ -104,7 +105,7 @@ namespace S7.Net
                     segment = TPDU.Read(stream);
                     output.Write(segment.Data, (int)output.Position, segment.Data.Length);
                 }
-                return output.GetBuffer();
+                return output.GetBuffer().Take((int)output.Position).ToArray();
             }
 
             /// <summary>
@@ -125,7 +126,7 @@ namespace S7.Net
                     segment = await TPDU.ReadAsync(stream);
                     output.Write(segment.Data, (int)output.Position, segment.Data.Length);
                 }
-                return output.GetBuffer();
+                return output.GetBuffer().Take((int)output.Position).ToArray();
             }
         }
     }
