@@ -24,7 +24,8 @@ namespace S7.Net
         public static TPKT Read(Stream stream)
         {
             var buf = new byte[4];
-            stream.Read(buf, 0, 4);
+            int len = stream.Read(buf, 0, 4);
+            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             var pkt = new TPKT
             {
                 Version = buf[0],
@@ -34,7 +35,9 @@ namespace S7.Net
             if (pkt.Length > 0)
             {
                 pkt.Data = new byte[pkt.Length - 4];
-                stream.Read(pkt.Data, 0, pkt.Length - 4);
+                len = stream.Read(pkt.Data, 0, pkt.Length - 4);
+                if (len < pkt.Length - 4)
+                    throw new TPKTInvalidException("TPKT is incomplete / invalid");
             }
             return pkt;
         }
@@ -47,7 +50,8 @@ namespace S7.Net
         public static async Task<TPKT> ReadAsync(Stream stream)
         {
             var buf = new byte[4];
-            await stream.ReadAsync(buf, 0, 4);
+            int len = await stream.ReadAsync(buf, 0, 4);
+            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             var pkt = new TPKT
             {
                 Version = buf[0],
@@ -57,7 +61,8 @@ namespace S7.Net
             if (pkt.Length > 0)
             {
                 pkt.Data = new byte[pkt.Length - 4];
-                await stream.ReadAsync(pkt.Data, 0, pkt.Length - 4);
+                len = await stream.ReadAsync(pkt.Data, 0, pkt.Length - 4);
+                if (len < pkt.Length - 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             }
             return pkt;
         }
