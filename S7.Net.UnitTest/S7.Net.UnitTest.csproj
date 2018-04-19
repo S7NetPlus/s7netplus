@@ -37,6 +37,12 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>S7.Net.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <Private>False</Private>
@@ -55,6 +61,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="ConvertersUnitTest.cs" />
+    <Compile Include="ProtocolTests.cs" />
     <Compile Include="Helpers\ConsoleManager.cs" />
     <Compile Include="Helpers\NativeMethods.cs" />
     <Compile Include="Helpers\S7TestServer.cs" />
@@ -80,6 +87,9 @@
       <Project>{bfd484f9-3f04-42a2-bf2a-60a189a25dcf}</Project>
       <Name>S7.Net</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="S7.Net.snk" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

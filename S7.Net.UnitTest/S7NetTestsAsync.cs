@@ -479,22 +479,15 @@ namespace S7.Net.UnitTest
 
 
         [TestMethod]
+        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadBytesThrowsExceptionIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-
                 TestClass tc = new TestClass();
-                try
-                {
-                    var res = await notConnectedPlc.ReadClassAsync(tc, DB2);
-                    Assert.Fail();
-                }
-                catch
-                {
-
-                }
+                var res = await notConnectedPlc.ReadClassAsync(tc, DB2);
+                Assert.Fail();
             }
         }
 
@@ -530,17 +523,13 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-                try
-                {
-                    TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(DB2);
-                    Assert.Fail();
-                }
-                catch { }
+                TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(DB2);
             }
         }
 
@@ -574,37 +563,24 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericAndClassFactoryThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                try
-                {
-                    TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2);
-                    Assert.Fail();
-                }
-                catch
-                {
-
-                }
+                TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2);
             }
         }
 
         [TestMethod]
+        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                try
-                {
-                    object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2);
-                    Assert.Fail();
-                } catch
-                {
-
-                }
+                object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2);
             }
         }
 
@@ -639,16 +615,13 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructWithGenericThrowsExceptionIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                try
-                {
-                    object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(DB2);
-                    Assert.Fail();
-                } catch { }
+                object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(DB2);
             }
         }
 
@@ -787,7 +760,7 @@ namespace S7.Net.UnitTest
 
             for (int x = 0; x < count; x++) 
             {
-                Assert.AreEqual(x % 256, res[x]);
+                Assert.AreEqual(x % 256, res[x], string.Format("Bit {0} failed", x));
             }
         }
         #endregion

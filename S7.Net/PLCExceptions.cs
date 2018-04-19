@@ -63,4 +63,23 @@ namespace S7.Net
         {
         }
     }
+
+    internal class TPKTInvalidException : Exception
+    {
+        public TPKTInvalidException() : base()
+        {
+        }
+
+        public TPKTInvalidException(string message) : base(message)
+        {
+        }
+
+        public TPKTInvalidException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected TPKTInvalidException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
 }
