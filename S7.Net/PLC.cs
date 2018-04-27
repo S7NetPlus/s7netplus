@@ -301,9 +301,16 @@ namespace S7.Net
                 if (bReceive[21] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 25;
+                int offset = 21;
                 foreach (var dataItem in dataItems)
                 {
+                    // check for Return Code = Success
+                    if (bReceive[offset] != 0xff)
+                        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                    // to Data bytes
+                    offset += 4;
+
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
                     byte[] bytes = new byte[byteCnt];
 
@@ -312,9 +319,14 @@ namespace S7.Net
                         bytes[i] = bReceive[i + offset];
                     }
 
-                    offset += byteCnt + 4;
+                    // next Item
+                    offset += byteCnt;
 
-                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
+                    // Fill byte in response
+                    if (dataItem.VarType == VarType.Bit)
+                        offset++;
+
+                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count, dataItem.BitAdr);
                 }
             }
             catch (SocketException socketException)
