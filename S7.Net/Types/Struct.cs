@@ -57,7 +57,7 @@ namespace S7.Net.Types
                         break;
                 }
             }
-            return (int)numBytes;
+            return (int)Math.Ceiling(numBytes);
         }
 
         /// <summary>
