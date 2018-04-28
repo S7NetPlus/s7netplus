@@ -99,7 +99,7 @@ namespace S7.Net.Types
                     numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType);
                 }
             }
-            return (int)numBytes;
+            return (int)Math.Ceiling(numBytes);
         }
 
         private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
