@@ -804,6 +804,20 @@ namespace S7.Net.UnitTest
             }
         }
 
+        [TestMethod]
+        public void T28_ReadClass_DoesntCrash_When_ReadingLessThan1Byte()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var tc = new TestSmallClass();
+            tc.Bool1 = true;
+
+            plc.WriteClass(tc, DB2);
+            var tc2 = plc.ReadClass<TestSmallClass>(DB2);
+
+            Assert.AreEqual(tc.Bool1, tc2.Bool1);
+        }
+
         #endregion
 
         #region Private methods
