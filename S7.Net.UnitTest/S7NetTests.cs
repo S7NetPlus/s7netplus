@@ -386,19 +386,51 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
-            ushort val = 16384;
-            plc.Write("DB2.DBW16384", val);
-            ushort result = (ushort)plc.Read("DB2.DBW16384");
-            Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
+            bool val = true;
+            plc.Write("DB2.DBX0.5", val);
+            bool result = (bool)plc.Read("DB2.DBX0.5");
+            Assert.AreEqual(val, result);
 
-            ushort val2 = 129;
-            plc.Write("DB2.DBW16", val2);
-            ushort result2 = (ushort)plc.Read("DB2.DBW16");
-            Assert.AreEqual(val2, result2, "A ushort goes from 0 to 64512");
+            ushort val1 = 16384;
+            plc.Write("DB2.DBW16384", val1);
+            ushort result1 = (ushort)plc.Read("DB2.DBW16384");
+            Assert.AreEqual(val1, result1, "A ushort goes from 0 to 64512");
+
+            bool val2 = true;
+            plc.Write("DB2.DBX8192.7", val2);
+            bool result2 = (bool)plc.Read("DB2.DBX8192.7");
+            Assert.AreEqual(val2, result2);
+
+            ushort val3 = 129;
+            plc.Write("DB2.DBW16", val3);
+            ushort result3 = (ushort)plc.Read("DB2.DBW16");
+            Assert.AreEqual(val3, result3, "A ushort goes from 0 to 64512");
+
+            byte[] val4 = new byte[] { 0x12, 0x34 };
+            plc.Write("DB2.DBB2048", val4[0]);
+            plc.Write("DB2.DBB2049", val4[1]);
+            byte result4b0 = (byte)plc.Read("DB2.DBB2048");
+            byte result4b1 = (byte)plc.Read("DB2.DBB2049");
+            Assert.AreEqual(val4[0], result4b0);
+            Assert.AreEqual(val4[1], result4b1);
+
+            bool val6 = true;
+            plc.Write("DB2.DBX16384.6", val6);
+            bool result6 = (bool)plc.Read("DB2.DBX16384.6");
+            Assert.AreEqual(val6, result6);
 
             var dataItems = new List<DataItem>()
             {
                 new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartByteAdr = 0,
+                    BitAdr = 5,
+                    VarType = VarType.Bit
+                }
+                ,new DataItem
                 {
                     Count = 1,
                     DataType = DataType.DataBlock,
@@ -411,15 +443,57 @@ namespace S7.Net.UnitTest
                     Count = 1,
                     DataType = DataType.DataBlock,
                     DB = 2,
+                    StartByteAdr = 8192,
+                    BitAdr = 7,
+                    VarType = VarType.Bit
+                },
+                new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
                     StartByteAdr = 16,
                     VarType = VarType.Word
-                }
+                },
+                // single byte
+                new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartByteAdr = 2048,
+                    VarType = VarType.Byte
+                },
+                // multiple bytes
+                new DataItem
+                {
+                    Count = 2,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartByteAdr = 2048,
+                    VarType = VarType.Byte
+                },
+                new DataItem
+                {
+                    Count = 1,
+                    DataType = DataType.DataBlock,
+                    DB = 2,
+                    StartByteAdr = 16384,
+                    BitAdr = 6,
+                    VarType = VarType.Bit
+                },
             };
 
             plc.ReadMultipleVars(dataItems);
 
             Assert.AreEqual(dataItems[0].Value, val);
-            Assert.AreEqual(dataItems[1].Value, val2);
+            Assert.AreEqual(dataItems[1].Value, val1);
+            Assert.AreEqual(dataItems[2].Value, val2);
+            Assert.AreEqual(dataItems[3].Value, val3);
+            Assert.AreEqual(dataItems[4].Value, val4[0]);
+            Assert.AreEqual(((byte[])dataItems[5].Value)[0], val4[0]);  //dataItem[5].Value should be byte[2]
+            Assert.AreEqual(((byte[])dataItems[5].Value)[1], val4[1]);
+            Assert.AreEqual(dataItems[6].Value, val6);
         }
 
         /// <summary>
