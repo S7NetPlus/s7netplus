@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using S7.Net.Types;
-using Double = System.Double;
-
 
 namespace S7.Net
 {
@@ -41,6 +38,11 @@ namespace S7.Net
         /// Slot of the CPU of the PLC
         /// </summary>
         public Int16 Slot { get; private set; }
+
+        /// <summary>
+        /// Max PDU size this cpu supports
+        /// </summary>
+        public Int16 MaxPDUSize { get; set; }
         
         /// <summary>
         /// Returns true if a connection to the PLC can be established
@@ -119,6 +121,7 @@ namespace S7.Net
             IP = ip;
             Rack = rack;
             Slot = slot;
+            MaxPDUSize = 240;
         }
 
         private ErrorCode Connect(Socket socket)
@@ -160,7 +163,6 @@ namespace S7.Net
         /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
         public ErrorCode Open()
         {
-            byte[] bReceive = new byte[256];
 
             _mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _mSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1000);
@@ -171,9 +173,25 @@ namespace S7.Net
                 return LastErrorCode;
             }
 
-            try 
+            try
             {
-                byte[] bSend1 = { 3, 0, 0, 22, 17, 224, 0, 0, 0, 46, 0, 193, 2, 1, 0, 194, 2, 3, 0, 192, 1, 9 };
+                byte[] bSend1 = {
+                    3, 0, 0, 22, //TPKT
+                    17,     //COTP Header Length
+                    224,    //Connect Request 
+                    0, 0,   //Destination Reference
+                    0, 46,  //Source Reference
+                    0,      //Flags
+                    193,    //Parameter Code (src-tasp)
+                    2,      //Parameter Length
+                    1, 0,   //Source TASP
+                    194,    //Parameter Code (dst-tasp)
+                    2,      //Parameter Length
+                    3, 0,   //Destination TASP
+                    192,    //Parameter Code (tpdu-size)
+                    1,      //Parameter Length
+                    9       //TPDU Size (2^9 = 512)
+                };
 
                 switch (CPU) {
                     case CpuType.S7200:
@@ -229,28 +247,29 @@ namespace S7.Net
                         return ErrorCode.WrongCPU_Type;
                 }
 
+                //COTP Setup
                 _mSocket.Send(bSend1, 22, SocketFlags.None);
-                if (_mSocket.Receive(bReceive, 22, SocketFlags.None) != 22)
-                {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3,
+                    7, 80 //Try 1920 PDU Size. Same as libnodave.
+                };
 
-                byte[] bsend2 = { 3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3, 1, 0 };
                 _mSocket.Send(bsend2, 25, SocketFlags.None);
 
-                if (_mSocket.Receive(bReceive, 27, SocketFlags.None) != 27)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                } 
+                }
+                MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
+
+                return ErrorCode.NoError;
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 LastErrorCode = ErrorCode.ConnectionError;
                 LastErrorString = string.Format("Couldn't establish the connection to {0}.\nMessage: {1}", IP, exc.Message);
                 return ErrorCode.ConnectionError;
             }
-
-            return ErrorCode.NoError;
         }
 
         /// <summary>
@@ -276,12 +295,14 @@ namespace S7.Net
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-            
+
+            //TODO: Figure out how to use MaxPDUSize here
+            //Snap7 seems to choke on PDU sizes above 256 even if snap7 
+            //replies with bigger PDU size in connection setup.
             if (dataItems.Count > 20)
                 throw new Exception("Too many vars requested");
             if (cntBytes > 222)
                 throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
-
             try
             {
                 // first create the header
@@ -296,37 +317,20 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 21;
+                int offset = 18;
                 foreach (var dataItem in dataItems)
                 {
-                    // check for Return Code = Success
-                    if (bReceive[offset] != 0xff)
-                        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-
-                    // to Data bytes
-                    offset += 4;
-
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
-                    byte[] bytes = new byte[byteCnt];
-
-                    for (int i = 0; i < byteCnt; i++)
-                    {
-                        bytes[i] = bReceive[i + offset];
-                    }
-
-                    // next Item
-                    offset += byteCnt;
-
-                    // Fill byte in response
-                    if (dataItem.VarType == VarType.Bit)
-                        offset++;
-
-                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count, dataItem.BitAdr);
+                    dataItem.Value = ParseBytes(
+                        dataItem.VarType, 
+                        s7data.Skip(offset).Take(byteCnt).ToArray(),
+                        dataItem.Count
+                    );
+                    offset += byteCnt + 4;
                 }
             }
             catch (SocketException socketException)
@@ -356,7 +360,8 @@ namespace S7.Net
             int index = startByteAdr;
             while (count > 0)
             {
-                var maxToRead = (int)Math.Min(count, 200);
+                //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
+                var maxToRead = (int)Math.Min(count, MaxPDUSize-18);
                 byte[] bytes = ReadBytesWithASingleRequest(dataType, db, index, maxToRead);
                 if (bytes == null)
                     return resultBytes.ToArray();
@@ -633,7 +638,10 @@ namespace S7.Net
             int localIndex = 0;
             int count = value.Length;
             while (count > 0)
-            {
+            {                
+                //TODO: Figure out how to use MaxPDUSize here
+                //Snap7 seems to choke on PDU sizes above 256 even if snap7 
+                //replies with bigger PDU size in connection setup.
                 var maxToWrite = (int)Math.Min(count, 200);
                 ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 if (lastError != ErrorCode.NoError)
@@ -743,7 +751,7 @@ namespace S7.Net
                     package = Types.DWord.ToByteArray((UInt32)value);
                     break;
                 case "Double":
-                    package = Types.Double.ToByteArray((Double)value);
+                    package = Types.Double.ToByteArray((double)value);
                     break;
                 case "Byte[]":
                     package = (byte[])value;
@@ -827,10 +835,11 @@ namespace S7.Net
                                 {
                                     return Write(DataType.DataBlock, mDB, dbIndex, (Int32)value);
                                 }
-                                else
+                                else if (value is double)
                                 {
-                                    objValue = Convert.ChangeType(value, typeof(UInt32));
+                                    return Write(DataType.DataBlock, mDB, dbIndex, value);
                                 }
+                                objValue = Convert.ChangeType(value, typeof(UInt32));                                
                                 return Write(DataType.DataBlock, mDB, dbIndex, (UInt32)objValue);
                             case "DBX":
                                 mByte = dbIndex;
@@ -1046,8 +1055,6 @@ namespace S7.Net
 
         private byte[] ReadBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, int count)
         {
-            byte[] bytes = new byte[count];
-
             try
             {
                 // first create the header
@@ -1059,15 +1066,11 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                byte[] bReceive = new byte[512];
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = bReceive[cnt + 25];
-
-                return bytes;
+                return s7data.Skip(18).Take(count).ToArray();
             }
             catch (SocketException socketException)
             {
@@ -1094,9 +1097,7 @@ namespace S7.Net
         /// <returns>NoError if it was successful, or the error is specified</returns>
         private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
         {
-            byte[] bReceive = new byte[513];
             int varCount = 0;
-
             try
             {
                 varCount = value.Length;
@@ -1125,8 +1126,8 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data == null || s7data[14] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
                 }
@@ -1143,7 +1144,6 @@ namespace S7.Net
 
         private ErrorCode WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
-            byte[] bReceive = new byte[513];
             int varCount = 0;
 
             try
@@ -1175,11 +1175,9 @@ namespace S7.Net
 
                 _mSocket.Send(package.array, package.array.Length, SocketFlags.None);
 
-                int numReceived = _mSocket.Receive(bReceive, 512, SocketFlags.None);
-                if (bReceive[21] != 0xff)
-                {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-                }
+                var s7data = COTP.TSDU.Read(_mSocket);
+                if (s7data == null || s7data[14] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());                
 
                 return ErrorCode.NoError;
             }
@@ -1301,23 +1299,53 @@ namespace S7.Net
             }
         }
 
-        #region IDisposable members
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Releases all resources, disonnects from the PLC and closes the <see cref="Socket"/>
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    if (_mSocket != null)
+                    {
+                        if (_mSocket.Connected)
+                        {
+                            _mSocket.Shutdown(SocketShutdown.Both);
+                            _mSocket.Close();
+                        }
+                    }
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~Plc() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
         /// <summary>
         /// Releases all resources, disonnects from the PLC and closes the <see cref="Socket"/>
         /// </summary>
         public void Dispose()
         {
-            if (_mSocket != null)
-            {
-                if (_mSocket.Connected)
-                {
-                    _mSocket.Shutdown(SocketShutdown.Both);
-                    _mSocket.Close();
-                }
-            }
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
         }
-
         #endregion
     }
 }
