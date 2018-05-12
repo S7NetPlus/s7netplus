@@ -321,16 +321,30 @@ namespace S7.Net
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 18;
+                int offset = 14;
                 foreach (var dataItem in dataItems)
                 {
+                    // check for Return Code = Success
+                    if (s7data[offset] != 0xff)
+                        throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                    // to Data bytes
+                    offset += 4;
+
                     int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
                     dataItem.Value = ParseBytes(
-                        dataItem.VarType, 
+                        dataItem.VarType,
                         s7data.Skip(offset).Take(byteCnt).ToArray(),
-                        dataItem.Count
+                        dataItem.Count,
+                        dataItem.BitAdr
                     );
-                    offset += byteCnt + 4;
+
+                    // next Item
+                    offset += byteCnt;
+
+                    // Fill byte in response when bytecount is odd
+                    if (dataItem.Count % 2 != 0 && (dataItem.VarType == VarType.Byte || dataItem.VarType == VarType.Bit))
+                        offset++;
                 }
             }
             catch (SocketException socketException)
