@@ -91,6 +91,7 @@ namespace S7.Net
             /// Reads the full COTP TSDU (Transport service data unit)
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
+            /// <param name="stream">The stream to read from</param>
             /// <returns>Data in TSDU</returns>
             public static byte[] Read(Stream stream)
             {
@@ -112,6 +113,7 @@ namespace S7.Net
             /// Reads the full COTP TSDU (Transport service data unit)
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
+            /// <param name="stream">The stream to read from</param>
             /// <returns>Data in TSDU</returns>
             public static async Task<byte[]> ReadAsync(Stream stream)
             {                

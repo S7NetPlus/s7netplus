@@ -19,7 +19,7 @@ namespace S7.Net
         /// <summary>
         /// Reads a TPKT from the socket
         /// </summary>
-        /// <param name="stream"></param>
+        /// <param name="stream">The stream to read from</param>
         /// <returns>TPKT Instance</returns>
         public static TPKT Read(Stream stream)
         {
@@ -45,7 +45,7 @@ namespace S7.Net
         /// <summary>
         /// Reads a TPKT from the socket Async
         /// </summary>
-        /// <param name="stream">The socket to read from</param>
+        /// <param name="stream">The stream to read from</param>
         /// <returns>Task TPKT Instace</returns>
         public static async Task<TPKT> ReadAsync(Stream stream)
         {
