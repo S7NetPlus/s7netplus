@@ -24,14 +24,14 @@ namespace S7.Net
         {
             await ConnectAsync();
 
-            await socket.SendAsync(GetCOPTConnectionRequest(CPU), 0, 22, SocketFlags.None);
+            await socket.SendAsync(GetCOPTConnectionRequest(CPU), 0, 22);
             var response = await COTP.TPDU.ReadAsync(socket);
             if (response.PDUType != 0xd0) //Connect Confirm
             {
                 throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
             }
 
-            await socket.SendAsync(GetS7ConnectionSetup(), 0, 25, SocketFlags.None);
+            await socket.SendAsync(GetS7ConnectionSetup(), 0, 25);
 
             var s7data = await COTP.TSDU.ReadAsync(socket);
             if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
@@ -400,7 +400,7 @@ namespace S7.Net
             // package.Add(0x02);  // datenart
             package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-            await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
+            await socket.SendAsync(package.Array, 0, package.Array.Length);
 
             var s7data = await COTP.TSDU.ReadAsync(socket);
             if (s7data == null || s7data[14] != 0xff)
@@ -452,7 +452,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
+                await socket.SendAsync(package.Array, 0, package.Array.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
@@ -502,7 +502,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
+                await socket.SendAsync(package.Array, 0, package.Array.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
