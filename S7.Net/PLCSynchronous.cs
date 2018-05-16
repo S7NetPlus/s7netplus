@@ -1,5 +1,6 @@
 ﻿using S7.Net.Types;
 using System;
+using System.Net;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,16 +26,16 @@ namespace S7.Net
             }
             try
             {
-                stream.Write(GetCOPTConnectionRequest(CPU), 0, 22);
-                var response = COTP.TPDU.Read(stream);
+                socket.Send(GetCOPTConnectionRequest(CPU), 0, 22, SocketFlags.None);
+                var response = COTP.TPDU.Read(socket);
                 if (response.PDUType != 0xd0) //Connect Confirm
                 {
                     throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
                 }
 
-                stream.Write(GetS7ConnectionSetup(), 0, 25);
+                socket.Send(GetS7ConnectionSetup(), 0, 25, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
                 {
                     throw new WrongNumberOfBytesException("Waiting for S7 connection setup");
@@ -54,9 +55,10 @@ namespace S7.Net
         {
             try
             {
-                tcpClient = new TcpClient();
-                tcpClient.Connect(IP, 102);
-                stream = tcpClient.GetStream();
+                IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(server);
+                return ErrorCode.NoError;
             }
             catch (SocketException sex)
             {
@@ -267,12 +269,13 @@ namespace S7.Net
         public ErrorCode WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
         {
             if (bitAdr < 0 || bitAdr > 7)
-                throw new InvalidAddressException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
+                throw new Exception(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
 
             ErrorCode lastError = WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
             if (lastError != ErrorCode.NoError)
             {
-                return lastError;            }
+                return lastError;
+            }
 
             return ErrorCode.NoError;
         }
@@ -348,7 +351,9 @@ namespace S7.Net
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
-            return WriteStructAsync(structValue, db, startByteAdr).Result;
+            var bytes = Struct.ToBytes(structValue).ToList();
+            var errCode = WriteBytes(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            return errCode;
         }
 
         /// <summary>
@@ -360,7 +365,9 @@ namespace S7.Net
         /// <returns>NoError if it was successful, or the error is specified</returns>
         public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
         {
-            return WriteClassAsync(classValue, db, startByteAdr).Result;
+            var bytes = Class.ToBytes(classValue).ToList();
+            var errCode = WriteBytes(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            return errCode;
         }
 
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
@@ -374,9 +381,9 @@ namespace S7.Net
                 // package.Add(0x02);  // datenart
                 package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-                stream.Write(package.array, 0, package.array.Length);
+                socket.Send(package.array, 0, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
@@ -401,12 +408,96 @@ namespace S7.Net
 
         private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
         {
-            return WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr, value).Result;
+            int varCount = 0;
+            try
+            {
+                varCount = value.Length;
+                // first create the header
+                int packageSize = 35 + value.Length;
+                ByteArray package = new ByteArray(packageSize);
+
+                package.Add(new byte[] { 3, 0, 0 });
+                package.Add((byte)packageSize);
+                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+                package.Add(Word.ToByteArray((ushort)(varCount - 1)));
+                package.Add(new byte[] { 0, 0x0e });
+                package.Add(Word.ToByteArray((ushort)(varCount + 4)));
+                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+                package.Add(Word.ToByteArray((ushort)varCount));
+                package.Add(Word.ToByteArray((ushort)(db)));
+                package.Add((byte)dataType);
+                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
+                package.Add(Word.ToByteArray((ushort)(startByteAdr * 8)));
+                package.Add(new byte[] { 0, 4 });
+                package.Add(Word.ToByteArray((ushort)(varCount * 8)));
+
+                // now join the header and the data
+                package.Add(value);
+
+                socket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                var s7data = COTP.TSDU.Read(socket);
+                if (s7data == null || s7data[14] != 0xff)
+                {
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                }
+
+                return ErrorCode.NoError;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return LastErrorCode;
+            }
         }
 
         private ErrorCode WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
-            return WriteBitWithASingleRequestAsync(dataType, db, startByteAdr, bitAdr, bitValue).Result;
+            int varCount = 0;
+
+            try
+            {
+                var value = new[] { bitValue ? (byte)1 : (byte)0 };
+                varCount = value.Length;
+                // first create the header
+                int packageSize = 35 + value.Length;
+                ByteArray package = new ByteArray(packageSize);
+
+                package.Add(new byte[] { 3, 0, 0 });
+                package.Add((byte)packageSize);
+                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+                package.Add(Word.ToByteArray((ushort)(varCount - 1)));
+                package.Add(new byte[] { 0, 0x0e });
+                package.Add(Word.ToByteArray((ushort)(varCount + 4)));
+                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x01 }); //ending 0x01 is used for writing a sinlge bit
+                package.Add(Word.ToByteArray((ushort)varCount));
+                package.Add(Word.ToByteArray((ushort)(db)));
+                package.Add((byte)dataType);
+                int overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+                package.Add((byte)overflow);
+                package.Add(Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
+                package.Add(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit
+                package.Add(Word.ToByteArray((ushort)(varCount)));
+
+                // now join the header and the data
+                package.Add(value);
+
+                socket.Send(package.array, package.array.Length, SocketFlags.None);
+
+                var s7data = COTP.TSDU.Read(socket);
+                if (s7data == null || s7data[14] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                return ErrorCode.NoError;
+            }
+            catch (Exception exc)
+            {
+                LastErrorCode = ErrorCode.WriteData;
+                LastErrorString = exc.Message;
+                return LastErrorCode;
+            }
         }
 
         /// <summary>
@@ -417,7 +508,6 @@ namespace S7.Net
         /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
-        [Obsolete("Use ReadMultipleVarsAsync. Note: different function signature")]
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
@@ -442,9 +532,9 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                stream.Write(package.array, 0, package.array.Length);
+                socket.Send(package.array, 0, package.array.Length, SocketFlags.None);
 
-                var s7data = COTP.TSDU.Read(stream); //TODO use Async
+                var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 

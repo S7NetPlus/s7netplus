@@ -1,5 +1,6 @@
 using S7.Net.Types;
 using System;
+using System.Net;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,16 +24,16 @@ namespace S7.Net
         {
             await ConnectAsync();
 
-            await stream.WriteAsync(GetCOPTConnectionRequest(CPU), 0, 22);
-            var response = await COTP.TPDU.ReadAsync(stream);
+            await socket.SendAsync(GetCOPTConnectionRequest(CPU), 0, 22, SocketFlags.None);
+            var response = await COTP.TPDU.ReadAsync(socket);
             if (response.PDUType != 0xd0) //Connect Confirm
             {
                 throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
             }
 
-            await stream.WriteAsync(GetS7ConnectionSetup(), 0, 25);
+            await socket.SendAsync(GetS7ConnectionSetup(), 0, 25, SocketFlags.None);
 
-            var s7data = await COTP.TSDU.ReadAsync(stream);
+            var s7data = await COTP.TSDU.ReadAsync(socket);
             if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
             {
                 throw new WrongNumberOfBytesException("Waiting for S7 connection setup");
@@ -42,9 +43,9 @@ namespace S7.Net
 
         private async Task ConnectAsync()
         {
-            tcpClient = new TcpClient();
-            await tcpClient.ConnectAsync(IP, 102);
-            stream = tcpClient.GetStream();
+            IPEndPoint server = new IPEndPoint(IPAddress.Parse(IP), 102);
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            await socket.ConnectAsync(server.Address, 102);
         }
 
         /// <summary>
@@ -225,9 +226,9 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                await stream.WriteAsync(package.array, 0, package.array.Length);
+                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream); //TODO use Async
+                var s7data = await COTP.TSDU.ReadAsync(socket); //TODO use Async
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
@@ -415,9 +416,9 @@ namespace S7.Net
             // package.Add(0x02);  // datenart
             package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-            await stream.WriteAsync(package.array, 0, package.array.Length);
+            await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
-            var s7data = await COTP.TSDU.ReadAsync(stream);
+            var s7data = await COTP.TSDU.ReadAsync(socket);
             if (s7data == null || s7data[14] != 0xff)
                 throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
@@ -467,9 +468,9 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await stream.WriteAsync(package.array, 0, package.array.Length);
+                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream);
+                var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
                 {
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
@@ -517,9 +518,9 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await stream.WriteAsync(package.array, 0, package.array.Length);
+                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream);
+                var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
