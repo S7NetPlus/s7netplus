@@ -99,6 +99,10 @@ namespace S7.Net.Types
                     numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType);
                 }
             }
+            // enlarge numBytes to next even number because S7-Structs in a DB always will be resized to an even byte count
+            numBytes = Math.Ceiling(numBytes);
+            if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                numBytes++;
             return (int)numBytes;
         }
 

@@ -70,6 +70,7 @@
     <Compile Include="Helpers\TestClassWithPrivateSetters.cs" />
     <Compile Include="Helpers\TestLongClass.cs" />
     <Compile Include="S7NetTestsAsync.cs" />
+    <Compile Include="Helpers\TestSmallClass.cs" />
     <Compile Include="Snap7\snap7.net.cs" />
     <Compile Include="Helpers\TestClass.cs" />
     <Compile Include="Helpers\TestStruct.cs" />

@@ -26,6 +26,11 @@
         public int StartByteAdr { get; set; }
 
         /// <summary>
+        /// Addess of bit to read from StartByteAdr
+        /// </summary>
+        public byte BitAdr { get; set; }
+
+        /// <summary>
         /// Number of variables to read
         /// </summary>
         public int Count { get; set; }
