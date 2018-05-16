@@ -481,5 +481,34 @@ namespace S7.Net
                     7, 80 //Try 1920 PDU Size. Same as libnodave.
             };
         }
+
+        private void ParseDataIntoDataItems(byte[] s7data, List<DataItem> dataItems)
+        {
+            int offset = 14;
+            foreach (var dataItem in dataItems)
+            {
+                // check for Return Code = Success
+                if (s7data[offset] != 0xff)
+                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+
+                // to Data bytes
+                offset += 4;
+
+                int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
+                dataItem.Value = ParseBytes(
+                    dataItem.VarType,
+                    s7data.Skip(offset).Take(byteCnt).ToArray(),
+                    dataItem.Count,
+                    dataItem.BitAdr
+                );
+
+                // next Item
+                offset += byteCnt;
+
+                // Fill byte in response when bytecount is odd
+                if (dataItem.Count % 2 != 0 && (dataItem.VarType == VarType.Byte || dataItem.VarType == VarType.Bit))
+                    offset++;
+            }
+        }
     }
 }

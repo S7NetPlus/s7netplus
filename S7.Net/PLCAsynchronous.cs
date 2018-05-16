@@ -102,7 +102,7 @@ namespace S7.Net
         public async Task<object> ReadAsync(string variable)
         {
             var adr = new PLCAddress(variable);
-            return await ReadAsync(adr.dataType, adr.DBNumber, adr.Address, adr.varType, 1, (byte)adr.BitNumber);            
+            return await ReadAsync(adr.dataType, adr.DBNumber, adr.Address, adr.varType, 1, (byte)adr.BitNumber);
         }
 
         /// <summary>
@@ -213,12 +213,11 @@ namespace S7.Net
                 throw new Exception("Too many vars requested");
             if (cntBytes > 222)
                 throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
-
             try
             {
                 // first create the header
                 int packageSize = 19 + (dataItems.Count * 12);
-                Types.ByteArray package = new ByteArray(packageSize);
+                ByteArray package = new ByteArray(packageSize);
                 package.Add(ReadHeaderPackage(dataItems.Count));
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
@@ -226,28 +225,13 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
+                socket.Send(package.Array, package.Array.Length, SocketFlags.None);
 
-                var s7data = await COTP.TSDU.ReadAsync(socket); //TODO use Async
+                var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 18;
-                foreach (var dataItem in dataItems)
-                {
-                    int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
-                    byte[] bytes = new byte[byteCnt];
-
-                    for (int i = 0; i < byteCnt; i++)
-                    {
-                        bytes[i] = s7data[i + offset];
-                    }
-
-                    offset += byteCnt + 4;
-
-                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
-                }
-                return dataItems;
+                ParseDataIntoDataItems(s7data, dataItems);
             }
             catch (SocketException socketException)
             {
@@ -259,7 +243,7 @@ namespace S7.Net
                 LastErrorCode = ErrorCode.WriteData;
                 LastErrorString = exc.Message;
             }
-            return null;
+            return dataItems;
         }
 
         /// <summary>
@@ -416,7 +400,7 @@ namespace S7.Net
             // package.Add(0x02);  // datenart
             package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-            await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
+            await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
 
             var s7data = await COTP.TSDU.ReadAsync(socket);
             if (s7data == null || s7data[14] != 0xff)
@@ -468,7 +452,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
+                await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
 
                 var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)
@@ -518,7 +502,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                await socket.SendAsync(package.array, 0, package.array.Length, SocketFlags.None);
+                await socket.SendAsync(package.Array, 0, package.Array.Length, SocketFlags.None);
 
                 var s7data = await COTP.TSDU.ReadAsync(socket);
                 if (s7data == null || s7data[14] != 0xff)

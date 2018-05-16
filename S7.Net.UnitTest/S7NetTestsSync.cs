@@ -908,8 +908,10 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
-            var tc = new TestSmallClass();
-            tc.Bool1 = true;
+            var tc = new TestSmallClass
+            {
+                Bool1 = true
+            };
 
             plc.WriteClass(tc, DB2);
             var tc2 = plc.ReadClass<TestSmallClass>(DB2);

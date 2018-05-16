@@ -70,7 +70,7 @@ namespace S7.Net.Types
             ByteArray arr = new ByteArray();
             foreach (double val in value)
                 arr.Add(ToByteArray(val));
-            return arr.array;
+            return arr.Array;
         }
 
         /// <summary>

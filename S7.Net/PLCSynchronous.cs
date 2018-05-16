@@ -373,7 +373,8 @@ namespace S7.Net
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
         {
             byte[] bytes = new byte[count];
-            try { 
+            try
+            {
                 // first create the header
                 int packageSize = 31;
                 ByteArray package = new ByteArray(packageSize);
@@ -381,7 +382,7 @@ namespace S7.Net
                 // package.Add(0x02);  // datenart
                 package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-                socket.Send(package.array, 0, package.array.Length, SocketFlags.None);
+                socket.Send(package.Array, 0, package.Array.Length, SocketFlags.None);
 
                 var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
@@ -435,7 +436,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                socket.Send(package.array, package.array.Length, SocketFlags.None);
+                socket.Send(package.Array, package.Array.Length, SocketFlags.None);
 
                 var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
@@ -484,7 +485,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                socket.Send(package.array, package.array.Length, SocketFlags.None);
+                socket.Send(package.Array, package.Array.Length, SocketFlags.None);
 
                 var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
@@ -519,7 +520,6 @@ namespace S7.Net
                 throw new Exception("Too many vars requested");
             if (cntBytes > 222)
                 throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
-
             try
             {
                 // first create the header
@@ -532,27 +532,13 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                socket.Send(package.array, 0, package.array.Length, SocketFlags.None);
+                socket.Send(package.Array, package.Array.Length, SocketFlags.None);
 
                 var s7data = COTP.TSDU.Read(socket);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
 
-                int offset = 18;
-                foreach (var dataItem in dataItems)
-                {
-                    int byteCnt = VarTypeToByteLength(dataItem.VarType, dataItem.Count);
-                    byte[] bytes = new byte[byteCnt];
-
-                    for (int i = 0; i < byteCnt; i++)
-                    {
-                        bytes[i] = s7data[i + offset];
-                    }
-
-                    offset += byteCnt + 4;
-
-                    dataItem.Value = ParseBytes(dataItem.VarType, bytes, dataItem.Count);
-                }
+                ParseDataIntoDataItems(s7data, dataItems);
             }
             catch (SocketException socketException)
             {
