@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net;
-using System.Net.Sockets;
 
 using System.IO;
 using System.Threading.Tasks;
@@ -14,22 +13,18 @@ namespace S7.Net.UnitTest
     [TestClass]
     public class ProtocolUnitTest
     {
-        /*
-         * Not sure how to implment these tests cleanly now. Probably need to spin up a TcpServer. 
-          [TestMethod]
-          public void TPKT_Read()
-          {
-              Socket s = new Socket(SocketType.Stream, ProtocolType.Tcp);
-              s.Send(StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd"));
-              //Socket m = new MemoryStream();
-              var t = TPKT.Read(s);
-              Assert.AreEqual(0x03, t.Version);
-              Assert.AreEqual(0x29, t.Length);
-              //m.Position = 0;
-              //t = TPKT.ReadAsync(m).Result;
-              //Assert.AreEqual(0x03, t.Version);
-              //Assert.AreEqual(0x29, t.Length);
-          }
+        [TestMethod]
+        public void TPKT_Read()
+        {
+            var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd"));
+            var t = TPKT.Read(m);
+            Assert.AreEqual(0x03, t.Version);
+            Assert.AreEqual(0x29, t.Length);
+            m.Position = 0;
+            t = TPKT.ReadAsync(m).Result;
+            Assert.AreEqual(0x03, t.Version);
+            Assert.AreEqual(0x29, t.Length);
+        }
 
         [TestMethod]
         [ExpectedException(typeof(TPKTInvalidException))]
@@ -58,7 +53,7 @@ namespace S7.Net.UnitTest
             t = COTP.TSDU.ReadAsync(m).Result;
             Assert.IsTrue(expected.SequenceEqual(t));
         }
-         */
+
         private static byte[] StringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)
@@ -66,7 +61,5 @@ namespace S7.Net.UnitTest
                              .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
                              .ToArray();
         }
-
     }
-
 }

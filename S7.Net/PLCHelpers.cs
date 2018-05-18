@@ -316,11 +316,6 @@ namespace S7.Net
             }
         }
 
-        /// <summary>
-        /// Get S7 Package for value
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         public byte[] GetPackage(object value)
         {
             switch (value.GetType().Name)

@@ -79,13 +79,12 @@
     <Compile Include="Conversion.cs" />
     <Compile Include="COTP.cs" />
     <Compile Include="Enums.cs" />
-    <Compile Include="PLC.cs" />
-    <Compile Include="PLCAsynchronous.cs" />
+    <Compile Include="Plc.cs" />
+    <Compile Include="PlcAsynchronous.cs" />
     <Compile Include="PLCExceptions.cs" />
-    <Compile Include="PLCHelpers.cs" />
-    <Compile Include="PLCSynchronous.cs" />
+    <Compile Include="PlcHelpers.cs" />
+    <Compile Include="PlcSynchronous.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SocketExtension.cs" />
     <Compile Include="TPKT.cs" />
     <Compile Include="Types\Bit.cs" />
     <Compile Include="Types\Boolean.cs" />

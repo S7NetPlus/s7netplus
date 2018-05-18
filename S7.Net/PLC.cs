@@ -17,10 +17,9 @@ namespace S7.Net
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
         
-        /// <summary>
-        /// TCP Connection to device
-        /// </summary>
-        private Socket socket;
+        //TCP connection to device
+        private TcpClient tcpClient;
+        private NetworkStream stream;
 
         /// <summary>
         /// IP address of the PLC
@@ -70,11 +69,11 @@ namespace S7.Net
             {
                 try
                 {
-                    if (socket == null)
+                    if (tcpClient == null)
                         return false;
 
                     //TODO: Actually check communication by sending an empty TPDU
-                    return socket.Connected;
+                    return tcpClient.Connected;
                 }
                 catch { return false; }
             }
@@ -120,9 +119,9 @@ namespace S7.Net
         /// </summary>
         public void Close()
         {
-            if (socket != null)
+            if (tcpClient != null)
             {
-                if (socket.Connected) socket.Close();
+                if (tcpClient.Connected) tcpClient.Close();
             }
         }
 
