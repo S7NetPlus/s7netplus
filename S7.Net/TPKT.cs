@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace S7.Net
 {
@@ -15,14 +17,15 @@ namespace S7.Net
         public byte[] Data;
 
         /// <summary>
-        /// Reds a TPKT from the socket
+        /// Reads a TPKT from the socket
         /// </summary>
-        /// <param name="socket">The socket to read from</param>
-        /// <returns>TPKT Instace</returns>
-        public static TPKT Read(Socket socket)
+        /// <param name="stream">The stream to read from</param>
+        /// <returns>TPKT Instance</returns>
+        public static TPKT Read(Stream stream)
         {
             var buf = new byte[4];
-            socket.Receive(buf, 4, SocketFlags.None);
+            int len = stream.Read(buf, 0, 4);
+            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             var pkt = new TPKT
             {
                 Version = buf[0],
@@ -32,7 +35,34 @@ namespace S7.Net
             if (pkt.Length > 0)
             {
                 pkt.Data = new byte[pkt.Length - 4];
-                socket.Receive(pkt.Data, pkt.Length - 4, SocketFlags.None);
+                len = stream.Read(pkt.Data, 0, pkt.Length - 4);
+                if (len < pkt.Length - 4)
+                    throw new TPKTInvalidException("TPKT is incomplete / invalid");
+            }
+            return pkt;
+        }
+
+        /// <summary>
+        /// Reads a TPKT from the socket Async
+        /// </summary>
+        /// <param name="stream">The stream to read from</param>
+        /// <returns>Task TPKT Instace</returns>
+        public static async Task<TPKT> ReadAsync(Stream stream)
+        {
+            var buf = new byte[4];
+            int len = await stream.ReadAsync(buf, 0, 4);
+            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
+            var pkt = new TPKT
+            {
+                Version = buf[0],
+                Reserved1 = buf[1],
+                Length = buf[2] * 256 + buf[3] //BigEndian
+            };
+            if (pkt.Length > 0)
+            {
+                pkt.Data = new byte[pkt.Length - 4];
+                len = await stream.ReadAsync(pkt.Data, 0, pkt.Length - 4);
+                if (len < pkt.Length - 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             }
             return pkt;
         }

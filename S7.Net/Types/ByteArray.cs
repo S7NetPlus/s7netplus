@@ -6,7 +6,7 @@ namespace S7.Net.Types
     {
         List<byte> list = new List<byte>();
 
-        public byte[] array
+        public byte[] Array
         {
             get { return list.ToArray(); }
         }
@@ -38,7 +38,7 @@ namespace S7.Net.Types
 
         public void Add(ByteArray byteArray)
         {
-            list.AddRange(byteArray.array);
+            list.AddRange(byteArray.Array);
         }
     }
 }
