@@ -344,7 +344,7 @@ namespace S7.Net
                 }
                 throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return await WriteBytesAsync(dataType, db, startByteAdr, GetPackage(value));
+            return await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>

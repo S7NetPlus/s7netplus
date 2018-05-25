@@ -324,7 +324,7 @@ namespace S7.Net
                 }
                 throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return WriteBytes(dataType, db, startByteAdr, GetPackage(value));
+            return WriteBytes(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>

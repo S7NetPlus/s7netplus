@@ -316,42 +316,6 @@ namespace S7.Net
             }
         }
 
-        public byte[] GetPackage(object value)
-        {
-            switch (value.GetType().Name)
-            {
-                case "Byte":
-                    return Types.Byte.ToByteArray((byte)value);
-                case "Int16":
-                    return Types.Int.ToByteArray((Int16)value);
-                case "UInt16":
-                    return Types.Word.ToByteArray((UInt16)value);
-                case "Int32":
-                    return Types.DInt.ToByteArray((Int32)value);
-                case "UInt32":
-                    return Types.DWord.ToByteArray((UInt32)value);
-                case "Double":
-                    return Types.Double.ToByteArray((double)value);
-                case "Byte[]":
-                    return (byte[])value;
-                case "Int16[]":
-                    return Types.Int.ToByteArray((Int16[])value);
-                case "UInt16[]":
-                    return Types.Word.ToByteArray((UInt16[])value);
-                case "Int32[]":
-                    return Types.DInt.ToByteArray((Int32[])value);
-                case "UInt32[]":
-                    return Types.DWord.ToByteArray((UInt32[])value);
-                case "Double[]":
-                    return Types.Double.ToByteArray((double[])value);
-                case "String":
-                    return Types.String.ToByteArray(value as string);
-                default:
-                    throw new InvalidVariableTypeException();
-            }
-        }
-
-
         /// <summary>
         /// Sets the <see cref="LastErrorCode"/> to <see cref="ErrorCode.NoError"/> and <see cref="LastErrorString"/> to <see cref="string.Empty"/>.
         /// </summary>

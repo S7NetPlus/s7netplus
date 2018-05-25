@@ -85,6 +85,7 @@
     <Compile Include="PlcHelpers.cs" />
     <Compile Include="PlcSynchronous.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocol\Serialization.cs" />
     <Compile Include="TPKT.cs" />
     <Compile Include="Types\Bit.cs" />
     <Compile Include="Types\Boolean.cs" />
