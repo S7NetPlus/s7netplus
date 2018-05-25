@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using S7.Net.Protocol;
 
 //Implement obsolete synchronous methods here
 namespace S7.Net
@@ -399,6 +400,21 @@ namespace S7.Net
                 LastErrorString = exc.Message;
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Write DataItem(s) to the PLC. Throws an exception if the response is invalid
+        /// or when the PLC reports errors for item(s) written.
+        /// </summary>
+        /// <param name="dataItems">The DataItem(s) to write to the PLC.</param>
+        public void Write(params DataItem[] dataItems)
+        {
+            var message = new ByteArray();
+            var length = S7WriteMultiple.CreateRequest(message, dataItems);
+            stream.Write(message.Array, 0, length);
+
+            var response = COTP.TSDU.Read(stream);
+            S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
         private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)

@@ -63,21 +63,21 @@ namespace S7.Net.Protocol
             Serialization.SetWordAt(message, Header.Offsets.MessageLength, (ushort) message.Length);
             Serialization.SetWordAt(message, Header.Offsets.DataLength, (ushort) (message.Length - paramOffset));
 
-            return dataOffset;
+            return message.Length;
         }
 
         public static void ParseResponse(byte[] message, int length, DataItem[] dataItems)
         {
-            if (length < 19) throw new Exception("Not enough data received to parse write response.");
+            if (length < 12) throw new Exception("Not enough data received to parse write response.");
 
-            var messageError = Serialization.GetWordAt(message, 17);
+            var messageError = Serialization.GetWordAt(message, 10);
             if (messageError != 0)
                 throw new Exception($"Write failed with error {messageError}.");
 
-            if (length < 21 + dataItems.Length)
+            if (length < 14 + dataItems.Length)
                 throw new Exception("Not enough data received to parse individual item responses.");
 
-            IList<byte> itemResults = new ArraySegment<byte>(message, 21, dataItems.Length);
+            IList<byte> itemResults = new ArraySegment<byte>(message, 14, dataItems.Length);
 
             List<Exception> errors = null;
 

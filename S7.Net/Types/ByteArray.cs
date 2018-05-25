@@ -6,10 +6,18 @@ namespace S7.Net.Types
     {
         List<byte> list = new List<byte>();
 
+        public byte this[int index]
+        {
+            get => list[index];
+            set => list[index] = value;
+        }
+
         public byte[] Array
         {
             get { return list.ToArray(); }
         }
+
+        public int Length => list.Count;
 
         public ByteArray()
         {
@@ -29,6 +37,12 @@ namespace S7.Net.Types
         public void Add(byte item)
         {
             list.Add(item);
+        }
+
+        public void AddWord(ushort value)
+        {
+            list.Add((byte) (value >> 8));
+            list.Add((byte) value);
         }
 
         public void Add(byte[] items)
