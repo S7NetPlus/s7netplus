@@ -234,12 +234,12 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
             }
             return dataItems;

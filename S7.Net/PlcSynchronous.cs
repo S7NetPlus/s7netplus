@@ -272,7 +272,8 @@ namespace S7.Net
             ErrorCode lastError = WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
             if (lastError != ErrorCode.NoError)
             {
-                return lastError;            }
+                return lastError;
+            }
 
             return ErrorCode.NoError;
         }
@@ -388,13 +389,13 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
                 return null;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
                 return null;
             }
@@ -525,7 +526,7 @@ namespace S7.Net
                 {
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
-                
+
                 stream.Write(package.Array, 0, package.Array.Length);
 
                 var s7data = COTP.TSDU.Read(stream); //TODO use Async
@@ -536,12 +537,12 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
             }
         }
