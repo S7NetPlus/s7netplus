@@ -15,6 +15,8 @@ namespace S7.Net.Protocol
         {
             switch (value.GetType().Name)
             {
+                case "Boolean":
+                    return new[] {(byte) ((bool) value ? 1 : 0)};
                 case "Byte":
                     return Types.Byte.ToByteArray((byte) value);
                 case "Int16":
