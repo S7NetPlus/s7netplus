@@ -437,7 +437,7 @@ namespace S7.Net
         private byte[] GetS7ConnectionSetup()
         {
             return new byte[] {  3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 3, 0, 3,
-                    7, 80 //Try 1920 PDU Size. Same as libnodave.
+                    7, 128 //Try 1920 PDU Size. Same as libnodave.
             };
         }
 
