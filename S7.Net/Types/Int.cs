@@ -29,8 +29,8 @@ namespace S7.Net.Types
         {
             byte[] bytes = new byte[2];
 
-            bytes[1] = (byte)((int)value & 0xFF);
-            bytes[0] = (byte)((int)value >> 8 & 0xFF);
+            bytes[0] = (byte) (value >> 8 & 0xFF);
+            bytes[1] = (byte)(value & 0xFF);
 
             return bytes;
         }
@@ -45,8 +45,8 @@ namespace S7.Net.Types
 
             for(int i=0; i< value.Length; i++)
             {
-                bytes[bytesPos++] = (byte)((int)value[i] & 0xFF);
-                bytes[bytesPos++] = (byte)(((int)value[i] >> 8) & 0xFF);
+                bytes[bytesPos++] = (byte)((value[i] >> 8) & 0xFF);
+                bytes[bytesPos++] = (byte) (value[i] & 0xFF);
             }
             return bytes;
         }
