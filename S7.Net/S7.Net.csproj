@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
@@ -7,5 +7,5 @@
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
   </PropertyGroup>
-  
+
 </Project>

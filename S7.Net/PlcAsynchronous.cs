@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using S7.Net.Protocol;
 
 namespace S7.Net
 {
@@ -234,12 +235,12 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
             }
             return dataItems;
@@ -344,7 +345,7 @@ namespace S7.Net
                 }
                 throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return await WriteBytesAsync(dataType, db, startByteAdr, GetPackage(value));
+            return await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>
@@ -409,6 +410,22 @@ namespace S7.Net
                 bytes[cnt] = s7data[cnt + 18];
 
             return bytes;
+        }
+
+        /// <summary>
+        /// Write DataItem(s) to the PLC. Throws an exception if the response is invalid
+        /// or when the PLC reports errors for item(s) written.
+        /// </summary>
+        /// <param name="dataItems">The DataItem(s) to write to the PLC.</param>
+        /// <returns>Task that completes when response from PLC is parsed.</returns>
+        public async Task WriteAsync(params DataItem[] dataItems)
+        {
+            var message = new ByteArray();
+            var length = S7WriteMultiple.CreateRequest(message, dataItems);
+            await stream.WriteAsync(message.Array, 0, length).ConfigureAwait(false);
+
+            var response = await COTP.TSDU.ReadAsync(stream).ConfigureAwait(false);
+            S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
         /// <summary>

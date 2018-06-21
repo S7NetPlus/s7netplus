@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using S7.Net.Protocol;
 
 //Implement obsolete synchronous methods here
 namespace S7.Net
@@ -272,7 +273,8 @@ namespace S7.Net
             ErrorCode lastError = WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
             if (lastError != ErrorCode.NoError)
             {
-                return lastError;            }
+                return lastError;
+            }
 
             return ErrorCode.NoError;
         }
@@ -323,7 +325,7 @@ namespace S7.Net
                 }
                 throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return WriteBytes(dataType, db, startByteAdr, GetPackage(value));
+            return WriteBytes(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>
@@ -388,16 +390,31 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
                 return null;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Write DataItem(s) to the PLC. Throws an exception if the response is invalid
+        /// or when the PLC reports errors for item(s) written.
+        /// </summary>
+        /// <param name="dataItems">The DataItem(s) to write to the PLC.</param>
+        public void Write(params DataItem[] dataItems)
+        {
+            var message = new ByteArray();
+            var length = S7WriteMultiple.CreateRequest(message, dataItems);
+            stream.Write(message.Array, 0, length);
+
+            var response = COTP.TSDU.Read(stream);
+            S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
         private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
@@ -525,7 +542,7 @@ namespace S7.Net
                 {
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
-                
+
                 stream.Write(package.Array, 0, package.Array.Length);
 
                 var s7data = COTP.TSDU.Read(stream); //TODO use Async
@@ -536,12 +553,12 @@ namespace S7.Net
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = socketException.Message;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
+                LastErrorCode = ErrorCode.ReadData;
                 LastErrorString = exc.Message;
             }
         }

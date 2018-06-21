@@ -897,6 +897,21 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.Bool1, tc2.Bool1);
         }
 
+        [TestMethod]
+        public void T29_Read_Write_ExceptionHandlingWhenPlcIsNotReachable()
+        {
+            // leave plc Open
+            S7TestServer.Stop();
+
+            double test_value = 55.66;
+            plc.Write("DB1.DBD0", test_value);
+            Assert.AreEqual(plc.LastErrorCode, ErrorCode.WriteData, "No Write Error.");
+
+            var helper = plc.Read("DB1.DBD0");
+            Assert.AreEqual(helper, null, "Value in Read.");
+            Assert.AreEqual(plc.LastErrorCode, ErrorCode.ReadData, "No Read Error.");
+        }
+
         #endregion
 
         #region Private methods
