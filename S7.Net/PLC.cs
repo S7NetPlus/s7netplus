@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Types;
 
 
 namespace S7.Net
@@ -178,6 +181,25 @@ namespace S7.Net
             }
         }
 
+        private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
+        {
+            // 12 bytes of header data, 12 bytes of parameter data for each dataItem
+            if ((dataItems.Count + 1) * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
+            
+            // 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
+            if (GetDataLength(dataItems) + dataItems.Count * 4 + 14 > MaxPDUSize) throw new Exception("Too much data requested for read");
+        }
+
+        private void AssertPduSizeForWrite(ICollection<DataItem> dataItems)
+        {
+            // 12 bytes of header data, 18 bytes of parameter data for each dataItem
+            if (dataItems.Count * 18 + 12 > MaxPDUSize) throw new Exception("Too many vars supplied for write");
+
+            // 12 bytes of header data, 16 bytes of data for each dataItem and the actual data
+            if (GetDataLength(dataItems) + dataItems.Count * 16 + 12 > MaxPDUSize)
+                throw new Exception("Too much data supplied for write");
+        }
+
         private void ConfigureConnection()
         {
             if (tcpClient == null)
@@ -187,6 +209,13 @@ namespace S7.Net
 
             tcpClient.ReceiveTimeout = ReadTimeout;
             tcpClient.SendTimeout = WriteTimeout;
+        }
+
+        private int GetDataLength(IEnumerable<DataItem> dataItems)
+        {
+            // Odd length variables are 0-padded
+            return dataItems.Select(di => VarTypeToByteLength(di.VarType, di.Count))
+                .Sum(len => (len & 1) == 1 ? len + 1 : len);
         }
 
         #region IDisposable Support

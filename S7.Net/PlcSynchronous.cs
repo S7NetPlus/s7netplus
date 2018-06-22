@@ -374,6 +374,8 @@ namespace S7.Net
         /// <param name="dataItems">The DataItem(s) to write to the PLC.</param>
         public void Write(params DataItem[] dataItems)
         {
+            AssertPduSizeForWrite(dataItems);
+
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
             stream.Write(message.Array, 0, length);
@@ -479,15 +481,10 @@ namespace S7.Net
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
-            int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-
-            //TODO: Figure out how to use MaxPDUSize here
             //Snap7 seems to choke on PDU sizes above 256 even if snap7 
             //replies with bigger PDU size in connection setup.
-            if (dataItems.Count > 20)
-                throw new Exception("Too many vars requested");
-            if (cntBytes > 222)
-                throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
+            AssertPduSizeForRead(dataItems);
+
             try
             {
                 // first create the header
