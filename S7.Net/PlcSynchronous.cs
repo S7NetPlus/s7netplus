@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using S7.Net.Protocol;
 
-//Implement obsolete synchronous methods here
+//Implement synchronous methods here
 namespace S7.Net
 {
     public partial class Plc
@@ -519,7 +519,6 @@ namespace S7.Net
         /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
-        [Obsolete("Use ReadMultipleVarsAsync. Note: different function signature")]
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));

@@ -31,7 +31,7 @@ using S7.UnitTest.Helpers;
  *
  */
 
-//This file contains tests for the obsolete synchronous methods
+//This file contains tests for the synchronous methods
 #pragma warning disable CS0618
 namespace S7.Net.UnitTest
 {
