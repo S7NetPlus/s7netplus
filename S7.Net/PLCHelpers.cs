@@ -381,52 +381,29 @@ namespace S7.Net
             {
                 case CpuType.S7200:
                     //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
-                    bSend1[11] = 193;
-                    bSend1[12] = 2;
-                    bSend1[13] = 16;
-                    bSend1[14] = 0;
+                    bSend1[13] = 0x10;
+                    bSend1[14] = 0x00;
                     //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
-                    bSend1[15] = 194;
-                    bSend1[16] = 2;
-                    bSend1[17] = 16;
-                    bSend1[18] = 0;
+                    bSend1[17] = 0x10;
+                    bSend1[18] = 0x00;
                     break;
                 case CpuType.S71200:
                 case CpuType.S7300:
-                    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-                    bSend1[11] = 193;
-                    bSend1[12] = 2;
-                    bSend1[13] = 1;
-                    bSend1[14] = 0;
-                    //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
-                    bSend1[15] = 194;
-                    bSend1[16] = 2;
-                    bSend1[17] = 3;
-                    bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
-                    break;
                 case CpuType.S7400:
-                    //S7400: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-                    bSend1[11] = 193;
-                    bSend1[12] = 2;
-                    bSend1[13] = 1;
-                    bSend1[14] = 0;
-                    //S7400: Chr(194) & Chr(2) & Chr(3) & Chr(3)  'Fremder Tsap
-                    bSend1[15] = 194;
-                    bSend1[16] = 2;
-                    bSend1[17] = 3;
-                    bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
+                    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
+                    bSend1[13] = 0x01;
+                    bSend1[14] = 0x00;
+                    //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
+                    bSend1[17] = 0x03;
+                    bSend1[18] = (byte)((Rack << 5) | (int) Slot);
                     break;
                 case CpuType.S71500:
                     // Eigener Tsap
-                    bSend1[11] = 193;
-                    bSend1[12] = 2;
                     bSend1[13] = 0x10;
-                    bSend1[14] = 0x2;
+                    bSend1[14] = 0x02;
                     // Fredmer Tsap
-                    bSend1[15] = 194;
-                    bSend1[16] = 2;
-                    bSend1[17] = 0x3;
-                    bSend1[18] = (byte)(Rack * 2 * 16 + Slot);
+                    bSend1[17] = 0x03;
+                    bSend1[18] = (byte)((Rack << 5) | (int) Slot);
                     break;
                 default:
                     throw new Exception("Wrong CPU Type Secified");
