@@ -24,7 +24,7 @@ namespace S7.Net
         {
             await ConnectAsync();
 
-            await stream.WriteAsync(GetCOPTConnectionRequest(CPU), 0, 22);
+            await stream.WriteAsync(GetCOTPConnectionRequest(CPU), 0, 22);
             var response = await COTP.TPDU.ReadAsync(stream);
             if (response.PDUType != 0xd0) //Connect Confirm
             {

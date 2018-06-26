@@ -357,7 +357,7 @@ namespace S7.Net
             }
         }
 
-        private byte[] GetCOPTConnectionRequest(CpuType CPU)
+        private byte[] GetCOTPConnectionRequest(CpuType CPU)
         {
             byte[] bSend1 = {
                     3, 0, 0, 22, //TPKT

@@ -26,7 +26,7 @@ namespace S7.Net
             }
             try
             {
-                stream.Write(GetCOPTConnectionRequest(CPU), 0, 22);
+                stream.Write(GetCOTPConnectionRequest(CPU), 0, 22);
                 var response = COTP.TPDU.Read(stream);
                 if (response.PDUType != 0xd0) //Connect Confirm
                 {
