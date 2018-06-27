@@ -60,6 +60,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="ConnectionRequestTest.cs" />
     <Compile Include="ConvertersUnitTest.cs" />
     <Compile Include="ProtocolTests.cs" />
     <Compile Include="Helpers\ConsoleManager.cs" />
