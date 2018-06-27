@@ -6,7 +6,7 @@
     <ProjectGuid>{303CCED6-9ABC-4899-A509-743341AAA804}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>S7.UnitTest</RootNamespace>
+    <RootNamespace>S7.Net.UnitTest</RootNamespace>
     <AssemblyName>S7Net.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
