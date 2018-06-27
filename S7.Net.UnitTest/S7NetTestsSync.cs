@@ -877,7 +877,7 @@ namespace S7.Net.UnitTest
 
             for (int x = 0; x < count; x++)
             {
-                Assert.AreEqual(x % 256, res[x]);
+                Assert.AreEqual(x % 256, res[x], $"Mismatch at offset {x}, expected {x % 256}, actual {res[x]}.");
             }
         }
 
