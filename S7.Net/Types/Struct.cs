@@ -19,7 +19,13 @@ namespace S7.Net.Types
         {
             double numBytes = 0.0;
 
-            System.Reflection.FieldInfo[] infos = structType.GetFields();
+            var infos = structType
+            #if NETSTANDARD1_3
+                .GetTypeInfo().DeclaredFields;
+            #else
+                .GetFields();
+            #endif
+
             foreach (System.Reflection.FieldInfo info in infos)
             {
                 switch (info.FieldType.Name)
@@ -80,7 +86,14 @@ namespace S7.Net.Types
             double numBytes = 0.0;
             object structValue = Activator.CreateInstance(structType);
 
-            System.Reflection.FieldInfo[] infos = structValue.GetType().GetFields();
+
+            var infos = structValue.GetType()
+            #if NETSTANDARD1_3
+                .GetTypeInfo().DeclaredFields;
+            #else
+                .GetFields();
+            #endif
+
             foreach (System.Reflection.FieldInfo info in infos)
             {
                 switch (info.FieldType.Name)
@@ -182,7 +195,13 @@ namespace S7.Net.Types
             int bitPos = 0;
             double numBytes = 0.0;
 
-            System.Reflection.FieldInfo[] infos = type.GetFields();
+            var infos = type
+            #if NETSTANDARD1_3
+                .GetTypeInfo().DeclaredFields;
+            #else
+                .GetFields();
+            #endif
+
             foreach (System.Reflection.FieldInfo info in infos)
             {
                 bytes2 = null;
