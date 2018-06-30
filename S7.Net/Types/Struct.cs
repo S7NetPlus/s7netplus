@@ -24,7 +24,7 @@ namespace S7.Net.Types
                 .GetFields();
             #endif
 
-            foreach (System.Reflection.FieldInfo info in infos)
+            foreach (var info in infos)
             {
                 switch (info.FieldType.Name)
                 {
@@ -92,7 +92,7 @@ namespace S7.Net.Types
                 .GetFields();
             #endif
 
-            foreach (System.Reflection.FieldInfo info in infos)
+            foreach (var info in infos)
             {
                 switch (info.FieldType.Name)
                 {
@@ -200,7 +200,7 @@ namespace S7.Net.Types
                 .GetFields();
             #endif
 
-            foreach (System.Reflection.FieldInfo info in infos)
+            foreach (var info in infos)
             {
                 bytes2 = null;
                 switch (info.FieldType.Name)
