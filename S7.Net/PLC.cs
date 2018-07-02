@@ -1,11 +1,5 @@
-using S7.Net.Types;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 
 
 namespace S7.Net
@@ -103,7 +97,7 @@ namespace S7.Net
         public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
-                throw new InvalidEnumArgumentException(nameof(cpu), (int) cpu, typeof(CpuType));
+                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
 
             if (string.IsNullOrEmpty(ip))
                 throw new ArgumentException("IP address must valid.", nameof(ip));
