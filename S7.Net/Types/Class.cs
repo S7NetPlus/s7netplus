@@ -52,7 +52,7 @@ namespace S7.Net.Types
                         numBytes++;
                     numBytes += 4;
                     break;
-                case "Float":
+                case "Single":
                 case "Double":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -181,6 +181,19 @@ namespace S7.Net.Types
                             bytes[(int)numBytes + 3] });
                     numBytes += 4;
                     break;
+                case "Single":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+                    // hier auswerten
+                    value = Single.FromByteArray(
+                        new byte[] {
+                            bytes[(int)numBytes],
+                            bytes[(int)numBytes + 1],
+                            bytes[(int)numBytes + 2],
+                            bytes[(int)numBytes + 3] });
+                    numBytes += 4;
+                    break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
                     var buffer = new byte[GetClassSize(propClass)];
@@ -275,6 +288,9 @@ namespace S7.Net.Types
                     break;
                 case "Double":
                     bytes2 = Double.ToByteArray((double)propertyValue);
+                    break;
+                case "Single":
+                    bytes2 = Single.ToByteArray((float)propertyValue);
                     break;
                 default:
                     bytes2 = ToBytes(propertyValue);
