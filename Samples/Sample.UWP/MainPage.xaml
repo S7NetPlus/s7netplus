@@ -1,0 +1,25 @@
+﻿<Page
+    x:Class="Sample.UWP.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Sample.UWP"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:s7NetPlus="using:S7.Net"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    d:DataContext="{d:DesignInstance local:MainViewModel}">
+
+    <Grid>
+        <StackPanel>
+            <ComboBox ItemsSource="{Binding CpuTypes}" SelectedValue="{Binding CpuType, Mode=TwoWay}"/>
+
+            <TextBox Text="{Binding IpAddress, Mode=TwoWay}" />
+            <TextBox Text="{Binding Rack, Mode=TwoWay}" />
+            <TextBox Text="{Binding Slot, Mode=TwoWay}" />
+            <Button Command="{Binding Connect}">Connect</Button>
+            
+            <local:PlcView DataContext="{Binding PlcViewModel}"></local:PlcView>
+        </StackPanel>
+    </Grid>
+</Page>
