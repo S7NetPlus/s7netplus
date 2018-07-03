@@ -75,7 +75,7 @@ namespace S7.Net.UnitTest
                 destTsap1, destTsap2, //Destination TASP
                 192, //Parameter Code (tpdu-size)
                 1, //Parameter Length
-                9 //TPDU Size (2^9 = 512)
+                10 //TPDU Size (2^10 = 1024)
             };
         }
     }

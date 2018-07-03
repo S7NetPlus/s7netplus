@@ -21,7 +21,7 @@ namespace S7.Net.Protocol
                     3, 0,   //Destination TASP
                     192,    //Parameter Code (tpdu-size)
                     1,      //Parameter Length
-                    9       //TPDU Size (2^9 = 512)
+                    10      //TPDU Size (2^10 = 1024)
                 };
 
             switch (cpu)
