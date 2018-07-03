@@ -130,7 +130,7 @@ namespace S7.Net
                 }
                 return txt;
             }
-            catch 
+            catch
             {
                 return "";
             }
@@ -204,10 +204,23 @@ namespace S7.Net
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static UInt32 ConvertToUInt(this double input) 
+        [Obsolete("Double support is obsolete. Use ConvertToUInt(float) instead.")]
+        public static UInt32 ConvertToUInt(this double input)
         {
             uint output;
             output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Double.ToByteArray(input));
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from float to DWord (DBD)
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static UInt32 ConvertToUInt(this float input)
+        {
+            uint output;
+            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Single.ToByteArray(input));
             return output;
         }
 
@@ -216,10 +229,23 @@ namespace S7.Net
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        [Obsolete("Double support is obsolete. Use ConvertToFloat(uint) instead.")]
         public static double ConvertToDouble(this uint input)
         {
             double output;
             output = S7.Net.Types.Double.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
+            return output;
+        }
+
+        /// <summary>
+        /// Converts from DWord (DBD) to float
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static float ConvertToFloat(this uint input)
+        {
+            float output;
+            output = S7.Net.Types.Single.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
             return output;
         }
     }

@@ -276,9 +276,9 @@ namespace S7.Net
                         return DInt.ToArray(bytes);
                 case VarType.Real:
                     if (varCount == 1)
-                        return Types.Double.FromByteArray(bytes);
+                        return Types.Single.FromByteArray(bytes);
                     else
-                        return Types.Double.ToArray(bytes);
+                        return Types.Single.ToArray(bytes);
 
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
