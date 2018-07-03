@@ -100,7 +100,7 @@ namespace S7.Net
         public async Task<object> ReadAsync(string variable)
         {
             var adr = new PLCAddress(variable);
-            return await ReadAsync(adr.dataType, adr.DBNumber, adr.Address, adr.varType, 1, (byte)adr.BitNumber);
+            return await ReadAsync(adr.DataType, adr.DbNumber, adr.Address, adr.VarType, 1, (byte)adr.BitNumber);
         }
 
         /// <summary>
@@ -356,7 +356,7 @@ namespace S7.Net
         public async Task<ErrorCode> WriteAsync(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            return await WriteAsync(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
+            return await WriteAsync(adr.DataType, adr.DbNumber, adr.Address, value, adr.BitNumber);
         }
 
         /// <summary>
