@@ -204,7 +204,7 @@ namespace S7.Net
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        [Obsolete("This method will soon be deprecated. Use ConvertToUInt(float) instead.")]
+        [Obsolete("Double support is obsolete. Use ConvertToUInt(float) instead.")]
         public static UInt32 ConvertToUInt(this double input)
         {
             uint output;
@@ -229,7 +229,7 @@ namespace S7.Net
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        [Obsolete("This method will soon be deprecated. Use ConvertToFloat(uint) instead.")]
+        [Obsolete("Double support is obsolete. Use ConvertToFloat(uint) instead.")]
         public static double ConvertToDouble(this uint input)
         {
             double output;
