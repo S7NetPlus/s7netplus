@@ -133,7 +133,7 @@ namespace S7.Net
         public object Read(string variable)
         {
             var adr = new PLCAddress(variable);
-            return Read(adr.DataType, adr.DbNumber, adr.Address, adr.VarType, 1, (byte)adr.BitNumber);
+            return Read(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber);
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace S7.Net
         public ErrorCode Write(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            return Write(adr.DataType, adr.DbNumber, adr.Address, value, adr.BitNumber);
+            return Write(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber);
         }
 
         /// <summary>

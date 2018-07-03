@@ -4,7 +4,7 @@
     {
         private DataType dataType;
         private int dbNumber;
-        private int address;
+        private int startByte;
         private int bitNumber;
         private VarType varType;
 
@@ -20,10 +20,10 @@
             set => dbNumber = value;
         }
 
-        public int Address
+        public int StartByte
         {
-            get => address;
-            set => address = value;
+            get => startByte;
+            set => startByte = value;
         }
 
         public int BitNumber
@@ -40,7 +40,7 @@
 
         public PLCAddress(string address)
         {
-            Parse(address, out dataType, out dbNumber, out varType, out this.address, out bitNumber);
+            Parse(address, out dataType, out dbNumber, out varType, out startByte, out bitNumber);
         }
 
         public static void Parse(string input, out DataType dataType, out int dbNumber, out VarType varType, out int address, out int bitNumber)
