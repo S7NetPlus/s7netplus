@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
+#if NET_FULL
+using System.Runtime.Serialization;    
+#endif
+
 
 namespace S7.Net
 {
@@ -21,9 +20,11 @@ namespace S7.Net
         {
         }
 
+        #if NET_FULL
         protected WrongNumberOfBytesException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
+        #endif
     }
 
     internal class InvalidAddressException : Exception
@@ -40,9 +41,11 @@ namespace S7.Net
         {
         }
 
+        #if NET_FULL
         protected InvalidAddressException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
+        #endif
     }
 
     internal class InvalidVariableTypeException : Exception
@@ -59,9 +62,11 @@ namespace S7.Net
         {
         }
 
+        #if NET_FULL
         protected InvalidVariableTypeException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
+        #endif
     }
 
     internal class TPKTInvalidException : Exception
@@ -78,8 +83,10 @@ namespace S7.Net
         {
         }
 
+        #if NET_FULL
         protected TPKTInvalidException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
+        #endif
     }
 }

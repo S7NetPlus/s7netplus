@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -98,15 +97,20 @@ namespace S7.Net
                 var segment = TPDU.Read(stream);
                 if (segment == null) return null;
 
-                var output = new MemoryStream(segment.Data.Length);
+                var buffer = new byte[segment.Data.Length];
+                var output = new MemoryStream(buffer);
                 output.Write(segment.Data, 0, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = TPDU.Read(stream);
-                    output.Write(segment.Data, (int)output.Position, segment.Data.Length);
+                    Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
+                    var lastPosition = output.Position;
+                    output = new MemoryStream(buffer);
+                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
                 }
-                return output.GetBuffer().Take((int)output.Position).ToArray();
+
+                return buffer.Take((int)output.Position).ToArray();
             }
 
             /// <summary>
@@ -120,15 +124,19 @@ namespace S7.Net
                 var segment = await TPDU.ReadAsync(stream);
                 if (segment == null) return null;
 
-                var output = new MemoryStream(segment.Data.Length);
+                var buffer = new byte[segment.Data.Length];
+                var output = new MemoryStream(buffer);
                 output.Write(segment.Data, 0, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = await TPDU.ReadAsync(stream);
-                    output.Write(segment.Data, (int)output.Position, segment.Data.Length);
+                    Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
+                    var lastPosition = output.Position;
+                    output = new MemoryStream(buffer);
+                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
                 }
-                return output.GetBuffer().Take((int)output.Position).ToArray();
+                return buffer.Take((int)output.Position).ToArray();
             }
         }
     }
