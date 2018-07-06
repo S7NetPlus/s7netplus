@@ -5,6 +5,15 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
+
+    <Title>S7.Net Plus</Title>
+    <Description>A continuation of Juergen1969's Siemens communication library.</Description>
+    <Authors>Derek Heiser;Michele Cattafesta;Michael Croes;Raphael Schlameuß</Authors>
+    <PackageProjectUrl>https://github.com/killnine/s7netplus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/killnine/s7netplus</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>PLC Siemens Communication S7</PackageTags>
+    <Copyright>Derek Heiser 2015</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'netstandard2.0' ">
