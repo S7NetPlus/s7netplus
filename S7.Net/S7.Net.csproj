@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard2.0;netstandard1.3</TargetFrameworks>
