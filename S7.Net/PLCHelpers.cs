@@ -177,9 +177,9 @@ namespace S7.Net
         {
             //header size = 19 bytes
             var package = new Types.ByteArray(19);
-            package.Add(new byte[] { 0x03, 0x00, 0x00 });
+            package.Add(new byte[] { 0x03, 0x00 });
             //complete package size
-            package.Add((byte)(19 + (12 * amount)));
+            package.Add(Types.Int.ToByteArray((short)(19 + (12 * amount))));
             package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
             package.Add(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
@@ -276,9 +276,9 @@ namespace S7.Net
                         return DInt.ToArray(bytes);
                 case VarType.Real:
                     if (varCount == 1)
-                        return Types.Double.FromByteArray(bytes);
+                        return Types.Single.FromByteArray(bytes);
                     else
-                        return Types.Double.ToArray(bytes);
+                        return Types.Single.ToArray(bytes);
 
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);

@@ -49,7 +49,7 @@ namespace S7.Net.Types
                             numBytes++;
                         numBytes += 4;
                         break;
-                    case "Float": 
+                    case "Single":
                     case "Double":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -137,8 +137,8 @@ namespace S7.Net.Types
                         uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 1],
-                                                                           bytes[(int)numBytes + 0]);                        
-                        info.SetValue(structValue, sourceUInt.ConvertToInt());                       
+                                                                           bytes[(int)numBytes + 0]);
+                        info.SetValue(structValue, sourceUInt.ConvertToInt());
                         numBytes += 4;
                         break;
                     case "UInt32":
@@ -158,6 +158,17 @@ namespace S7.Net.Types
                             numBytes++;
                         // hier auswerten
                         info.SetValue(structValue, Double.FromByteArray(new byte[] { bytes[(int)numBytes],
+                                                                           bytes[(int)numBytes + 1],
+                                                                           bytes[(int)numBytes + 2],
+                                                                           bytes[(int)numBytes + 3] }));
+                        numBytes += 4;
+                        break;
+                    case "Single":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        // hier auswerten
+                        info.SetValue(structValue, Single.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3] }));
@@ -236,6 +247,9 @@ namespace S7.Net.Types
                     case "Double":
                         bytes2 = Double.ToByteArray((double)info.GetValue(structValue));
                         break;
+                    case "Single":
+                        bytes2 = Single.ToByteArray((float)info.GetValue(structValue));
+                        break;
                 }
                 if (bytes2 != null)
                 {
@@ -244,7 +258,7 @@ namespace S7.Net.Types
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
                     bytePos = (int)numBytes;
-                    for (int bCnt=0; bCnt<bytes2.Length; bCnt++)
+                    for (int bCnt = 0; bCnt < bytes2.Length; bCnt++)
                         bytes[bytePos + bCnt] = bytes2[bCnt];
                     numBytes += bytes2.Length;
                 }
@@ -252,6 +266,6 @@ namespace S7.Net.Types
             return bytes;
         }
 
-       
+
     }
 }
