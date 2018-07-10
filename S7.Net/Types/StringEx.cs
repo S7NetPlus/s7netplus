@@ -43,7 +43,7 @@ namespace S7.Net.Types
 
             if (value == null) return bytes;
 
-            bytes[1] = (byte) Encoding.ASCII.GetBytes(value, 0, reservedLength, bytes, 2);
+            bytes[1] = (byte) Encoding.ASCII.GetBytes(value, 0, length.Value, bytes, 2);
             return bytes;
         }
     }
