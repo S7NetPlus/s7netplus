@@ -29,11 +29,10 @@ namespace S7.Net.Types
         /// Converts a <see cref="T:string"/> to S7 string with 2-byte header.
         /// </summary>
         /// <param name="value">The string to convert to byte array.</param>
-        /// <param name="lengthIncludingHeader">The length (in bytes) allocated in PLC for string and header.</param>
-        /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="lengthIncludingHeader"/>.</returns>
-        public static byte[] ToByteArray(string value, int lengthIncludingHeader)
+        /// <param name="reservedLength">The length (in bytes) allocated in PLC for string excluding header.</param>
+        /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="reservedLength"/> + 2.</returns>
+        public static byte[] ToByteArray(string value, int reservedLength)
         {
-            var reservedLength = lengthIncludingHeader - 2;
             if (reservedLength > byte.MaxValue) throw new ArgumentException($"The maximum string length supported is {byte.MaxValue}.");
 
             var length = value?.Length;
