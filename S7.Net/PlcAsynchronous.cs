@@ -345,7 +345,7 @@ namespace S7.Net
         public async Task WriteAsync(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            await WriteAsync(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
+            await WriteAsync(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber);
         }
 
         /// <summary>
