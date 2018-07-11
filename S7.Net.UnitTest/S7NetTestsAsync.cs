@@ -226,10 +226,8 @@ namespace S7.Net.UnitTest
                 IntVariable111 = 201
             };
             plc.WriteStruct(tc, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongStruct tc2 = (TestLongStruct)await plc.ReadStructAsync(typeof(TestLongStruct), DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -292,11 +290,9 @@ namespace S7.Net.UnitTest
                 IntVariable111 = 201
             };
             await plc.WriteClassAsync(tc, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongClass tc2 = new TestLongClass();
             await plc.ReadClassAsync(tc2, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -571,7 +567,7 @@ namespace S7.Net.UnitTest
 
         [TestMethod]
         [ExpectedException(typeof(NullReferenceException))]
-        public async Task Test_Async_ReadBytesThrowsExceptionIfPlcIsNotConnected()
+        public async Task Test_Async_ReadBytesReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
@@ -831,11 +827,9 @@ namespace S7.Net.UnitTest
         {
             double test_value = 55.66;
             await plc.WriteAsync("DB1.DBD0", test_value);
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Write Double");
             var helper = await plc.ReadAsync("DB1.DBD0");
             double test_value2 = Conversion.ConvertToDouble((uint)helper);
 
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Read Double");
             Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
         }
 
@@ -844,11 +838,9 @@ namespace S7.Net.UnitTest
         {
             float test_value = 55.6632f;
             await plc.WriteAsync("DB1.DBD0", test_value);
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Write Single");
             var helper = await plc.ReadAsync("DB1.DBD0");
             float test_value2 = Conversion.ConvertToFloat((uint)helper);
 
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Read Single");
             Assert.AreEqual(test_value, test_value2, "Compare Write/Read"); //No delta, datatype matches
         }
 
