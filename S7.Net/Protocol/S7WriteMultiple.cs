@@ -23,7 +23,7 @@ namespace S7.Net.Protocol
             foreach (var item in dataItems)
             {
                 message.Add(Parameter.Template);
-                var value = Serialization.SerializeValue(item.Value);
+                var value = Serialization.SerializeDataItem(item);
                 var wordLen = item.Value is bool ? 1 : 2;
 
                 message[paramOffset + Parameter.Offsets.WordLength] = (byte) wordLen;

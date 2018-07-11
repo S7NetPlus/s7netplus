@@ -5,167 +5,6 @@ using System.Linq;
 
 namespace S7.Net
 {
-
-    internal class PLCAddress
-    {
-        public DataType dataType;
-        public int DBNumber;
-        public int Address;
-        public int BitNumber;
-        public VarType varType;
-
-        public PLCAddress(string address)
-        {
-            ParseString(address);
-        }
-
-        private void ParseString(string address)
-        {
-            BitNumber = -1;
-            switch (address.Substring(0, 2))
-            {
-                case "DB":
-                    string[] strings = address.Split(new char[] { '.' });
-                    if (strings.Length < 2)
-                        throw new InvalidAddressException("To few periods for DB address");
-
-                    dataType = DataType.DataBlock;
-                    DBNumber = int.Parse(strings[0].Substring(2));
-                    Address = int.Parse(strings[1].Substring(3));
-
-                    string dbType = strings[1].Substring(0, 3);
-                    switch (dbType)
-                    {
-                        case "DBB":
-                            varType = VarType.Byte;
-                            return;
-                        case "DBW":
-                            varType = VarType.Word;
-                            return;
-                        case "DBD":
-                            varType = VarType.DWord;
-                            return;
-                        case "DBX":
-                            BitNumber = int.Parse(strings[2]);
-                            if (BitNumber > 7)
-                                throw new InvalidAddressException("Bit can only be 0-7");
-                            varType = VarType.Bit;
-                            return;
-                        default:
-                            throw new InvalidAddressException();
-                    }
-                case "EB":
-                    // Input byte
-                    dataType = DataType.Input;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Byte;
-                    return;
-                case "EW":
-                    // Input word
-                    dataType = DataType.Input;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Word;
-                    return;
-                case "ED":
-                    // Input double-word
-                    dataType = DataType.Input;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.DWord;
-                    return;
-                case "AB":
-                    // Output byte
-                    dataType = DataType.Output;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Byte;
-                    return;
-                case "AW":
-                    // Output word
-                    dataType = DataType.Output;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Word;
-                    return;
-                case "AD":
-                    // Output double-word
-                    dataType = DataType.Output;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.DWord;
-                    return;
-                case "MB":
-                    // Memory byte
-                    dataType = DataType.Memory;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Byte;
-                    return;
-                case "MW":
-                    // Memory word
-                    dataType = DataType.Memory;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.Word;
-                    return;
-                case "MD":
-                    // Memory double-word
-                    dataType = DataType.Memory;
-                    DBNumber = 0;
-                    Address = int.Parse(address.Substring(2));
-                    varType = VarType.DWord;
-                    return;
-                default:
-                    switch (address.Substring(0, 1))
-                    {
-                        case "E":
-                        case "I":
-                            // Input
-                            dataType = DataType.Input;
-                            break;
-                        case "A":
-                        case "O":
-                            // Output
-                            dataType = DataType.Output;
-                            break;
-                        case "M":
-                            // Memory
-                            dataType = DataType.Memory;
-                            break;
-                        case "T":
-                            // Timer
-                            dataType = DataType.Timer;
-                            DBNumber = 0;
-                            Address = int.Parse(address.Substring(1));
-                            varType = VarType.Timer;
-                            return;
-                        case "Z":
-                        case "C":
-                            // Counter
-                            dataType = DataType.Timer;
-                            DBNumber = 0;
-                            Address = int.Parse(address.Substring(1));
-                            varType = VarType.Counter;
-                            return;
-                        default:
-                            throw new InvalidAddressException(string.Format("{0} is not a valid address", address.Substring(0, 1)));
-                    }
-
-                    string txt2 = address.Substring(1);
-                    if (txt2.IndexOf(".") == -1)
-                        throw new InvalidAddressException("To few periods for DB address");
-
-                    Address = int.Parse(txt2.Substring(0, txt2.IndexOf(".")));
-                    BitNumber = int.Parse(txt2.Substring(txt2.IndexOf(".") + 1));
-                    if (BitNumber > 7)
-                        throw new InvalidAddressException("Bit can only be 0-7");
-                    return;
-            }
-        }
-    }
-
     public partial class Plc
     {
         /// <summary>
@@ -313,15 +152,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Sets the <see cref="LastErrorCode"/> to <see cref="ErrorCode.NoError"/> and <see cref="LastErrorString"/> to <see cref="string.Empty"/>.
-        /// </summary>
-        public void ClearLastError()
-        {
-            LastErrorCode = ErrorCode.NoError;
-            LastErrorString = string.Empty;
-        }
-
-        /// <summary>
         /// Given a S7 <see cref="VarType"/> (Bool, Word, DWord, etc.), it returns how many bytes to read.
         /// </summary>
         /// <param name="varType"></param>
@@ -367,7 +197,7 @@ namespace S7.Net
             {
                 // check for Return Code = Success
                 if (s7data[offset] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 // to Data bytes
                 offset += 4;

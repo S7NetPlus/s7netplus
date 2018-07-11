@@ -11,6 +11,16 @@ namespace S7.Net.Protocol
             return (ushort)((buf[index] << 8) + buf[index]);
         }
 
+        public static byte[] SerializeDataItem(DataItem dataItem)
+        {
+            if (dataItem.Value is string s)
+                return dataItem.VarType == VarType.StringEx
+                    ? StringEx.ToByteArray(s, dataItem.Count)
+                    : Types.String.ToByteArray(s, dataItem.Count);
+
+            return SerializeValue(dataItem.Value);
+        }
+
         public static byte[] SerializeValue(object value)
         {
             switch (value.GetType().Name)
@@ -46,7 +56,10 @@ namespace S7.Net.Protocol
                 case "Single[]":
                     return Types.Single.ToByteArray((float[])value);
                 case "String":
-                    return Types.String.ToByteArray(value as string);
+                    // Hack: This is backwards compatible with the old code, but functionally it's broken
+                    // if the consumer does not pay attention to string length.
+                    var stringVal = (string) value;
+                    return Types.String.ToByteArray(stringVal, stringVal.Length);
                 default:
                     throw new InvalidVariableTypeException();
             }

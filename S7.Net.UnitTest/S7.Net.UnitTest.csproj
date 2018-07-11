@@ -78,6 +78,8 @@
     <Compile Include="S7NetTestsSync.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\TestLongStruct.cs" />
+    <Compile Include="TypeTests\StringExTests.cs" />
+    <Compile Include="TypeTests\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="snap7.dll">

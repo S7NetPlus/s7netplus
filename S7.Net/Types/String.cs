@@ -6,11 +6,21 @@
     public class String
     {
         /// <summary>
-        /// Converts a string to S7 bytes
+        /// Converts a string to <paramref name="reservedLength"/> of bytes, padded with 0-bytes if required.
         /// </summary>
-        public static byte[] ToByteArray(string value)
+        /// <param name="value">The string to write to the PLC.</param>
+        /// <param name="reservedLength">The amount of bytes reserved for the <paramref name="value"/> in the PLC.</param>
+        public static byte[] ToByteArray(string value, int reservedLength)
         {
-            return System.Text.Encoding.ASCII.GetBytes(value);
+            var length = value?.Length;
+            if (length > reservedLength) length = reservedLength;
+            var bytes = new byte[reservedLength];
+
+            if (length == null || length == 0) return bytes;
+
+            System.Text.Encoding.ASCII.GetBytes(value, 0, length.Value, bytes, 0);
+
+            return bytes;
         }
         
         /// <summary>

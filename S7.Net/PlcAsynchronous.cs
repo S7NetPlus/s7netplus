@@ -14,10 +14,9 @@ namespace S7.Net
     public partial class Plc
     {
         /// <summary>
-        /// Open a <see cref="Socket"/> and connects to the PLC, sending all the corrected package
-        /// and returning if the connection was successful (<see cref="ErrorCode.NoError"/>) of it was wrong.
+        /// Connects to the PLC and performs a COTP ConnectionRequest and S7 CommunicationSetup.
         /// </summary>
-        /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
+        /// <returns>A task that represents the asynchronous open operation.</returns>
         public async Task OpenAsync()
         {
             await ConnectAsync();
@@ -100,7 +99,7 @@ namespace S7.Net
         public async Task<object> ReadAsync(string variable)
         {
             var adr = new PLCAddress(variable);
-            return await ReadAsync(adr.dataType, adr.DBNumber, adr.Address, adr.varType, 1, (byte)adr.BitNumber);
+            return await ReadAsync(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber);
         }
 
         /// <summary>
@@ -227,19 +226,17 @@ namespace S7.Net
 
                 var s7data = await COTP.TSDU.ReadAsync(stream); //TODO use Async
                 if (s7data == null || s7data[14] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 ParseDataIntoDataItems(s7data, dataItems);
             }
             catch (SocketException socketException)
             {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = socketException.Message;
+                throw new PlcException(ErrorCode.ReadData, socketException);
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = exc.Message;
+                throw new PlcException(ErrorCode.ReadData, exc);
             }
             return dataItems;
         }
@@ -252,8 +249,8 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteBytesAsync(DataType dataType, int db, int startByteAdr, byte[] value)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteBytesAsync(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             int localIndex = 0;
             int count = value.Length;
@@ -263,15 +260,10 @@ namespace S7.Net
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
-                if (lastError != ErrorCode.NoError)
-                {
-                    return lastError;
-                }
+                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
-            return ErrorCode.NoError;
         }
 
         /// <summary>
@@ -282,19 +274,13 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteBitAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteBitAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
         {
             if (bitAdr < 0 || bitAdr > 7)
                 throw new InvalidAddressException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
 
-            ErrorCode lastError = await WriteBitWithASingleRequestAsync(dataType, db, startByteAdr, bitAdr, value);
-            if (lastError != ErrorCode.NoError)
-            {
-                return lastError;
-            }
-
-            return ErrorCode.NoError;
+            await WriteBitWithASingleRequestAsync(dataType, db, startByteAdr, bitAdr, value);
         }
 
         /// <summary>
@@ -305,13 +291,13 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteBitAsync(DataType dataType, int db, int startByteAdr, int bitAdr, int value)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteBitAsync(DataType dataType, int db, int startByteAdr, int bitAdr, int value)
         {
             if (value < 0 || value > 1)
                 throw new ArgumentException("Value must be 0 or 1", nameof(value));
 
-            return await WriteBitAsync(dataType, db, startByteAdr, bitAdr, value == 1);
+            await WriteBitAsync(dataType, db, startByteAdr, bitAdr, value == 1);
         }
 
         /// <summary>
@@ -324,26 +310,29 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteAsync(DataType dataType, int db, int startByteAdr, object value, int bitAdr = -1)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteAsync(DataType dataType, int db, int startByteAdr, object value, int bitAdr = -1)
         {
             if (bitAdr != -1)
             {
                 //Must be writing a bit value as bitAdr is specified
                 if (value is bool)
                 {
-                    return await WriteBitAsync(dataType, db, startByteAdr, bitAdr, (bool)value);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, (bool) value);
                 }
                 else if (value is int intValue)
                 {
                     if (intValue < 0 || intValue > 7)
-                        throw new ArgumentOutOfRangeException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr), nameof(bitAdr));
+                        throw new ArgumentOutOfRangeException(
+                            string.Format(
+                                "Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid",
+                                bitAdr), nameof(bitAdr));
 
-                    return await WriteBitAsync(dataType, db, startByteAdr, bitAdr, intValue == 1);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, intValue == 1);
                 }
-                throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
+                else throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value));
+            else await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>
@@ -352,11 +341,11 @@ namespace S7.Net
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <param name="value">Value to be written to the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteAsync(string variable, object value)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteAsync(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            return await WriteAsync(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
+            await WriteAsync(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber);
         }
 
         /// <summary>
@@ -365,12 +354,11 @@ namespace S7.Net
         /// <param name="structValue">The struct to be written</param>
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteStructAsync(object structValue, int db, int startByteAdr = 0)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteStructAsync(object structValue, int db, int startByteAdr = 0)
         {
             var bytes = Struct.ToBytes(structValue).ToList();
-            var errCode = await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
-            return errCode;
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
         }
 
         /// <summary>
@@ -379,12 +367,11 @@ namespace S7.Net
         /// <param name="classValue">The class to be written</param>
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public async Task<ErrorCode> WriteClassAsync(object classValue, int db, int startByteAdr = 0)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public async Task WriteClassAsync(object classValue, int db, int startByteAdr = 0)
         {
             var bytes = Types.Class.ToBytes(classValue).ToList();
-            var errCode = await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
-            return errCode;
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
         }
 
         private async Task<byte[]> ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)
@@ -402,7 +389,7 @@ namespace S7.Net
 
             var s7data = await COTP.TSDU.ReadAsync(stream);
             if (s7data == null || s7data[14] != 0xff)
-                throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
             for (int cnt = 0; cnt < count; cnt++)
                 bytes[cnt] = s7data[cnt + 18];
@@ -427,15 +414,14 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Writes up to 200 bytes to the PLC and returns NoError if successful. You must specify the memory area type, memory are address, byte start address and bytes count.
-        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// Writes up to 200 bytes to the PLC. You must specify the memory area type, memory are address, byte start address and bytes count.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        private async Task<ErrorCode> WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value)
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
@@ -471,27 +457,23 @@ namespace S7.Net
                 var s7data = await COTP.TSDU.ReadAsync(stream);
                 if (s7data == null || s7data[14] != 0xff)
                 {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
                 }
-
-                return ErrorCode.NoError;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return LastErrorCode;
+                throw new PlcException(ErrorCode.WriteData, exc);
             }
         }
 
-        private async Task<ErrorCode> WriteBitWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
+        private async Task WriteBitWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
             byte[] bReceive = new byte[513];
             int varCount = 0;
 
             try
             {
-                var value = new[] { bitValue ? (byte)1 : (byte)0 };
+                var value = new[] {bitValue ? (byte) 1 : (byte) 0};
                 varCount = value.Length;
                 // first create the header
                 int packageSize = 35 + value.Length;
@@ -520,15 +502,11 @@ namespace S7.Net
 
                 var s7data = await COTP.TSDU.ReadAsync(stream);
                 if (s7data == null || s7data[14] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-
-                return ErrorCode.NoError;
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return LastErrorCode;
+                throw new PlcException(ErrorCode.WriteData, exc);
             }
         }
     }
