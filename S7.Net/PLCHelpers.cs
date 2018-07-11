@@ -152,15 +152,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Sets the <see cref="LastErrorCode"/> to <see cref="ErrorCode.NoError"/> and <see cref="LastErrorString"/> to <see cref="string.Empty"/>.
-        /// </summary>
-        public void ClearLastError()
-        {
-            LastErrorCode = ErrorCode.NoError;
-            LastErrorString = string.Empty;
-        }
-
-        /// <summary>
         /// Given a S7 <see cref="VarType"/> (Bool, Word, DWord, etc.), it returns how many bytes to read.
         /// </summary>
         /// <param name="varType"></param>
@@ -206,7 +197,7 @@ namespace S7.Net
             {
                 // check for Return Code = Success
                 if (s7data[offset] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 // to Data bytes
                 offset += 4;
