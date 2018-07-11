@@ -145,7 +145,7 @@ namespace S7.Net
                     }
                     else
                     {
-                        return Bit.ToBitArray(bytes);
+                        return Bit.ToBitArray(bytes, varCount);
                     }
                 case VarType.DateTime:
                     if (varCount == 1)
