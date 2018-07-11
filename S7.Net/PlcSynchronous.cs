@@ -309,7 +309,7 @@ namespace S7.Net
         public void Write(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            Write(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
+            Write(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber);
         }
 
         /// <summary>
