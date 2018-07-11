@@ -11,16 +11,12 @@ namespace S7.Net
     public partial class Plc
     {
         /// <summary>
-        /// Open a <see cref="Socket"/> and connects to the PLC, sending all the corrected package
-        /// and returning if the connection was successful (<see cref="ErrorCode.NoError"/>) of it was wrong.
+        /// Connects to the PLC and performs a COTP ConnectionRequest and S7 CommunicationSetup.
         /// </summary>
-        /// <returns>Returns ErrorCode.NoError if the connection was successful, otherwise check the ErrorCode</returns>
-        public ErrorCode Open()
+        public void Open()
         {
-            if (Connect() != ErrorCode.NoError)
-            {
-                return LastErrorCode;
-            }
+            Connect();
+
             try
             {
                 stream.Write(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
@@ -41,14 +37,12 @@ namespace S7.Net
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.ConnectionError;
-                LastErrorString = string.Format("Couldn't establish the connection to {0}.\nMessage: {1}", IP, exc.Message);
-                return ErrorCode.ConnectionError;
+                throw new PlcException(ErrorCode.ConnectionError,
+                    $"Couldn't establish the connection to {IP}.\nMessage: {exc.Message}", exc);
             }
-            return ErrorCode.NoError;
         }
 
-        private ErrorCode Connect()
+        private void Connect()
         {
             try
             {
@@ -59,23 +53,15 @@ namespace S7.Net
             catch (SocketException sex)
             {
                 // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
-                if (sex.SocketErrorCode == SocketError.TimedOut)
-                {
-                    LastErrorCode = ErrorCode.IPAddressNotAvailable;
-                }
-                else
-                {
-                    LastErrorCode = ErrorCode.ConnectionError;
-                }
-
-                LastErrorString = sex.Message;
+                throw new PlcException(
+                    sex.SocketErrorCode == SocketError.TimedOut
+                        ? ErrorCode.IPAddressNotAvailable
+                        : ErrorCode.ConnectionError, sex);
             }
             catch (Exception ex)
             {
-                LastErrorCode = ErrorCode.ConnectionError;
-                LastErrorString = ex.Message;
+                throw new PlcException(ErrorCode.ConnectionError, ex);
             }
-            return LastErrorCode;
         }
 
         /// <summary>
@@ -231,8 +217,7 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
+        public void WriteBytes(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             int localIndex = 0;
             int count = value.Length;
@@ -241,16 +226,11 @@ namespace S7.Net
                 //TODO: Figure out how to use MaxPDUSize here
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
-                var maxToWrite = (int)Math.Min(count, 200);
-                ErrorCode lastError = WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
-                if (lastError != ErrorCode.NoError)
-                {
-                    return lastError;
-                }
+                var maxToWrite = Math.Min(count, 200);
+                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
-            return ErrorCode.NoError;
         }
 
         /// <summary>
@@ -261,36 +241,28 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
         /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
+        public void WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, bool value)
         {
             if (bitAdr < 0 || bitAdr > 7)
                 throw new InvalidAddressException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
 
-            ErrorCode lastError = WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
-            if (lastError != ErrorCode.NoError)
-            {
-                return lastError;
-            }
-
-            return ErrorCode.NoError;
+            WriteBitWithASingleRequest(dataType, db, startByteAdr, bitAdr, value);
         }
 
         /// <summary>
-        /// Write a single bit from a DB with the specified index.
+        /// Write a single bit to a DB with the specified index.
         /// </summary>
         /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
-        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="db">Address of the memory area (if you want to write DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
-        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, int value)
+        /// <param name="value">Value to write (0 or 1).</param>
+        public void WriteBit(DataType dataType, int db, int startByteAdr, int bitAdr, int value)
         {
             if (value < 0 || value > 1)
                 throw new ArgumentException("Value must be 0 or 1", nameof(value));
 
-            return WriteBit(dataType, db, startByteAdr, bitAdr, value == 1);
+            WriteBit(dataType, db, startByteAdr, bitAdr, value == 1);
         }
 
         /// <summary>
@@ -303,26 +275,29 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <param name="bitAdr">The address of the bit. (0-7)</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(DataType dataType, int db, int startByteAdr, object value, int bitAdr = -1)
+        public void Write(DataType dataType, int db, int startByteAdr, object value, int bitAdr = -1)
         {
             if (bitAdr != -1)
             {
                 //Must be writing a bit value as bitAdr is specified
                 if (value is bool)
                 {
-                    return WriteBit(dataType, db, startByteAdr, bitAdr, (bool)value);
+                    WriteBit(dataType, db, startByteAdr, bitAdr, (bool) value);
                 }
                 else if (value is int intValue)
                 {
                     if (intValue < 0 || intValue > 7)
-                        throw new ArgumentOutOfRangeException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr), nameof(bitAdr));
+                        throw new ArgumentOutOfRangeException(
+                            string.Format(
+                                "Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid",
+                                bitAdr), nameof(bitAdr));
 
-                    return WriteBit(dataType, db, startByteAdr, bitAdr, intValue == 1);
+                    WriteBit(dataType, db, startByteAdr, bitAdr, intValue == 1);
                 }
-                throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
+                else
+                    throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            return WriteBytes(dataType, db, startByteAdr, Serialization.SerializeValue(value));
+            else WriteBytes(dataType, db, startByteAdr, Serialization.SerializeValue(value));
         }
 
         /// <summary>
@@ -331,11 +306,10 @@ namespace S7.Net
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <param name="value">Value to be written to the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode Write(string variable, object value)
+        public void Write(string variable, object value)
         {
             var adr = new PLCAddress(variable);
-            return Write(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
+            Write(adr.dataType, adr.DBNumber, adr.Address, value, adr.BitNumber);
         }
 
         /// <summary>
@@ -344,10 +318,9 @@ namespace S7.Net
         /// <param name="structValue">The struct to be written</param>
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteStruct(object structValue, int db, int startByteAdr = 0)
+        public void WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
-            return WriteStructAsync(structValue, db, startByteAdr).Result;
+            WriteStructAsync(structValue, db, startByteAdr).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -356,10 +329,9 @@ namespace S7.Net
         /// <param name="classValue">The class to be written</param>
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        /// <returns>NoError if it was successful, or the error is specified</returns>
-        public ErrorCode WriteClass(object classValue, int db, int startByteAdr = 0)
+        public void WriteClass(object classValue, int db, int startByteAdr = 0)
         {
-            return WriteClassAsync(classValue, db, startByteAdr).Result;
+            WriteClassAsync(classValue, db, startByteAdr).GetAwaiter().GetResult();
         }
 
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
@@ -378,24 +350,16 @@ namespace S7.Net
 
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null || s7data[14] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 for (int cnt = 0; cnt < count; cnt++)
                     bytes[cnt] = s7data[cnt + 18];
 
                 return bytes;
             }
-            catch (SocketException socketException)
-            {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = socketException.Message;
-                return null;
-            }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = exc.Message;
-                return null;
+                throw new PlcException(ErrorCode.ReadData, exc);
             }
         }
 
@@ -414,7 +378,7 @@ namespace S7.Net
             S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
-        private ErrorCode WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
         {
             int varCount = 0;
             try
@@ -448,26 +412,22 @@ namespace S7.Net
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null || s7data[14] != 0xff)
                 {
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
                 }
-
-                return ErrorCode.NoError;
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return LastErrorCode;
+                throw new PlcException(ErrorCode.WriteData, exc);
             }
         }
 
-        private ErrorCode WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
+        private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
             int varCount = 0;
 
             try
             {
-                var value = new[] { bitValue ? (byte)1 : (byte)0 };
+                var value = new[] {bitValue ? (byte) 1 : (byte) 0};
                 varCount = value.Length;
                 // first create the header
                 int packageSize = 35 + value.Length;
@@ -496,15 +456,11 @@ namespace S7.Net
 
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null || s7data[14] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
-
-                return ErrorCode.NoError;
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
             }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.WriteData;
-                LastErrorString = exc.Message;
-                return LastErrorCode;
+                throw new PlcException(ErrorCode.WriteData, exc);
             }
         }
 
@@ -531,7 +487,7 @@ namespace S7.Net
             {
                 // first create the header
                 int packageSize = 19 + (dataItems.Count * 12);
-                Types.ByteArray package = new ByteArray(packageSize);
+                ByteArray package = new ByteArray(packageSize);
                 package.Add(ReadHeaderPackage(dataItems.Count));
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
@@ -543,19 +499,13 @@ namespace S7.Net
 
                 var s7data = COTP.TSDU.Read(stream); //TODO use Async
                 if (s7data == null || s7data[14] != 0xff)
-                    throw new Exception(ErrorCode.WrongNumberReceivedBytes.ToString());
+                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 ParseDataIntoDataItems(s7data, dataItems);
             }
-            catch (SocketException socketException)
-            {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = socketException.Message;
-            }
             catch (Exception exc)
             {
-                LastErrorCode = ErrorCode.ReadData;
-                LastErrorString = exc.Message;
+                throw new PlcException(ErrorCode.ReadData, exc);
             }
         }
     }
