@@ -48,7 +48,15 @@ namespace S7.Net
             //TODO: Fix This
             get
             {
-                    return Connect() == ErrorCode.NoError;                   
+                try
+                {
+                    Connect();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 
@@ -72,16 +80,6 @@ namespace S7.Net
                 catch { return false; }
             }
         }
-
-        /// <summary>
-        /// Contains the last error registered when executing a function
-        /// </summary>
-        public string LastErrorString { get; private set; }
-
-        /// <summary>
-        /// Contains the last error code registered when executing a function
-        /// </summary>
-        public ErrorCode LastErrorCode { get; private set; }
         
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.

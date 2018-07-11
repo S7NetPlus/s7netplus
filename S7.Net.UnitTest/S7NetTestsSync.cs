@@ -81,8 +81,14 @@ namespace S7.Net.UnitTest
         {
             if (plc.IsConnected == false)
             {
-                var error = plc.Open();
-                Assert.AreEqual(ErrorCode.NoError, error, "If you have s7 installed you must close s7oiehsx64 service.");
+                try
+                {
+                    plc.Open();
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("If you have s7 installed you must close s7oiehsx64 service.", e);
+                }
             }
         }
 
@@ -257,10 +263,8 @@ namespace S7.Net.UnitTest
             tc.IntVariable110 = 200;
             tc.IntVariable111 = 201;
             plc.WriteStruct(tc, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongStruct tc2 = (TestLongStruct)plc.ReadStruct(typeof(TestLongStruct), DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -321,11 +325,9 @@ namespace S7.Net.UnitTest
             tc.IntVariable110 = 200;
             tc.IntVariable111 = 201;
             plc.WriteClass(tc, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongClass tc2 = new TestLongClass();
             plc.ReadClass(tc2, DB2);
-            Assert.AreEqual(ErrorCode.NoError, plc.LastErrorCode);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -596,19 +598,14 @@ namespace S7.Net.UnitTest
         }
 
 
-        [TestMethod]
-        public void T13_ReadBytesReturnsEmptyArrayIfPlcIsNotConnected()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T13_ReadBytesThrowsIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-
-                int expectedReadBytes = 0; // 0 bytes, because no connection was established
-
                 TestClass tc = new TestClass();
                 int actualReadBytes = notConnectedPlc.ReadClass(tc, DB2);
-
-                Assert.AreEqual(expectedReadBytes, actualReadBytes);
             }
         }
 
@@ -642,8 +639,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
         }
 
-        [TestMethod]
-        public void T15_ReadClassWithGenericReturnsNullIfPlcIsNotConnected()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T15_ReadClassWithGenericThrowsIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
@@ -684,8 +681,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
         }
 
-        [TestMethod]
-        public void T17_ReadClassWithGenericAndClassFactoryReturnsNullIfPlcIsNotConnected()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T17_ReadClassWithGenericAndClassFactoryThrowsIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
@@ -697,8 +694,8 @@ namespace S7.Net.UnitTest
             }
         }
 
-        [TestMethod]
-        public void T18_ReadStructReturnsNullIfPlcIsNotConnected()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
@@ -739,8 +736,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(ts2.DWordVariable, ts2Generic.DWordVariable);
         }
 
-        [TestMethod]
-        public void T20_ReadStructWithGenericReturnsNullIfPlcIsNotConnected()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T20_ReadStructThrowsIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
@@ -883,11 +880,9 @@ namespace S7.Net.UnitTest
         {
             double test_value = 55.66;
             plc.Write("DB1.DBD0", test_value);
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Write Double");
             var helper = plc.Read("DB1.DBD0");
             double test_value2 = Conversion.ConvertToDouble((uint)helper);
 
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Read Double");
             Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
         }
 
@@ -929,19 +924,17 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.Bool1, tc2.Bool1);
         }
 
-        [TestMethod]
-        public void T29_Read_Write_ExceptionHandlingWhenPlcIsNotReachable()
+        [TestMethod, ExpectedException(typeof(PlcException))]
+        public void T29_Read_Write_ThrowsWhenPlcIsNotReachable()
         {
             // leave plc Open
             S7TestServer.Stop();
 
             double test_value = 55.66;
             plc.Write("DB1.DBD0", test_value);
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.WriteData, "No Write Error.");
 
             var helper = plc.Read("DB1.DBD0");
             Assert.AreEqual(helper, null, "Value in Read.");
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.ReadData, "No Read Error.");
         }
 
         [TestMethod]
@@ -949,11 +942,9 @@ namespace S7.Net.UnitTest
         {
             float test_value = 55.6632f;
             plc.Write("DB1.DBD0", test_value);
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Write Single");
             var helper = plc.Read("DB1.DBD0");
             float test_value2 = Conversion.ConvertToFloat((uint)helper);
 
-            Assert.AreEqual(plc.LastErrorCode, ErrorCode.NoError, "Read Single");
             Assert.AreEqual(test_value, test_value2, "Compare Write/Read"); //No delta, datatype matches
         }
 

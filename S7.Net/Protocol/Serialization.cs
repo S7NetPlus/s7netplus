@@ -11,6 +11,16 @@ namespace S7.Net.Protocol
             return (ushort)((buf[index] << 8) + buf[index]);
         }
 
+        public static byte[] SerializeDataItem(DataItem dataItem)
+        {
+            if (dataItem.Value is string s)
+                return dataItem.VarType == VarType.StringEx
+                    ? StringEx.ToByteArray(s, dataItem.Count)
+                    : Types.String.ToByteArray(s);
+
+            return SerializeValue(dataItem.Value);
+        }
+
         public static byte[] SerializeValue(object value)
         {
             switch (value.GetType().Name)
