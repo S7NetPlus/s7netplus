@@ -34,6 +34,10 @@ namespace S7.Net.Protocol
                 data.Add(0x00);
                 if (item.Value is bool b)
                 {
+                    if (item.BitAdr > 7)
+                        throw new ArgumentException(
+                            $"Cannot read bit with invalid {nameof(item.BitAdr)} '{item.BitAdr}'.", nameof(dataItems));
+
                     Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr,
                         item.BitAdr);
 
