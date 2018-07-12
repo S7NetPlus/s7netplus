@@ -30,13 +30,13 @@ namespace S7.Net.Protocol
                 Serialization.SetWordAt(message, paramOffset + Parameter.Offsets.Amount, (ushort) value.Length);
                 Serialization.SetWordAt(message, paramOffset + Parameter.Offsets.DbNumber, (ushort) item.DB);
                 message[paramOffset + Parameter.Offsets.Area] = (byte) item.DataType;
-                Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr, item.BitAdr);
-
-                paramOffset += Parameter.Template.Length;
 
                 data.Add(0x00);
                 if (item.Value is bool b)
                 {
+                    Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr,
+                        item.BitAdr);
+
                     data.Add(0x03);
                     data.AddWord(1);
 
@@ -45,6 +45,8 @@ namespace S7.Net.Protocol
                 }
                 else
                 {
+                    Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr, 0);
+
                     var len = value.Length;
                     data.Add(0x04);
                     data.AddWord((ushort) (len << 3));
@@ -55,8 +57,9 @@ namespace S7.Net.Protocol
                         data.Add(0);
                     }
                 }
-            }
 
+                paramOffset += Parameter.Template.Length;
+            }
 
             message.Add(data.Array);
 
