@@ -68,7 +68,7 @@ namespace S7.Net.Types
                 DB = dbNumber,
                 VarType = varType,
                 StartByteAdr = startByte,
-                BitAdr = (byte) bitNumber
+                BitAdr = (byte) (bitNumber == -1 ? 0 : bitNumber)
             };
         }
 
