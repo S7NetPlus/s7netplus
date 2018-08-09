@@ -16,10 +16,14 @@ namespace S7.Net
         /// <summary>
         /// Connects to the PLC and performs a COTP ConnectionRequest and S7 CommunicationSetup.
         /// </summary>
+        /// <param name="timeout">
+        /// Timeout in miliseconds. Default value is 0. 
+        /// 0 means do not use timeout.
+        /// </param>
         /// <returns>A task that represents the asynchronous open operation.</returns>
-        public async Task OpenAsync()
+        public async Task OpenAsync(int timeout = 0)
         {
-            await ConnectAsync();
+            await ConnectAsync(timeout);
 
             await stream.WriteAsync(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
             var response = await COTP.TPDU.ReadAsync(stream);
@@ -38,10 +42,28 @@ namespace S7.Net
             MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
         }
 
-        private async Task ConnectAsync()
+        private async Task ConnectAsync(int timeout)
         {
             tcpClient = new TcpClient();
-            await tcpClient.ConnectAsync(IP, 102);
+            Task task = tcpClient.ConnectAsync(IP, 102);
+
+            if (timeout == 0)
+            {
+                await task;
+            }
+            else if (timeout > 0)
+            {
+                if (!task.Wait(timeout))
+                {
+                    throw new TimeoutException($"TCP client failed to connect within {timeout} ms.");
+                }
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout),
+                    "Timeout can be only non negative value. Specify zero to not use any.");
+            }
+
             stream = tcpClient.GetStream();
         }
 
@@ -318,7 +340,7 @@ namespace S7.Net
                 //Must be writing a bit value as bitAdr is specified
                 if (value is bool)
                 {
-                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, (bool) value);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, (bool)value);
                 }
                 else if (value is int intValue)
                 {
@@ -473,7 +495,7 @@ namespace S7.Net
 
             try
             {
-                var value = new[] {bitValue ? (byte) 1 : (byte) 0};
+                var value = new[] { bitValue ? (byte)1 : (byte)0 };
                 varCount = value.Length;
                 // first create the header
                 int packageSize = 35 + value.Length;
