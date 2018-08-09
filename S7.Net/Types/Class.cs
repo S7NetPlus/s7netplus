@@ -35,6 +35,7 @@ namespace S7.Net.Types
                     numBytes += 0.125;
                     break;
                 case "Byte":
+                case "Char":
                     numBytes = Math.Ceiling(numBytes);
                     numBytes++;
                     break;
@@ -89,6 +90,8 @@ namespace S7.Net.Types
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
                     }
 
+                    // Array starts at even byte adress
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType);
@@ -100,10 +103,16 @@ namespace S7.Net.Types
                 }
             }
             // enlarge numBytes to next even number because S7-Structs in a DB always will be resized to an even byte count
+            numBytes = IncreaseToEvenNumber(numBytes);
+            return (int)numBytes;
+        }
+
+        private static double IncreaseToEvenNumber(double numBytes)
+        {
             numBytes = Math.Ceiling(numBytes);
             if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                 numBytes++;
-            return (int)numBytes;
+            return numBytes;
         }
 
         private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
@@ -125,6 +134,11 @@ namespace S7.Net.Types
                 case "Byte":
                     numBytes = Math.Ceiling(numBytes);
                     value = (byte)(bytes[(int)numBytes]);
+                    numBytes++;
+                    break;
+                case "Char":
+                    numBytes = Math.Ceiling(numBytes);
+                    value = (char)(bytes[(int)numBytes]);
                     numBytes++;
                     break;
                 case "Int16":
@@ -232,6 +246,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -272,6 +287,12 @@ namespace S7.Net.Types
                     numBytes = (int)Math.Ceiling(numBytes);
                     bytePos = (int)numBytes;
                     bytes[bytePos] = (byte)propertyValue;
+                    numBytes++;
+                    break;
+                case "Char":
+                    numBytes = (int)Math.Ceiling(numBytes);
+                    bytePos = (int)numBytes;
+                    bytes[bytePos] = Convert.ToByte((char)propertyValue);
                     numBytes++;
                     break;
                 case "Int16":
@@ -326,6 +347,7 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     Array array = (Array)property.GetValue(sourceClass, null);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
