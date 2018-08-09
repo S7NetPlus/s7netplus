@@ -18,8 +18,8 @@ namespace S7.Net.Types
             wert += ((bytes[1] >> 4) & 0x0F) * 10.0;
             wert += ((bytes[1]) & 0x0F) * 1.0;
 
-            /// this value is not used... may for a nother exponation
-            ///int unknown = (bytes[0] >> 6) & 0x03;
+            // this value is not used... may for a nother exponation
+            //int unknown = (bytes[0] >> 6) & 0x03;
 
             switch ((bytes[0] >> 4) & 0x03)
             {
@@ -60,7 +60,7 @@ namespace S7.Net.Types
             ByteArray arr = new ByteArray();
             foreach (UInt16 val in value)
                 arr.Add(ToByteArray(val));
-            return arr.array;
+            return arr.Array;
         }
 
         /// <summary>

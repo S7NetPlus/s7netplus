@@ -6,9 +6,9 @@
     <ProjectGuid>{303CCED6-9ABC-4899-A509-743341AAA804}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>S7.UnitTest</RootNamespace>
+    <RootNamespace>S7.Net.UnitTest</RootNamespace>
     <AssemblyName>S7Net.UnitTest</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -16,6 +16,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\$(VisualStudioVersion)\UITestExtensionPackages</ReferencePath>
     <IsCodedUITest>False</IsCodedUITest>
     <TestProjectType>UnitTest</TestProjectType>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -25,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,8 +35,18 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>S7.Net.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Windows.Forms" />
@@ -45,14 +57,12 @@
         <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
       </ItemGroup>
     </When>
-    <Otherwise>
-      <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
-      </ItemGroup>
-    </Otherwise>
+    <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="ConnectionRequestTest.cs" />
     <Compile Include="ConvertersUnitTest.cs" />
+    <Compile Include="ProtocolTests.cs" />
     <Compile Include="Helpers\ConsoleManager.cs" />
     <Compile Include="Helpers\NativeMethods.cs" />
     <Compile Include="Helpers\S7TestServer.cs" />
@@ -60,12 +70,16 @@
     <Compile Include="Helpers\TestClassWithCustomType.cs" />
     <Compile Include="Helpers\TestClassWithPrivateSetters.cs" />
     <Compile Include="Helpers\TestLongClass.cs" />
+    <Compile Include="S7NetTestsAsync.cs" />
+    <Compile Include="Helpers\TestSmallClass.cs" />
     <Compile Include="Snap7\snap7.net.cs" />
     <Compile Include="Helpers\TestClass.cs" />
     <Compile Include="Helpers\TestStruct.cs" />
-    <Compile Include="S7NetTests.cs" />
+    <Compile Include="S7NetTestsSync.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\TestLongStruct.cs" />
+    <Compile Include="TypeTests\StringExTests.cs" />
+    <Compile Include="TypeTests\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="snap7.dll">
@@ -77,6 +91,9 @@
       <Project>{bfd484f9-3f04-42a2-bf2a-60a189a25dcf}</Project>
       <Name>S7.Net</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="S7.Net.snk" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

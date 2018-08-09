@@ -35,15 +35,20 @@ namespace S7.Net.UnitTest.Helpers
         /// <summary>
         /// DB1.DBD4
         /// </summary>
-        public double RealVariable { get; set; }
+        public double RealVariableDouble { get; set; }
 
         /// <summary>
         /// DB1.DBD8
         /// </summary>
-        public int DIntVariable { get; set; }
+        public float RealVariableFloat { get; set; }
 
         /// <summary>
         /// DB1.DBD12
+        /// </summary>
+        public int DIntVariable { get; set; }
+
+        /// <summary>
+        /// DB1.DBD16
         /// </summary>
         public ushort DWordVariable { get; set; }
     }

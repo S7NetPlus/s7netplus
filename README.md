@@ -18,12 +18,13 @@ S7.Net Plus has a [User Manual](https://github.com/killnine/s7netplus/blob/maste
 
 + Compatible S7 PLC (S7-200, S7-300, S7-400, S7-1200, S7-1500)
 
-## Target framework
-+ .NET Framework 3.5 or higher
-+ Universal Windows Application (.Net Core) - see S7.UniversalWindowsApp.sln
+## Supported frameworks
++ .NET Framework 4.5.2 and higher
++ .NET Standard 1.3 (.NET Core 1.0, UWP 10.0, Xamarin, ...)
++ .NET Standard 2.0 (.NET Core 2.0, .NET Framework 4.6.1)
 
 ## Compile
-You need at least Visual Studio 2015 (you can download the Community Edition for free).
+You need at least Visual Studio 2017 (you can download the Community Edition for free).
 
 ## Nuget
 

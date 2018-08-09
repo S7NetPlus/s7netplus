@@ -3,14 +3,14 @@
 namespace S7.Net.Types
 {
     /// <summary>
-    /// Contains the conversion methods to convert Real from S7 plc to C# double.
+    /// Contains the conversion methods to convert Real from S7 plc to C# float.
     /// </summary>
-    public static class Double
+    public static class Single
     {
         /// <summary>
-        /// Converts a S7 Real (4 bytes) to double
+        /// Converts a S7 Real (4 bytes) to float
         /// </summary>
-        public static double FromByteArray(byte[] bytes)
+        public static float FromByteArray(byte[] bytes)
         {
             if (bytes.Length != 4)
             {
@@ -28,22 +28,22 @@ namespace S7.Net.Types
         }
 
         /// <summary>
-        /// Converts a S7 DInt to double
+        /// Converts a S7 DInt to float
         /// </summary>
-        public static double FromDWord(Int32 value)
+        public static float FromDWord(Int32 value)
         {
             byte[] b = DInt.ToByteArray(value);
-            double d = FromByteArray(b);
+            float d = FromByteArray(b);
             return d;
         }
 
         /// <summary>
-        /// Converts a S7 DWord to double
+        /// Converts a S7 DWord to float
         /// </summary>
-        public static double FromDWord(UInt32 value)
+        public static float FromDWord(UInt32 value)
         {
             byte[] b = DWord.ToByteArray(value);
-            double d = FromByteArray(b);
+            float d = FromByteArray(b);
             return d;
         }
 
@@ -51,7 +51,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts a double to S7 Real (4 bytes)
         /// </summary>
-        public static byte[] ToByteArray(double value)
+        public static byte[] ToByteArray(float value)
         {
             byte[] bytes = BitConverter.GetBytes((float)(value));
 
@@ -63,22 +63,22 @@ namespace S7.Net.Types
         }
 
         /// <summary>
-        /// Converts an array of double to an array of bytes 
+        /// Converts an array of float to an array of bytes 
         /// </summary>
-        public static byte[] ToByteArray(double[] value)
+        public static byte[] ToByteArray(float[] value)
         {
             ByteArray arr = new ByteArray();
-            foreach (double val in value)
+            foreach (float val in value)
                 arr.Add(ToByteArray(val));
             return arr.Array;
         }
 
         /// <summary>
-        /// Converts an array of S7 Real to an array of double
+        /// Converts an array of S7 Real to an array of float
         /// </summary>
-        public static double[] ToArray(byte[] bytes)
+        public static float[] ToArray(byte[] bytes)
         {
-            double[] values = new double[bytes.Length / 4];
+            float[] values = new float[bytes.Length / 4];
 
             int counter = 0;
             for (int cnt = 0; cnt < bytes.Length / 4; cnt++)
