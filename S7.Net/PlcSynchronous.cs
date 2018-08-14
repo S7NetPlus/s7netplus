@@ -505,7 +505,6 @@ namespace S7.Net
         #region Private variables
 
         private MultiLock _multiLock = new MultiLock();
-        private object _lock = new object();
 
         #endregion
 
@@ -516,10 +515,6 @@ namespace S7.Net
         {
             byte[] result;
 
-            //lock (_lock)
-            //{
-
-            //}
             _multiLock.Enter();
 
             stream.Write(array, offset, size);
