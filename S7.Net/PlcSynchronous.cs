@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using S7.Net.Protocol;
+using S7.Net.Thread;
 
 //Implement synchronous methods here
 namespace S7.Net
@@ -346,9 +347,7 @@ namespace S7.Net
                 // package.Add(0x02);  // datenart
                 package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
 
-                stream.Write(package.Array, 0, package.Array.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = Access(package.Array, 0, package.Array.Length);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
@@ -407,9 +406,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                stream.Write(package.Array, 0, package.Array.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = Access(package.Array, 0, package.Array.Length);
                 if (s7data == null || s7data[14] != 0xff)
                 {
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
@@ -452,9 +449,7 @@ namespace S7.Net
                 // now join the header and the data
                 package.Add(value);
 
-                stream.Write(package.Array, 0, package.Array.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = Access(package.Array, 0, package.Array.Length);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
             }
@@ -495,9 +490,7 @@ namespace S7.Net
                     package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
                 }
 
-                stream.Write(package.Array, 0, package.Array.Length);
-
-                var s7data = COTP.TSDU.Read(stream); //TODO use Async
+                var s7data = Access(package.Array, 0, package.Array.Length);
                 if (s7data == null || s7data[14] != 0xff)
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
@@ -508,5 +501,35 @@ namespace S7.Net
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
         }
+
+        #region Private variables
+
+        private MultiLock _multiLock = new MultiLock();
+        private object _lock = new object();
+
+        #endregion
+
+        #region Private method
+
+        // Access S7 PLC, write/read PLC
+        private byte[] Access(byte[] array,int offset,int size)
+        {
+            byte[] result;
+
+            //lock (_lock)
+            //{
+
+            //}
+            _multiLock.Enter();
+
+            stream.Write(array, offset, size);
+            result = COTP.TSDU.Read(stream); //TODO use Async
+
+            _multiLock.Leave();
+
+            return result;
+        }
+
+        #endregion
     }
 }
