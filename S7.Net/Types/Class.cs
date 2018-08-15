@@ -89,6 +89,8 @@ namespace S7.Net.Types
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
                     }
 
+                    // Array starts at even byte adress
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType);
@@ -100,9 +102,7 @@ namespace S7.Net.Types
                 }
             }
             // enlarge numBytes to next even number because S7-Structs in a DB always will be resized to an even byte count
-            numBytes = Math.Ceiling(numBytes);
-            if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                numBytes++;
+            numBytes = IncreaseToEvenNumber(numBytes);
             return (int)numBytes;
         }
 
@@ -232,6 +232,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -326,6 +327,7 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
+                    numBytes = IncreaseToEvenNumber(numBytes);
                     Array array = (Array)property.GetValue(sourceClass, null);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
@@ -339,6 +341,14 @@ namespace S7.Net.Types
                 }
             }
             return bytes;
+        }
+
+        private static double IncreaseToEvenNumber(double numBytes)
+        {
+            numBytes = Math.Ceiling(numBytes);
+            if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                numBytes++;
+            return numBytes;
         }
     }
 }
