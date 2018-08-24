@@ -185,8 +185,31 @@ namespace S7.Net
 
         private byte[] GetS7ConnectionSetup()
         {
-            return new byte[] {  3, 0, 0, 25, 2, 240, 128, 50, 1, 0, 0, 255, 255, 0, 8, 0, 0, 240, 0, 0, 1, 0, 1,
-                    7, 128 //Try 1920 PDU Size. Same as libnodave.
+            return new byte[] {
+                // TPKT
+                3, // version
+                0, // reserved
+                0, 25, // Length
+
+                // ISO DT
+                2, // Length
+                240, // DT identifier
+                128, // First bit: Last PDU, remainder: PDU number
+
+                // S7 Header
+                50, // Protocol ID
+                1, // MessageType: JobReqest
+                0, 0, // Reserved
+                255, 255, // PDU ref
+                0, 8, // Parameter length
+                0, 0, // Data length
+
+                // S7 Function
+                240, // Function code: Communication Setup
+                0, // Reserved
+                0, 1, // Max AMQ caller
+                0, 1, // Max AMQ callee
+                7, 128 // Max PDU size
             };
         }
 
