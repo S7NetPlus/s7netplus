@@ -200,7 +200,7 @@ namespace S7.Net
                 50, // Protocol ID
                 1, // MessageType: JobReqest
                 0, 0, // Reserved
-                255, 255, // PDU ref
+                1, 0, // PDU ref
                 0, 8, // Parameter length
                 0, 0, // Data length
 
