@@ -13,44 +13,44 @@ namespace S7.Net.Protocol
                     0, 0,   //Destination Reference
                     0, 0,   //Source Reference
                     0,      //Flags
+                    192, //Parameter Code (tpdu-size)
+                    1, //Parameter Length
+                    11, //TPDU Size (2^11 = 2048)
                     193,    //Parameter Code (src-tasp)
                     2,      //Parameter Length
                     1, 0,   //Source TASP
                     194,    //Parameter Code (dst-tasp)
                     2,      //Parameter Length
-                    3, 0,   //Destination TASP
-                    192,    //Parameter Code (tpdu-size)
-                    1,      //Parameter Length
-                    11      //TPDU Size (2^11 = 2048)
+                    3, 0    //Destination TASP
                 };
 
             switch (cpu)
             {
                 case CpuType.S7200:
                     //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
-                    bSend1[13] = 0x10;
-                    bSend1[14] = 0x00;
+                    bSend1[16] = 0x10;
+                    bSend1[17] = 0x00;
                     //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
-                    bSend1[17] = 0x10;
-                    bSend1[18] = 0x00;
+                    bSend1[20] = 0x10;
+                    bSend1[21] = 0x00;
                     break;
                 case CpuType.S71200:
                 case CpuType.S7300:
                 case CpuType.S7400:
                     //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-                    bSend1[13] = 0x01;
-                    bSend1[14] = 0x00;
+                    bSend1[16] = 0x01;
+                    bSend1[17] = 0x00;
                     //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
-                    bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
+                    bSend1[20] = 0x03;
+                    bSend1[21] = (byte) ((rack << 5) | (int) slot);
                     break;
                 case CpuType.S71500:
                     // Eigener Tsap
-                    bSend1[13] = 0x10;
-                    bSend1[14] = 0x02;
+                    bSend1[16] = 0x10;
+                    bSend1[17] = 0x02;
                     // Fredmer Tsap
-                    bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
+                    bSend1[20] = 0x03;
+                    bSend1[21] = (byte) ((rack << 5) | (int) slot);
                     break;
                 default:
                     throw new Exception("Wrong CPU Type Secified");
