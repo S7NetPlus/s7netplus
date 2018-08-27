@@ -65,17 +65,17 @@ namespace S7.Net.UnitTest
                 17, //COTP Header Length
                 224, //Connect Request 
                 0, 0, //Destination Reference
-                0, 46, //Source Reference
+                0, 0, //Source Reference
                 0, //Flags
+                192, //Parameter Code (tpdu-size)
+                1, //Parameter Length
+                11, //TPDU Size (2^11 = 2048)
                 193, //Parameter Code (src-tasp)
                 2, //Parameter Length
                 sourceTsap1, sourceTsap2, //Source TASP
                 194, //Parameter Code (dst-tasp)
                 2, //Parameter Length
                 destTsap1, destTsap2, //Destination TASP
-                192, //Parameter Code (tpdu-size)
-                1, //Parameter Length
-                11 //TPDU Size (2^11 = 2048)
             };
         }
     }
