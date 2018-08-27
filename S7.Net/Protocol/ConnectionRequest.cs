@@ -11,7 +11,7 @@ namespace S7.Net.Protocol
                     17,     //COTP Header Length
                     224,    //Connect Request 
                     0, 0,   //Destination Reference
-                    0, 46,  //Source Reference
+                    0, 0,   //Source Reference
                     0,      //Flags
                     193,    //Parameter Code (src-tasp)
                     2,      //Parameter Length
