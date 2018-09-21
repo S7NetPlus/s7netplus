@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace S7.Net.Types
 {
@@ -27,9 +28,37 @@ namespace S7.Net.Types
         ///   is outside the valid range of values.</exception>
         public static System.DateTime FromByteArray(byte[] bytes)
         {
-            if (bytes.Length != 8)
+            return FromByteArrayImpl(bytes);
+        }
+
+        /// <summary>
+        /// Parses an array of <see cref="T:System.DateTime"/> values from bytes.
+        /// </summary>
+        /// <param name="bytes">Input bytes read from PLC.</param>
+        /// <returns>An array of <see cref="T:System.DateTime"/> objects representing the values read from PLC.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the length of
+        ///   <paramref name="bytes"/> is not a multiple of 8 or any value in
+        ///   <paramref name="bytes"/> is outside the valid range of values.</exception>
+        public static System.DateTime[] ToArray(byte[] bytes)
+        {
+            if (bytes.Length % 8 != 0)
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
-                    $"Parsing a DateTime requires exactly 8 bytes of input data, input data is {bytes.Length} bytes long.");
+                    $"Parsing an array of DateTime requires a multiple of 8 bytes of input data, input data is '{bytes.Length}' long.");
+
+            var cnt = bytes.Length / 8;
+            var result = new System.DateTime[bytes.Length / 8];
+
+            for (var i = 0; i < cnt; i++)
+                result[i] = FromByteArrayImpl(new ArraySegment<byte>(bytes, i * 8, 8));
+
+            return result;
+        }
+
+        private static System.DateTime FromByteArrayImpl(IList<byte> bytes)
+        {
+            if (bytes.Count != 8)
+                throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Count,
+                    $"Parsing a DateTime requires exactly 8 bytes of input data, input data is {bytes.Count} bytes long.");
 
             int DecodeBcd(byte input) => 10 * (input >> 4) + (input & 0b00001111);
 
@@ -106,6 +135,22 @@ namespace S7.Net.Types
                 EncodeBcd(dateTime.Millisecond / 10),
                 (byte) (dateTime.Millisecond % 10 << 4 | DayOfWeekToInt(dateTime.DayOfWeek))
             };
+        }
+
+        /// <summary>
+        /// Converts an array of <see cref="T:System.DateTime"/> values to a byte array.
+        /// </summary>
+        /// <param name="dateTimes">The DateTime values to convert.</param>
+        /// <returns>A byte array containing the S7 date time representations of <paramref name="dateTime"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when any value of
+        ///   <paramref name="dateTimes"/> is before <see cref="P:SpecMinimumDateTime"/>
+        ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>
+        public static byte[] ToByteArray(System.DateTime[] dateTimes)
+        {
+            var bytes = new List<byte>(dateTimes.Length * 8);
+            foreach (var dateTime in dateTimes) bytes.AddRange(ToByteArray(dateTime));
+
+            return bytes.ToArray();
         }
     }
 }
