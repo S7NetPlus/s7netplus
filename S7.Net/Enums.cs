@@ -181,6 +181,11 @@
         /// <summary>
         /// Counter variable type
         /// </summary>
-        Counter
+        Counter,
+
+        /// <summary>
+        /// DateTIme variable type
+        /// </summary>
+        DateTime
     }
 }
