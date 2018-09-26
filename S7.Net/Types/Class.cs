@@ -25,10 +25,8 @@ namespace S7.Net.Types
 
         }
 
-        private static double GetIncreasedNumberOfBytes(double startingNumberOfBytes, Type type)
+        private static double GetIncreasedNumberOfBytes(double numBytes, Type type)
         {
-            double numBytes = startingNumberOfBytes;
-
             switch (type.Name)
             {
                 case "Boolean":
@@ -61,7 +59,7 @@ namespace S7.Net.Types
                     break;
                 default:
                     var propertyClass = Activator.CreateInstance(type);
-                    numBytes += GetClassSize(propertyClass);
+                    numBytes = GetClassSize(propertyClass, numBytes, true);
                     break;
             }
 
@@ -73,10 +71,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="instance">An instance of the class</param>
         /// <returns>the number of bytes</returns>
-        public static int GetClassSize(object instance)
+        public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false)
         {
-            double numBytes = 0.0;
-
             var properties = GetAccessableProperties(instance.GetType());
             foreach (var property in properties)
             {
@@ -99,11 +95,14 @@ namespace S7.Net.Types
                     numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType);
                 }
             }
-            // enlarge numBytes to next even number because S7-Structs in a DB always will be resized to an even byte count
-            numBytes = Math.Ceiling(numBytes);
-            if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                numBytes++;
-            return (int)numBytes;
+            if (false == isInnerProperty)
+            {
+                // enlarge numBytes to next even number because S7-Structs in a DB always will be resized to an even byte count
+                numBytes = Math.Ceiling(numBytes);
+                if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                    numBytes++;
+            }
+            return numBytes;
         }
 
         private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
@@ -196,14 +195,8 @@ namespace S7.Net.Types
                     break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
-                    var buffer = new byte[GetClassSize(propClass)];
-                    if (buffer.Length > 0)
-                    {
-                        Buffer.BlockCopy(bytes, (int)Math.Ceiling(numBytes), buffer, 0, buffer.Length);
-                        FromBytes(propClass, buffer);
-                        value = propClass;
-                        numBytes += buffer.Length;
-                    }
+                    numBytes = FromBytes(propClass, bytes, numBytes);
+                    value = propClass;
                     break;
             }
 
@@ -215,16 +208,10 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The object to fill in the given array of bytes</param>
         /// <param name="bytes">The array of bytes</param>
-        public static void FromBytes(object sourceClass, byte[] bytes)
+        public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false)
         {
             if (bytes == null)
-                return;
-
-            if (bytes.Length != GetClassSize(sourceClass))
-                return;
-
-            // and decode it
-            double numBytes = 0.0;
+                return numBytes;
 
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
@@ -248,6 +235,8 @@ namespace S7.Net.Types
                         null);
                 }
             }
+
+            return numBytes;
         }
 
         private static void ToBytes(object propertyValue, byte[] bytes, ref double numBytes)
@@ -317,7 +306,7 @@ namespace S7.Net.Types
         /// <returns>A byte array or null if fails.</returns>
         public static byte[] ToBytes(object sourceClass)
         {
-            int size = GetClassSize(sourceClass);
+            int size = (int)GetClassSize(sourceClass);
             byte[] bytes = new byte[size];
             double numBytes = 0.0;
 

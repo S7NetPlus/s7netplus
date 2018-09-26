@@ -40,6 +40,7 @@ namespace S7.Net.UnitTest
     {
         #region Constants
         const int DB2 = 2;
+        const int DB4 = 4;
         #endregion
 
         #region Private fields
@@ -694,6 +695,29 @@ namespace S7.Net.UnitTest
             }
         }
 
+        [TestMethod]
+        public void T31_ReadClassWithNestedClassAfterBit()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass()));
+
+            TestClassWithNestedClass tc = new TestClassWithNestedClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable01.BitVariable00 = true;
+            tc.ByteVariable02.ByteVariable00 = 128;
+            tc.BitVariable03 = true;
+            tc.ShortVariable04.ShortVarialbe00 = -15000;
+
+            TestClassWithNestedClass tc2 = new TestClassWithNestedClass();
+            plc.ReadClass(tc2, DB4);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
+            Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
+            Assert.AreEqual(tc.BitVariable03, tc2.BitVariable03);
+            Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
+        }
+
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
@@ -767,7 +791,7 @@ namespace S7.Net.UnitTest
             tc.DWordVariable = 850;
             plc.WriteClass(tc, DB2);
 
-            int expectedReadBytes = Types.Class.GetClassSize(tc);
+            int expectedReadBytes = (int)Types.Class.GetClassSize(tc);
 
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference

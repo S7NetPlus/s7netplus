@@ -141,7 +141,7 @@ namespace S7.Net
         /// <returns>The number of read bytes</returns>
         public async Task<Tuple<int, object>> ReadClassAsync(object sourceClass, int db, int startByteAdr = 0)
         {
-            int numBytes = Class.GetClassSize(sourceClass);
+            int numBytes = (int)Class.GetClassSize(sourceClass);
             if (numBytes <= 0)
             {
                 throw new Exception("The size of the class is less than 1 byte and therefore cannot be read");
