@@ -370,8 +370,9 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous write operation.</returns>
         public async Task WriteClassAsync(object classValue, int db, int startByteAdr = 0)
         {
-            var bytes = Types.Class.ToBytes(classValue).ToList();
-            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            byte[] bytes = new byte[(int)Class.GetClassSize(classValue)];
+            Types.Class.ToBytes(classValue, bytes);
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes);
         }
 
         private async Task<byte[]> ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)

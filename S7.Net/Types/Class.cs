@@ -239,7 +239,7 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static void ToBytes(object propertyValue, byte[] bytes, ref double numBytes)
+        private static double SetBytesFromProperty(object propertyValue, byte[] bytes, double numBytes)
         {
             int bytePos = 0;
             int bitPos = 0;
@@ -282,7 +282,7 @@ namespace S7.Net.Types
                     bytes2 = Single.ToByteArray((float)propertyValue);
                     break;
                 default:
-                    bytes2 = ToBytes(propertyValue);
+                    numBytes = ToBytes(propertyValue, bytes, numBytes);
                     break;
             }
 
@@ -297,6 +297,8 @@ namespace S7.Net.Types
                     bytes[bytePos + bCnt] = bytes2[bCnt];
                 numBytes += bytes2.Length;
             }
+
+            return numBytes;
         }
 
         /// <summary>
@@ -304,12 +306,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The struct object</param>
         /// <returns>A byte array or null if fails.</returns>
-        public static byte[] ToBytes(object sourceClass)
+        public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0)
         {
-            int size = (int)GetClassSize(sourceClass);
-            byte[] bytes = new byte[size];
-            double numBytes = 0.0;
-
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
@@ -319,15 +317,15 @@ namespace S7.Net.Types
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        ToBytes(array.GetValue(i), bytes, ref numBytes);
+                        numBytes = SetBytesFromProperty(array.GetValue(i), bytes, numBytes);
                     }
                 }
                 else
                 {
-                    ToBytes(property.GetValue(sourceClass, null), bytes, ref numBytes);
+                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), bytes, numBytes);
                 }
             }
-            return bytes;
+            return numBytes;
         }
     }
 }
