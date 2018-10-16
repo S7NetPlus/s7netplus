@@ -48,6 +48,32 @@ namespace S7.Net.UnitTest
             }
         }
 
+        [TestMethod]
+        public async Task Test_Async_Connection_Timeout()
+        {
+            // According to https://tools.ietf.org/html/rfc5737
+            // address block 192.0.2.0/24 is used only for documentation.
+            Plc unavailablePlc = new Plc(CpuType.S7200, "192.0.2.0", 0, 0);
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            try
+            {
+                await unavailablePlc.OpenAsync(50);
+            }
+            catch (System.TimeoutException ex)
+            {
+                sw.Stop();                
+                Assert.IsInstanceOfType(ex, typeof(System.TimeoutException));
+                if (sw.ElapsedMilliseconds > 500)
+                {
+                    Assert.Fail("TimeoutException was not thrown fast enough.");
+                }
+                return;
+            }            
+            // Exception was not thrown, test failed.
+            Assert.Fail();
+        }
+
         /// <summary>
         /// Read/Write a single Int16 or UInt16 with a single request.
         /// Test that writing a UInt16 (ushort) and reading it gives the correct value.
