@@ -1,7 +1,7 @@
 image: Visual Studio 2017
 configuration: Release
 install:
-  - choco install gitversion.portable -y
+  - choco install gitversion.portable --version 3.6.4 -y
 before_build:
   - cmd: gitversion /l console /output buildserver /b %APPVEYOR_REPO_BRANCH%
   - nuget restore
