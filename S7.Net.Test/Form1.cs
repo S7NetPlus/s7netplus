@@ -34,6 +34,7 @@ namespace S7.Net.Test
                 grbInit.Enabled = false;
                 _myPlc = new Plc((CpuType)Enum.Parse(typeof(CpuType), cmbType.Text), txtIP.Text, 2, 1);
                 await _myPlc.OpenAsync();
+                //cc
                 //dd
             }
             catch (Exception ex)
