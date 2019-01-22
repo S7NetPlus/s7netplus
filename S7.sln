@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net.UnitTest", "S7.Net.U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net.Test", "S7.Net.Test\S7.Net.Test.csproj", "{0623206F-29EF-448F-903C-0A934EB91CDD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net.Console", "S7.Net.Console\S7.Net.Console.csproj", "{1A0AF337-93BA-4B90-8A1B-139FBAE08D39}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{0623206F-29EF-448F-903C-0A934EB91CDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0623206F-29EF-448F-903C-0A934EB91CDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0623206F-29EF-448F-903C-0A934EB91CDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A0AF337-93BA-4B90-8A1B-139FBAE08D39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A0AF337-93BA-4B90-8A1B-139FBAE08D39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A0AF337-93BA-4B90-8A1B-139FBAE08D39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A0AF337-93BA-4B90-8A1B-139FBAE08D39}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

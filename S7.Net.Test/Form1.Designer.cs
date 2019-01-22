@@ -645,7 +645,7 @@
             this.txtIP.Name = "txtIP";
             this.txtIP.Size = new System.Drawing.Size(130, 25);
             this.txtIP.TabIndex = 24;
-            this.txtIP.Text = "192.168.1.1";
+            this.txtIP.Text = "192.168.2.22";
             // 
             // btnOpen
             // 

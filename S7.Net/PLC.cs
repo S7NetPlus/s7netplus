@@ -10,7 +10,7 @@ namespace S7.Net
     public partial class Plc : IDisposable
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
+
         //TCP connection to device
         private TcpClient tcpClient;
         private NetworkStream stream;
@@ -39,7 +39,7 @@ namespace S7.Net
         /// Max PDU size this cpu supports
         /// </summary>
         public Int16 MaxPDUSize { get; set; }
-        
+
         /// <summary>
         /// Returns true if a connection to the PLC can be established
         /// </summary>
@@ -50,8 +50,17 @@ namespace S7.Net
             {
                 try
                 {
-                    Connect();
-                    return true;
+                    System.Net.NetworkInformation.Ping ping = new System.Net.NetworkInformation.Ping();
+                    System.Net.NetworkInformation.PingReply pingReply = ping.Send(IP, 1000);
+                    if (pingReply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                    {
+                        Connect();
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 catch
                 {
@@ -80,7 +89,7 @@ namespace S7.Net
                 catch { return false; }
             }
         }
-        
+
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
         /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.

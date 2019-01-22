@@ -27,13 +27,13 @@ namespace S7.Net.Test
             cmbType.SelectedIndex = 4;
         }
 
-        private async void btnOpen_Click(object sender, EventArgs e)
+        private void btnOpen_Click(object sender, EventArgs e)
         {
             try
             {
                 grbInit.Enabled = false;
-                _myPlc = new Plc((CpuType)Enum.Parse(typeof(CpuType), cmbType.Text), txtIP.Text, 2, 1);
-                await _myPlc.OpenAsync();
+                _myPlc = new Plc((CpuType)Enum.Parse(typeof(CpuType), cmbType.Text), txtIP.Text, 0, 1);
+                _myPlc.Open();
             }
             catch (Exception ex)
             {
@@ -47,7 +47,22 @@ namespace S7.Net.Test
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-
+            for (int i = 100; i < 255; i++)
+            {
+                using (var plc = new Plc((CpuType)Enum.Parse(typeof(CpuType), cmbType.Text), $"192.168.2.{i}", 0, 1))
+                {
+                    if (plc.IsAvailable)
+                    {
+                        recordMessage($"192.168.2.{i} OK");
+                        break;
+                    }
+                    else
+                    {
+                        recordMessage($"192.168.2.{i} NG");
+                    }
+                }
+            }
+            
         }
 
         private void btnRead_Click(object sender, EventArgs e)
