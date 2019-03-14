@@ -34,6 +34,14 @@ namespace S7.Net.Protocol
                     bSend1[17] = 0x10;
                     bSend1[18] = 0x00;
                     break;
+                case CpuType.Logo0BA8:
+                    // These values are taken from NodeS7, it's not verified if these are
+                    // exact requirements to connect to the Logo0BA8.
+                    bSend1[13] = 0x01;
+                    bSend1[14] = 0x00;
+                    bSend1[17] = 0x01;
+                    bSend1[18] = 0x02;
+                    break;
                 case CpuType.S71200:
                 case CpuType.S7300:
                 case CpuType.S7400:
