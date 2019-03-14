@@ -25,16 +25,19 @@ namespace S7.Net
             var response = await COTP.TPDU.ReadAsync(stream);
             if (response.PDUType != 0xd0) //Connect Confirm
             {
-                throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
+                throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
             }
 
             await stream.WriteAsync(GetS7ConnectionSetup(), 0, 25);
 
             var s7data = await COTP.TSDU.ReadAsync(stream);
-            if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
-            {
-                throw new WrongNumberOfBytesException("Waiting for S7 connection setup");
-            }
+            if (s7data == null)
+                throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
+
+            //Check for S7 Ack Data
+            if (s7data[1] != 0x03)
+                throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
+
             MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
         }
 

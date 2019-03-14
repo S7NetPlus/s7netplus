@@ -11,6 +11,11 @@
         S7200 = 0,
 
         /// <summary>
+        /// Siemens Logo 0BA8
+        /// </summary>
+        Logo0BA8 = 1,
+
+        /// <summary>
         /// S7 300 cpu type
         /// </summary>
         S7300 = 10,
