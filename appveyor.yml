@@ -3,7 +3,7 @@ configuration: Release
 install:
   - choco install gitversion.portable -y
 before_build:
-  - cmd: gitversion /l console /output buildserver /b %APPVEYOR_REPO_BRANCH%
+  - cmd: gitversion /l console /output buildserver
   - nuget restore
 build_script:
   msbuild /nologo /v:m /p:AssemblyVersion=%GitVersion_AssemblySemVer% /p:FileVersion=%GitVersion_MajorMinorPatch% /p:InformationalVersion=%GitVersion_InformationalVersion% /p:Configuration=%CONFIGURATION% S7.sln
