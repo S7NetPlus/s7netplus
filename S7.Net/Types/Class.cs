@@ -82,6 +82,9 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
+                    // Array must always start on an even byte
+                    numBytes += numBytes % 2;
+
                     Type elementType = property.PropertyType.GetElementType();
                     Array array = (Array)property.GetValue(instance, null);
                     if (array.Length <= 0)
@@ -231,6 +234,9 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
+                    // Array must always start on an even byte
+                    numBytes += numBytes % 2;
+
                     Array array = (Array)property.GetValue(sourceClass, null);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
@@ -326,6 +332,9 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
+                    // Array must always start on an even byte
+                    numBytes += numBytes % 2;
+
                     Array array = (Array)property.GetValue(sourceClass, null);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
