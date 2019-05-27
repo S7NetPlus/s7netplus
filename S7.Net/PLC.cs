@@ -39,6 +39,22 @@ namespace S7.Net
         /// Max PDU size this cpu supports
         /// </summary>
         public Int16 MaxPDUSize { get; set; }
+
+        /// <summary>Gets or sets the amount of time that a read operation blocks waiting for data from PLC.</summary>
+        /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
+        public int ReadTimeout
+        {
+            get;
+            set;
+        } = System.Threading.Timeout.Infinite;
+
+        /// <summary>Gets or sets the amount of time that a write operation blocks waiting for data to PLC. </summary>
+        /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the write operation does not time out.</returns>
+        public int WriteTimeout
+        {
+            get;
+            set;
+        } = System.Threading.Timeout.Infinite;
         
         /// <summary>
         /// Returns true if a connection to the PLC can be established
@@ -115,6 +131,12 @@ namespace S7.Net
             {
                 if (tcpClient.Connected) tcpClient.Close();
             }
+        }
+
+        private void ConfigureNetworkStream(NetworkStream networkStream)
+        {
+            networkStream.ReadTimeout = ReadTimeout;
+            networkStream.WriteTimeout = WriteTimeout;
         }
 
         #region IDisposable Support
