@@ -15,8 +15,8 @@ namespace S7.Net
         private TcpClient tcpClient;
         private NetworkStream stream;
 
-        private int _readTimeout = System.Threading.Timeout.Infinite;
-        private int _writeTimeout = System.Threading.Timeout.Infinite;
+        private int readTimeout = System.Threading.Timeout.Infinite;
+        private int writeTimeout = System.Threading.Timeout.Infinite;
 
         /// <summary>
         /// IP address of the PLC
@@ -47,11 +47,11 @@ namespace S7.Net
         /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
         public int ReadTimeout
         {
-            get => _readTimeout;
+            get => readTimeout;
             set
             {
-                _readTimeout = value;
-                ConfigureConnection();
+                readTimeout = value;
+                if (tcpClient != null) tcpClient.ReceiveTimeout = readTimeout;
             }
         }
 
@@ -59,11 +59,11 @@ namespace S7.Net
         /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the write operation does not time out.</returns>
         public int WriteTimeout
         {
-            get => _writeTimeout;
+            get => writeTimeout;
             set
             {
-                _writeTimeout = value;
-                ConfigureConnection();
+                writeTimeout = value;
+                if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
             }
         }
         
@@ -147,16 +147,13 @@ namespace S7.Net
 
         private void ConfigureConnection()
         {
-            if (tcpClient != null)
+            if (tcpClient == null)
             {
-                ConfigureConnection(tcpClient);
+                return;
             }
-        }
 
-        private void ConfigureConnection(TcpClient client)
-        {
-            client.ReceiveTimeout = ReadTimeout;
-            client.SendTimeout = WriteTimeout;
+            tcpClient.ReceiveTimeout = ReadTimeout;
+            tcpClient.SendTimeout = WriteTimeout;
         }
 
         #region IDisposable Support

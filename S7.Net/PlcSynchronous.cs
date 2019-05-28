@@ -50,7 +50,7 @@ namespace S7.Net
             try
             {
                 tcpClient = new TcpClient();
-                ConfigureConnection(tcpClient);
+                ConfigureConnection();
                 tcpClient.Connect(IP, 102);
                 stream = tcpClient.GetStream();
             }
