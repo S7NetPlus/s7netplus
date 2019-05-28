@@ -15,6 +15,9 @@ namespace S7.Net
         private TcpClient tcpClient;
         private NetworkStream stream;
 
+        private int readTimeout = System.Threading.Timeout.Infinite;
+        private int writeTimeout = System.Threading.Timeout.Infinite;
+
         /// <summary>
         /// IP address of the PLC
         /// </summary>
@@ -39,6 +42,30 @@ namespace S7.Net
         /// Max PDU size this cpu supports
         /// </summary>
         public Int16 MaxPDUSize { get; set; }
+
+        /// <summary>Gets or sets the amount of time that a read operation blocks waiting for data from PLC.</summary>
+        /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
+        public int ReadTimeout
+        {
+            get => readTimeout;
+            set
+            {
+                readTimeout = value;
+                if (tcpClient != null) tcpClient.ReceiveTimeout = readTimeout;
+            }
+        }
+
+        /// <summary>Gets or sets the amount of time that a write operation blocks waiting for data to PLC. </summary>
+        /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the write operation does not time out.</returns>
+        public int WriteTimeout
+        {
+            get => writeTimeout;
+            set
+            {
+                writeTimeout = value;
+                if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
+            }
+        }
         
         /// <summary>
         /// Returns true if a connection to the PLC can be established
@@ -106,6 +133,7 @@ namespace S7.Net
             Slot = slot;
             MaxPDUSize = 240;
         }
+
         /// <summary>
         /// Close connection to PLC
         /// </summary>
@@ -115,6 +143,17 @@ namespace S7.Net
             {
                 if (tcpClient.Connected) tcpClient.Close();
             }
+        }
+
+        private void ConfigureConnection()
+        {
+            if (tcpClient == null)
+            {
+                return;
+            }
+
+            tcpClient.ReceiveTimeout = ReadTimeout;
+            tcpClient.SendTimeout = WriteTimeout;
         }
 
         #region IDisposable Support
