@@ -20,8 +20,11 @@ namespace S7.Net.Protocol
             var dataOffset = paramOffset + paramSize;
             var data = new ByteArray();
 
+            var itemCount = 0;
+
             foreach (var item in dataItems)
             {
+                itemCount++;
                 message.Add(Parameter.Template);
                 var value = Serialization.SerializeDataItem(item);
                 var wordLen = item.Value is bool ? 1 : 2;
@@ -44,8 +47,10 @@ namespace S7.Net.Protocol
                     data.Add(0x03);
                     data.AddWord(1);
 
-                    data.Add(b ? (byte) 1 : (byte) 0);
-                    data.Add(0);
+                    data.Add(b ? (byte)1 : (byte)0);
+                    if (itemCount != dataItems.Length) { 
+                        data.Add(0);
+                    }
                 }
                 else
                 {
@@ -56,7 +61,7 @@ namespace S7.Net.Protocol
                     data.AddWord((ushort) (len << 3));
                     data.Add(value);
                     
-                    if ((len & 0b1) == 1)
+                    if ((len & 0b1) == 1 && itemCount != dataItems.Length)
                     {
                         data.Add(0);
                     }
