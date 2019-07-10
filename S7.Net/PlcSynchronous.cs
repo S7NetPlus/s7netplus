@@ -51,7 +51,7 @@ namespace S7.Net
             {
                 tcpClient = new TcpClient();
                 ConfigureConnection();
-                tcpClient.Connect(IP, PORT);
+                tcpClient.Connect(IP, Port);
                 stream = tcpClient.GetStream();
             }
             catch (SocketException sex)
