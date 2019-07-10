@@ -53,7 +53,7 @@ namespace S7.Net.UnitTest
         /// </summary>
         public S7NetTests()
         {
-            plc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
+            plc = new Plc(CpuType.S7300, "127.0.0.1", 102, 0, 2);
             //ConsoleManager.Show();
             ShutDownServiceS7oiehsx64();
 
@@ -602,7 +602,7 @@ namespace S7.Net.UnitTest
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T13_ReadBytesThrowsIfPlcIsNotConnected()
         {
-            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
                 TestClass tc = new TestClass();
@@ -643,7 +643,7 @@ namespace S7.Net.UnitTest
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T15_ReadClassWithGenericThrowsIfPlcIsNotConnected()
         {
-            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
@@ -685,7 +685,7 @@ namespace S7.Net.UnitTest
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T17_ReadClassWithGenericAndClassFactoryThrowsIfPlcIsNotConnected()
         {
-            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
 
@@ -746,7 +746,7 @@ namespace S7.Net.UnitTest
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
-            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
 
@@ -788,7 +788,7 @@ namespace S7.Net.UnitTest
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T20_ReadStructThrowsIfPlcIsNotConnected()
         {
-            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
+            using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
 
@@ -909,7 +909,7 @@ namespace S7.Net.UnitTest
             plc.Close();
             S7TestServer.Stop();
 
-            var unreachablePlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 2);
+            var unreachablePlc = new Plc(CpuType.S7300, "255.255.255.255", 102, 0, 2);
             Assert.IsFalse(unreachablePlc.IsAvailable);
         }
 
@@ -920,7 +920,7 @@ namespace S7.Net.UnitTest
             S7TestServer.Stop();
             S7TestServer.Start();
 
-            var reachablePlc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
+            var reachablePlc = new Plc(CpuType.S7300, "127.0.0.1", 102, 0, 2);
             Assert.IsTrue(reachablePlc.IsAvailable);
         }
 
