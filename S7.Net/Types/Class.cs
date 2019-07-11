@@ -25,10 +25,8 @@ namespace S7.Net.Types
 
         }
 
-        private static double GetIncreasedNumberOfBytes(double startingNumberOfBytes, Type type)
+        private static double GetIncreasedNumberOfBytes(double numBytes, Type type)
         {
-            double numBytes = startingNumberOfBytes;
-
             switch (type.Name)
             {
                 case "Boolean":
@@ -61,7 +59,7 @@ namespace S7.Net.Types
                     break;
                 default:
                     var propertyClass = Activator.CreateInstance(type);
-                    numBytes += GetClassSize(propertyClass);
+                    numBytes = GetClassSize(propertyClass, numBytes, true);
                     break;
             }
 
@@ -73,10 +71,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="instance">An instance of the class</param>
         /// <returns>the number of bytes</returns>
-        public static int GetClassSize(object instance)
+        public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false)
         {
-            double numBytes = 0.0;
-
             var properties = GetAccessableProperties(instance.GetType());
             foreach (var property in properties)
             {
@@ -196,14 +192,8 @@ namespace S7.Net.Types
                     break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
-                    var buffer = new byte[GetClassSize(propClass)];
-                    if (buffer.Length > 0)
-                    {
-                        Buffer.BlockCopy(bytes, (int)Math.Ceiling(numBytes), buffer, 0, buffer.Length);
-                        FromBytes(propClass, buffer);
-                        value = propClass;
-                        numBytes += buffer.Length;
-                    }
+                    numBytes = FromBytes(propClass, bytes, numBytes);
+                    value = propClass;
                     break;
             }
 
@@ -215,16 +205,10 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The object to fill in the given array of bytes</param>
         /// <param name="bytes">The array of bytes</param>
-        public static void FromBytes(object sourceClass, byte[] bytes)
+        public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false)
         {
             if (bytes == null)
-                return;
-
-            if (bytes.Length != GetClassSize(sourceClass))
-                return;
-
-            // and decode it
-            double numBytes = 0.0;
+                return numBytes;
 
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
@@ -249,9 +233,11 @@ namespace S7.Net.Types
                         null);
                 }
             }
+
+            return numBytes;
         }
 
-        private static void ToBytes(object propertyValue, byte[] bytes, ref double numBytes)
+        private static double SetBytesFromProperty(object propertyValue, byte[] bytes, double numBytes)
         {
             int bytePos = 0;
             int bitPos = 0;
@@ -294,7 +280,7 @@ namespace S7.Net.Types
                     bytes2 = Single.ToByteArray((float)propertyValue);
                     break;
                 default:
-                    bytes2 = ToBytes(propertyValue);
+                    numBytes = ToBytes(propertyValue, bytes, numBytes);
                     break;
             }
 
@@ -309,6 +295,8 @@ namespace S7.Net.Types
                     bytes[bytePos + bCnt] = bytes2[bCnt];
                 numBytes += bytes2.Length;
             }
+
+            return numBytes;
         }
 
         /// <summary>
@@ -316,12 +304,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The struct object</param>
         /// <returns>A byte array or null if fails.</returns>
-        public static byte[] ToBytes(object sourceClass)
+        public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0)
         {
-            int size = GetClassSize(sourceClass);
-            byte[] bytes = new byte[size];
-            double numBytes = 0.0;
-
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
@@ -332,15 +316,15 @@ namespace S7.Net.Types
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        ToBytes(array.GetValue(i), bytes, ref numBytes);
+                        numBytes = SetBytesFromProperty(array.GetValue(i), bytes, numBytes);
                     }
                 }
                 else
                 {
-                    ToBytes(property.GetValue(sourceClass, null), bytes, ref numBytes);
+                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), bytes, numBytes);
                 }
             }
-            return bytes;
+            return numBytes;
         }
 
         private static double IncreaseToEvenNumber(double numBytes)

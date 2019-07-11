@@ -25,22 +25,26 @@ namespace S7.Net
             var response = await COTP.TPDU.ReadAsync(stream);
             if (response.PDUType != 0xd0) //Connect Confirm
             {
-                throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
+                throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
             }
 
             await stream.WriteAsync(GetS7ConnectionSetup(), 0, 25);
 
             var s7data = await COTP.TSDU.ReadAsync(stream);
-            if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
-            {
-                throw new WrongNumberOfBytesException("Waiting for S7 connection setup");
-            }
+            if (s7data == null)
+                throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
+
+            //Check for S7 Ack Data
+            if (s7data[1] != 0x03)
+                throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
+
             MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
         }
 
         private async Task ConnectAsync()
         {
             tcpClient = new TcpClient();
+            ConfigureConnection();
             await tcpClient.ConnectAsync(IP, 102);
             stream = tcpClient.GetStream();
         }
@@ -141,7 +145,7 @@ namespace S7.Net
         /// <returns>The number of read bytes</returns>
         public async Task<Tuple<int, object>> ReadClassAsync(object sourceClass, int db, int startByteAdr = 0)
         {
-            int numBytes = Class.GetClassSize(sourceClass);
+            int numBytes = (int)Class.GetClassSize(sourceClass);
             if (numBytes <= 0)
             {
                 throw new Exception("The size of the class is less than 1 byte and therefore cannot be read");
@@ -370,8 +374,9 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous write operation.</returns>
         public async Task WriteClassAsync(object classValue, int db, int startByteAdr = 0)
         {
-            var bytes = Types.Class.ToBytes(classValue).ToList();
-            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray());
+            byte[] bytes = new byte[(int)Class.GetClassSize(classValue)];
+            Types.Class.ToBytes(classValue, bytes);
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes);
         }
 
         private async Task<byte[]> ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)

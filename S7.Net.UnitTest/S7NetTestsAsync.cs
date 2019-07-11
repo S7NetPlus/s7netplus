@@ -160,6 +160,31 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
         }
 
+        [TestMethod]
+        public async Task Test_Async_ReadAndWriteNestedClass()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClassWithNestedClass tc = new TestClassWithNestedClass
+            {
+                BitVariable00 = true,
+                BitVariable01 = new TestClassInnerWithBool { BitVariable00 = true },
+                ByteVariable02 = new TestClassInnerWithByte { ByteVariable00 = 128 },
+                BitVariable03 = true,
+                ShortVariable04 = new TestClassInnerWithShort { ShortVarialbe00 = -15000 }
+            };
+
+            await plc.WriteClassAsync(tc, DB4);
+            TestClassWithNestedClass tc2 = new TestClassWithNestedClass();
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            await plc.ReadClassAsync(tc2, DB4);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
+            Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
+            Assert.AreEqual(tc.BitVariable03, tc2.BitVariable03);
+            Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
+        }
+
         /// <summary>
         /// Read/Write a struct that has the same properties of a DB with the same field in the same order
         /// </summary>
@@ -664,6 +689,28 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        public async Task Test_Async_ReadClassWithNestedClassAfterBit()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass()));
+
+            TestClassWithNestedClass tc = new TestClassWithNestedClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable01.BitVariable00 = true;
+            tc.ByteVariable02.ByteVariable00 = 128;
+            tc.BitVariable03 = true;
+            tc.ShortVariable04.ShortVarialbe00 = -15000;
+
+            TestClassWithNestedClass tc2 = await plc.ReadClassAsync<TestClassWithNestedClass>(DB4);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
+            Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
+            Assert.AreEqual(tc.BitVariable03, tc2.BitVariable03);
+            Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructThrowsExceptionPlcIsNotConnected()
         {
@@ -737,7 +784,7 @@ namespace S7.Net.UnitTest
             };
             plc.WriteClass(tc, DB2);
 
-            int expectedReadBytes = Types.Class.GetClassSize(tc);
+            int expectedReadBytes = (int)Types.Class.GetClassSize(tc);
 
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference

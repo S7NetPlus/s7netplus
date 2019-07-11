@@ -4,14 +4,18 @@ branches:
   master:
     tag: rc
     increment: Minor
-  features?[/-]:
+  feature:
+    regex: features?[/-]
     tag: rc-{BranchName}
     increment: Minor
-  (pull|pull\-requests|pr)[/-]:
+  pull-request:
+    regex: (pull|pull\-requests|pr)[/-]
     tag: rc-pr-{BranchName}
     increment: Minor
-  hotfix(es)?[/-]:
+  hotfix:
+    regex: hotfix(es)?[/-]
     tag: rc
     increment: Patch
-  dev(elop)?(ment)?$:
+  develop:
+    regex: dev(elop)?(ment)?$
     tag: b
