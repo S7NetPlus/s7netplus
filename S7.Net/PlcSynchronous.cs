@@ -230,7 +230,7 @@ namespace S7.Net
                 //TODO: Figure out how to use MaxPDUSize here
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
-                var maxToWrite = Math.Min(count, 200);
+                var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
                 WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 count -= maxToWrite;
                 localIndex += maxToWrite;
@@ -392,8 +392,9 @@ namespace S7.Net
                 int packageSize = 35 + value.Length;
                 ByteArray package = new ByteArray(packageSize);
 
-                package.Add(new byte[] { 3, 0, 0 });
-                package.Add((byte)packageSize);
+                package.Add(new byte[] { 3, 0 });
+                //complete package size
+                package.Add(Int.ToByteArray((short)packageSize));
                 package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
                 package.Add(Word.ToByteArray((ushort)(varCount - 1)));
                 package.Add(new byte[] { 0, 0x0e });
