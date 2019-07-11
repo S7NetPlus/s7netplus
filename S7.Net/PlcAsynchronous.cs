@@ -45,7 +45,7 @@ namespace S7.Net
         {
             tcpClient = new TcpClient();
             ConfigureConnection();
-            await tcpClient.ConnectAsync(IP, 102);
+            await tcpClient.ConnectAsync(IP, Port);
             stream = tcpClient.GetStream();
         }
 

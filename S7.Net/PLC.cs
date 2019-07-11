@@ -24,6 +24,11 @@ namespace S7.Net
         public string IP { get; private set; }
 
         /// <summary>
+        /// PORT Number of the PLC, default is 102
+        /// </summary>
+        public int Port { get; private set; }
+
+        /// <summary>
         /// CPU type of the PLC
         /// </summary>
         public CpuType CPU { get; private set; }
@@ -107,7 +112,34 @@ namespace S7.Net
                 catch { return false; }
             }
         }
-        
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="port">Port address of the PLC, default 102</param>
+        /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        ///  If you use an external ethernet card, this must be set accordingly.</param>
+        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
+        {
+            if (!Enum.IsDefined(typeof(CpuType), cpu))
+                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
+
+            if (string.IsNullOrEmpty(ip))
+                throw new ArgumentException("IP address must valid.", nameof(ip));
+
+            CPU = cpu;
+            IP = ip;
+            Port = port;
+            Rack = rack;
+            Slot = slot;
+            MaxPDUSize = 240;
+        }
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
         /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
@@ -129,6 +161,7 @@ namespace S7.Net
 
             CPU = cpu;
             IP = ip;
+            Port = 102;
             Rack = rack;
             Slot = slot;
             MaxPDUSize = 240;
