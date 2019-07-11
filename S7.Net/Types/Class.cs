@@ -345,10 +345,10 @@ namespace S7.Net.Types
 
         private static double IncreaseToEvenNumber(double numBytes)
         {
-            numBytes = Math.Ceiling(numBytes);
-            if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                numBytes++;
-            return numBytes;
+            var numBytesInt = (int)Math.Ceiling(numBytes);
+            if (numBytesInt % 2 > 0)
+                numBytesInt++;
+            return numBytesInt;
         }
     }
 }
