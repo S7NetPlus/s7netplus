@@ -41,6 +41,8 @@ namespace S7.Net.Protocol
                     return Types.Double.ToByteArray((double)value);
                 case "Single":
                     return Types.Single.ToByteArray((float)value);
+                case "DateTime":
+                    return Types.DateTime.ToByteArray((System.DateTime) value);
                 case "Byte[]":
                     return (byte[])value;
                 case "Int16[]":
@@ -60,6 +62,8 @@ namespace S7.Net.Protocol
                     // if the consumer does not pay attention to string length.
                     var stringVal = (string) value;
                     return Types.String.ToByteArray(stringVal, stringVal.Length);
+                case "DateTime[]":
+                    return Types.DateTime.ToByteArray((System.DateTime[]) value);
                 default:
                     throw new InvalidVariableTypeException();
             }
