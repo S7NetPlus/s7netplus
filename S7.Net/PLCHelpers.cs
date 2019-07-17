@@ -145,7 +145,7 @@ namespace S7.Net
                     }
                     else
                     {
-                        return Bit.ToBitArray(bytes);
+                        return Bit.ToBitArray(bytes, varCount);
                     }
                 case VarType.DateTime:
                     if (varCount == 1)
@@ -172,7 +172,7 @@ namespace S7.Net
             switch (varType)
             {
                 case VarType.Bit:
-                    return varCount; //TODO
+                    return varCount + 7 / 8;
                 case VarType.Byte:
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
