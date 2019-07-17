@@ -9,6 +9,7 @@ namespace S7.Net.UnitTest.Helpers
         static private byte[] DB1 = new byte[1024];  // Our DB1
         static private byte[] DB2 = new byte[64000]; // Our DB2
         static private byte[] DB3 = new byte[1024]; // Our DB3
+        static private byte[] DB4 = new byte[6] { 3, 128, 1, 0, 197, 104 }; // Our DB4
 
         private static S7Server.TSrvCallback TheEventCallBack; // <== Static var containig the callback
         private static S7Server.TSrvCallback TheReadCallBack; // <== Static var containig the callback
@@ -36,9 +37,10 @@ namespace S7.Net.UnitTest.Helpers
                                 1,                   // Its number is 1 (DB1)
                                 DB1,                 // Our buffer for DB1
                                 DB1.Length);         // Its size
-            // Do the same for DB2 and DB3
+            // Do the same for DB2, DB3, and DB4
             Server.RegisterArea(S7Server.srvAreaDB, 2, DB2, DB2.Length);
             Server.RegisterArea(S7Server.srvAreaDB, 3, DB3, DB3.Length);
+            Server.RegisterArea(S7Server.srvAreaDB, 4, DB4, DB4.Length);
 
             // Exclude read event to avoid the double report
             // Set the callbacks (using the static var to avoid the garbage collect)

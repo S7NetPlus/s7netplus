@@ -16,6 +16,7 @@ namespace S7.Net
         /// </summary>
         public class TPDU
         {
+            public TPKT TPkt { get; }
             public byte HeaderLength;
             public byte PDUType;
             public int TPDUNumber;
@@ -24,6 +25,8 @@ namespace S7.Net
 
             public TPDU(TPKT tPKT)
             {
+                TPkt = tPKT;
+
                 var br = new BinaryReader(new MemoryStream(tPKT.Data));
                 HeaderLength = br.ReadByte();
                 if (HeaderLength >= 2)

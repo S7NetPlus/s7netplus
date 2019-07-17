@@ -23,16 +23,19 @@ namespace S7.Net
                 var response = COTP.TPDU.Read(stream);
                 if (response.PDUType != 0xd0) //Connect Confirm
                 {
-                    throw new WrongNumberOfBytesException("Waiting for COTP connect confirm");
+                    throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
                 }
 
                 stream.Write(GetS7ConnectionSetup(), 0, 25);
 
                 var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null || s7data[1] != 0x03) //Check for S7 Ack Data
-                {
-                    throw new WrongNumberOfBytesException("Waiting for S7 connection setup");
-                }
+                if (s7data == null)
+                    throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
+
+                //Check for S7 Ack Data
+                if (s7data[1] != 0x03)
+                    throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
+
                 MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
             }
             catch (Exception exc)
@@ -47,7 +50,8 @@ namespace S7.Net
             try
             {
                 tcpClient = new TcpClient();
-                tcpClient.Connect(IP, 102);
+                ConfigureConnection();
+                tcpClient.Connect(IP, Port);
                 stream = tcpClient.GetStream();
             }
             catch (SocketException sex)
@@ -162,7 +166,7 @@ namespace S7.Net
         /// <returns>The number of read bytes</returns>
         public int ReadClass(object sourceClass, int db, int startByteAdr = 0)
         {
-            int numBytes = Class.GetClassSize(sourceClass);
+            int numBytes = (int)Class.GetClassSize(sourceClass);
             if (numBytes <= 0)
             {
                 throw new Exception("The size of the class is less than 1 byte and therefore cannot be read");
@@ -226,7 +230,7 @@ namespace S7.Net
                 //TODO: Figure out how to use MaxPDUSize here
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
-                var maxToWrite = Math.Min(count, 200);
+                var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
                 WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
                 count -= maxToWrite;
                 localIndex += maxToWrite;
@@ -370,6 +374,8 @@ namespace S7.Net
         /// <param name="dataItems">The DataItem(s) to write to the PLC.</param>
         public void Write(params DataItem[] dataItems)
         {
+            AssertPduSizeForWrite(dataItems);
+
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
             stream.Write(message.Array, 0, length);
@@ -388,8 +394,9 @@ namespace S7.Net
                 int packageSize = 35 + value.Length;
                 ByteArray package = new ByteArray(packageSize);
 
-                package.Add(new byte[] { 3, 0, 0 });
-                package.Add((byte)packageSize);
+                package.Add(new byte[] { 3, 0 });
+                //complete package size
+                package.Add(Int.ToByteArray((short)packageSize));
                 package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
                 package.Add(Word.ToByteArray((ushort)(varCount - 1)));
                 package.Add(new byte[] { 0, 0x0e });
@@ -474,15 +481,10 @@ namespace S7.Net
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
-            int cntBytes = dataItems.Sum(dataItem => VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-
-            //TODO: Figure out how to use MaxPDUSize here
             //Snap7 seems to choke on PDU sizes above 256 even if snap7 
             //replies with bigger PDU size in connection setup.
-            if (dataItems.Count > 20)
-                throw new Exception("Too many vars requested");
-            if (cntBytes > 222)
-                throw new Exception("Too many bytes requested"); // TODO: proper TDU check + split in multiple requests
+            AssertPduSizeForRead(dataItems);
+
             try
             {
                 // first create the header

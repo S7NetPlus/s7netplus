@@ -21,7 +21,7 @@ namespace S7.Net.Protocol
                     3, 0,   //Destination TASP
                     192,    //Parameter Code (tpdu-size)
                     1,      //Parameter Length
-                    11      //TPDU Size (2^11 = 2048)
+                    10      //TPDU Size (2^10 = 1024)
                 };
 
             switch (cpu)
@@ -33,6 +33,14 @@ namespace S7.Net.Protocol
                     //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
                     bSend1[17] = 0x10;
                     bSend1[18] = 0x00;
+                    break;
+                case CpuType.Logo0BA8:
+                    // These values are taken from NodeS7, it's not verified if these are
+                    // exact requirements to connect to the Logo0BA8.
+                    bSend1[13] = 0x01;
+                    bSend1[14] = 0x00;
+                    bSend1[17] = 0x01;
+                    bSend1[18] = 0x02;
                     break;
                 case CpuType.S71200:
                 case CpuType.S7300:

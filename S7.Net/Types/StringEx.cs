@@ -22,7 +22,17 @@ namespace S7.Net.Types
             int size = bytes[0];
             int length = bytes[1];
 
-            return System.Text.Encoding.ASCII.GetString(bytes, 2, length);
+            try
+            {
+                return Encoding.ASCII.GetString(bytes, 2, length);
+            }
+            catch (Exception e)
+            {
+                throw new PlcException(ErrorCode.ReadData,
+                    $"Failed to parse {VarType.StringEx} from data. Following fields were read: size: '{size}', actual length: '{length}', total number of bytes (including header): '{bytes.Length}'.",
+                    e);
+            }
+            
         }
 
         /// <summary>
