@@ -214,6 +214,40 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Write a standard string to a PLC as a Simatic String.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
+        /// <param name="maxSize">The maximum size of the Simatic String to be written. Usually this is 254, but special UDTs / SDTs may occasionally have shorter strings.</param>
+        public void WriteString(DataType dataType, int db, int startByteAdr, string value, byte maxSize=254)
+        { 
+            if (value.Length > maxSize)
+                throw new ArgumentOutOfRangeException("You attempted to write a string larger than the maximum size!");
+            List<byte> bytes = new List<byte>();
+            bytes.Add((byte)maxSize);
+            bytes.Add((byte)value.Length);
+            foreach (char c in value) bytes.Add((byte)c);
+            WriteBytes(dataType, db, startByteAdr, bytes.ToArray());
+        }
+
+        /// <summary>
+        /// Read a Simatic String from the PLC into a standard string
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns></returns>
+        public string ReadString(DataType dataType, int db, int startByteAdr)
+        {
+            //The second byte in a Simatic String tells us the current string size
+            byte stringSize = (byte)Read(dataType, db, startByteAdr+1, VarType.Byte, 1);
+            //Read out the relevant part of the Simatic String (byte array) directly into a string
+            return System.Text.Encoding.UTF8.GetString(ReadBytes(dataType, db, startByteAdr + 2, stringSize));
+        }
+
+        /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the write was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
