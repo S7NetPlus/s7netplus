@@ -161,7 +161,7 @@
                         case "M":
                             // Memory
                             dataType = DataType.Memory;
-                            varType = VarType.Byte;
+                            varType = VarType.Bit;
                             break;
                         case "T":
                             // Timer
