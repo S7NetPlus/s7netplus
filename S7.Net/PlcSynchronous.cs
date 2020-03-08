@@ -353,7 +353,7 @@ namespace S7.Net
                 stream.Write(package.Array, 0, package.Array.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null || s7data[14] != 0xff)
+                if (s7data == null || s7data.Length < 18 + count || s7data[14] != 0xff)
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
 
                 for (int cnt = 0; cnt < count; cnt++)
