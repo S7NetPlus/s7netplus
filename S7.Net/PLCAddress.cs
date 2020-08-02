@@ -80,6 +80,7 @@
                         default:
                             throw new InvalidAddressException();
                     }
+                case "IB":
                 case "EB":
                     // Input byte
                     dataType = DataType.Input;
@@ -87,6 +88,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Byte;
                     return;
+                case "IW":
                 case "EW":
                     // Input word
                     dataType = DataType.Input;
@@ -94,6 +96,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Word;
                     return;
+                case "ID":
                 case "ED":
                     // Input double-word
                     dataType = DataType.Input;
@@ -101,6 +104,8 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.DWord;
                     return;
+                case "QB":
+                case "OB":
                 case "AB":
                     // Output byte
                     dataType = DataType.Output;
@@ -108,6 +113,8 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Byte;
                     return;
+                case "QW":
+                case "OW":
                 case "AW":
                     // Output word
                     dataType = DataType.Output;
@@ -115,6 +122,8 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Word;
                     return;
+                case "QD":
+                case "OD":
                 case "AD":
                     // Output double-word
                     dataType = DataType.Output;
@@ -154,6 +163,7 @@
                             break;
                         case "A":
                         case "O":
+                        case "Q":
                             // Output
                             dataType = DataType.Output;
                             varType = VarType.Bit;
