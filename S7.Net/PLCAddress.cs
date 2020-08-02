@@ -154,6 +154,7 @@
                             break;
                         case "A":
                         case "O":
+                        case "Q":
                             // Output
                             dataType = DataType.Output;
                             varType = VarType.Bit;
