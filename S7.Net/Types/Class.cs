@@ -85,6 +85,7 @@ namespace S7.Net.Types
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
                     }
 
+                    IncrementToEven(ref numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType);
@@ -219,6 +220,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -288,10 +290,8 @@ namespace S7.Net.Types
 
             if (bytes2 != null)
             {
-                // add them
-                numBytes = Math.Ceiling(numBytes);
-                if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                    numBytes++;
+                IncrementToEven(ref numBytes);
+
                 bytePos = (int)numBytes;
                 for (int bCnt = 0; bCnt < bytes2.Length; bCnt++)
                     bytes[bytePos + bCnt] = bytes2[bCnt];
@@ -314,6 +314,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -326,6 +327,12 @@ namespace S7.Net.Types
                 }
             }
             return numBytes;
+        }
+
+        private static void IncrementToEven(ref double numBytes)
+        {
+            numBytes = Math.Ceiling(numBytes);
+            if (numBytes % 2 > 0) numBytes++;
         }
     }
 }
