@@ -218,6 +218,27 @@ namespace S7.Net
                 .Sum(len => (len & 1) == 1 ? len + 1 : len);
         }
 
+        private static void AssertReadResponse(byte[] s7Data, int dataLength)
+        {
+            var expectedLength = dataLength + 18;
+
+            PlcException NotEnoughBytes() =>
+                new PlcException(ErrorCode.WrongNumberReceivedBytes,
+                    $"Received {s7Data.Length} bytes: '{BitConverter.ToString(s7Data)}', expected {expectedLength} bytes.")
+            ;
+
+            if (s7Data == null)
+                throw new PlcException(ErrorCode.WrongNumberReceivedBytes, "No s7Data received.");
+
+            if (s7Data.Length < 15) throw NotEnoughBytes();
+
+            if (s7Data[14] != 0xff)
+                throw new PlcException(ErrorCode.ReadData,
+                    $"Invalid response from PLC: '{BitConverter.ToString(s7Data)}'.");
+
+            if (s7Data.Length < expectedLength) throw NotEnoughBytes();
+        }
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 

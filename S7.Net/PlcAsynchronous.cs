@@ -388,8 +388,7 @@ namespace S7.Net
             await stream.WriteAsync(package.Array, 0, package.Array.Length);
 
             var s7data = await COTP.TSDU.ReadAsync(stream);
-            if (s7data == null || s7data[14] != 0xff)
-                throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
+            AssertReadResponse(s7data, count);
 
             for (int cnt = 0; cnt < count; cnt++)
                 bytes[cnt] = s7data[cnt + 18];
