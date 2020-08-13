@@ -20,8 +20,11 @@ namespace S7.Net.Protocol
             var dataOffset = paramOffset + paramSize;
             var data = new ByteArray();
 
+            var itemCount = 0;
+
             foreach (var item in dataItems)
             {
+                itemCount++;
                 message.Add(Parameter.Template);
                 var value = Serialization.SerializeDataItem(item);
                 var wordLen = item.Value is bool ? 1 : 2;
@@ -30,33 +33,42 @@ namespace S7.Net.Protocol
                 Serialization.SetWordAt(message, paramOffset + Parameter.Offsets.Amount, (ushort) value.Length);
                 Serialization.SetWordAt(message, paramOffset + Parameter.Offsets.DbNumber, (ushort) item.DB);
                 message[paramOffset + Parameter.Offsets.Area] = (byte) item.DataType;
-                Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr, item.BitAdr);
-
-                paramOffset += Parameter.Template.Length;
 
                 data.Add(0x00);
                 if (item.Value is bool b)
                 {
+                    if (item.BitAdr > 7)
+                        throw new ArgumentException(
+                            $"Cannot read bit with invalid {nameof(item.BitAdr)} '{item.BitAdr}'.", nameof(dataItems));
+
+                    Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr,
+                        item.BitAdr);
+
                     data.Add(0x03);
                     data.AddWord(1);
 
-                    data.Add(b ? (byte) 1 : (byte) 0);
-                    data.Add(0);
+                    data.Add(b ? (byte)1 : (byte)0);
+                    if (itemCount != dataItems.Length) { 
+                        data.Add(0);
+                    }
                 }
                 else
                 {
+                    Serialization.SetAddressAt(message, paramOffset + Parameter.Offsets.Address, item.StartByteAdr, 0);
+
                     var len = value.Length;
                     data.Add(0x04);
                     data.AddWord((ushort) (len << 3));
                     data.Add(value);
                     
-                    if ((len & 0b1) == 1)
+                    if ((len & 0b1) == 1 && itemCount != dataItems.Length)
                     {
                         data.Add(0);
                     }
                 }
-            }
 
+                paramOffset += Parameter.Template.Length;
+            }
 
             message.Add(data.Array);
 
