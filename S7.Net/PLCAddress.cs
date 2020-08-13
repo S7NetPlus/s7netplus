@@ -80,6 +80,7 @@
                         default:
                             throw new InvalidAddressException();
                     }
+                case "IB":
                 case "EB":
                     // Input byte
                     dataType = DataType.Input;
@@ -87,6 +88,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Byte;
                     return;
+                case "IW":
                 case "EW":
                     // Input word
                     dataType = DataType.Input;
@@ -94,6 +96,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Word;
                     return;
+                case "ID":
                 case "ED":
                     // Input double-word
                     dataType = DataType.Input;
@@ -101,6 +104,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.DWord;
                     return;
+                case "QB":
                 case "AB":
                     // Output byte
                     dataType = DataType.Output;
@@ -108,6 +112,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Byte;
                     return;
+                case "QW":
                 case "AW":
                     // Output word
                     dataType = DataType.Output;
@@ -115,6 +120,7 @@
                     address = int.Parse(input.Substring(2));
                     varType = VarType.Word;
                     return;
+                case "QD":
                 case "AD":
                     // Output double-word
                     dataType = DataType.Output;
@@ -152,6 +158,7 @@
                             dataType = DataType.Input;
                             varType = VarType.Bit;
                             break;
+                        case "Q":
                         case "A":
                         case "O":
                             // Output
@@ -161,7 +168,7 @@
                         case "M":
                             // Memory
                             dataType = DataType.Memory;
-                            varType = VarType.Byte;
+                            varType = VarType.Bit;
                             break;
                         case "T":
                             // Timer

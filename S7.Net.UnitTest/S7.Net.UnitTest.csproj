@@ -63,6 +63,7 @@
     <Compile Include="ConnectionRequestTest.cs" />
     <Compile Include="ConvertersUnitTest.cs" />
     <Compile Include="Helpers\TestClassWithNestedClass.cs" />
+    <Compile Include="PLCAddressParsingTests.cs" />
     <Compile Include="ProtocolTests.cs" />
     <Compile Include="Helpers\ConsoleManager.cs" />
     <Compile Include="Helpers\NativeMethods.cs" />
