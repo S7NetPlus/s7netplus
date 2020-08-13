@@ -106,6 +106,7 @@
                     return;
                 case "QB":
                 case "AB":
+                case "OB":
                     // Output byte
                     dataType = DataType.Output;
                     dbNumber = 0;
@@ -114,6 +115,7 @@
                     return;
                 case "QW":
                 case "AW":
+                case "OW":
                     // Output word
                     dataType = DataType.Output;
                     dbNumber = 0;
@@ -122,6 +124,7 @@
                     return;
                 case "QD":
                 case "AD":
+                case "OD":
                     // Output double-word
                     dataType = DataType.Output;
                     dbNumber = 0;
