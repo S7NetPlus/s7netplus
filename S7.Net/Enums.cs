@@ -186,6 +186,11 @@
         /// <summary>
         /// DateTIme variable type
         /// </summary>
-        DateTime
+        DateTime,
+
+        /// <summary>
+        /// DTL variable type
+        /// </summary>
+        Dtl
     }
 }
