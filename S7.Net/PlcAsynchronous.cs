@@ -222,15 +222,16 @@ namespace S7.Net
             {
                 // first create the header
                 int packageSize = 19 + (dataItems.Count * 12);
-                ByteArray package = new ByteArray(packageSize);
-                package.Add(ReadHeaderPackage(dataItems.Count));
+                var package = new System.IO.MemoryStream(packageSize);
+                BuildHeaderPackage(package, dataItems.Count);
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
                 {
-                    package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
+                    BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count));
                 }
 
-                await stream.WriteAsync(package.Array, 0, package.Array.Length);
+                var dataToSend = package.ToArray();
+                await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream); //TODO use Async
                 if (s7data == null || s7data[14] != 0xff)
@@ -390,13 +391,14 @@ namespace S7.Net
             byte[] bytes = new byte[count];
 
             // first create the header
-            int packageSize = 31;
-            ByteArray package = new ByteArray(packageSize);
-            package.Add(ReadHeaderPackage());
+            int packageSize = 31; 
+            var package = new System.IO.MemoryStream(packageSize);
+            BuildHeaderPackage(package);
             // package.Add(0x02);  // datenart
-            package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
+            BuildReadDataRequestPackage(package, dataType, db, startByteAdr, count);
 
-            await stream.WriteAsync(package.Array, 0, package.Array.Length);
+            var dataToSend = package.ToArray();
+            await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
             var s7data = await COTP.TSDU.ReadAsync(stream);
             AssertReadResponse(s7data, count);
