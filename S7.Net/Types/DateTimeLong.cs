@@ -9,6 +9,7 @@ namespace S7.Net.Types
     /// </summary>
     public static class DateTimeLong
     {
+        public const int TypeLengthInBytes = 12;
         /// <summary>
         /// The minimum <see cref="T:System.DateTime" /> value supported by the specification.
         /// </summary>
@@ -46,19 +47,19 @@ namespace S7.Net.Types
         /// </exception>
         public static System.DateTime[] ToArray(byte[] bytes)
         {
-            if (bytes.Length % 12 != 0)
+            if (bytes.Length % TypeLengthInBytes != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
                     $"Parsing an array of DateTimeLong requires a multiple of 12 bytes of input data, input data is '{bytes.Length}' long.");
             }
 
-            var cnt = bytes.Length / 12;
+            var cnt = bytes.Length / TypeLengthInBytes;
             var result = new System.DateTime[cnt];
 
             for (var i = 0; i < cnt; i++)
             {
-                var slice = new byte[12];
-                Array.Copy(bytes, i * 12, slice, 0, 12);
+                var slice = new byte[TypeLengthInBytes];
+                Array.Copy(bytes, i * TypeLengthInBytes, slice, 0, TypeLengthInBytes);
                 result[i] = FromByteArrayImpl(slice);
             }
 
@@ -67,7 +68,7 @@ namespace S7.Net.Types
 
         private static System.DateTime FromByteArrayImpl(byte[] bytes)
         {
-            if (bytes.Length != 12)
+            if (bytes.Length != TypeLengthInBytes)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
                     $"Parsing a DateTimeLong requires exactly 12 bytes of input data, input data is {bytes.Length} bytes long.");
@@ -114,7 +115,7 @@ namespace S7.Net.Types
                     $"Date time '{dateTime}' is after the maximum '{SpecMaximumDateTime}' supported in S7 DateTimeLong representation.");
             }
 
-            var stream = new MemoryStream(12);
+            var stream = new MemoryStream(TypeLengthInBytes);
             // Convert Year
             stream.Write(Word.ToByteArray(Convert.ToUInt16(dateTime.Year)), 0, 2);
 
@@ -155,7 +156,7 @@ namespace S7.Net.Types
         /// </exception>
         public static byte[] ToByteArray(System.DateTime[] dateTimes)
         {
-            var bytes = new List<byte>(dateTimes.Length * 12);
+            var bytes = new List<byte>(dateTimes.Length * TypeLengthInBytes);
             foreach (var dateTime in dateTimes)
             {
                 bytes.AddRange(ToByteArray(dateTime));
