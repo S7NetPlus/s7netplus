@@ -1,9 +1,11 @@
 ﻿using S7.Net.Types;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using S7.Net.Protocol;
+using S7.Net.Helper;
 
 //Implement synchronous methods here
 namespace S7.Net
@@ -232,7 +234,7 @@ namespace S7.Net
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
-                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite), maxToWrite);
+                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
@@ -387,12 +389,12 @@ namespace S7.Net
             S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
-        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, IEnumerable<byte> value, int count)
+        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
         {
             try
             {
                 var stream = GetStreamIfAvailable();
-                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, count);
+                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
 
                 stream.Write(dataToSend, 0, dataToSend.Length);
 
@@ -408,34 +410,35 @@ namespace S7.Net
             }
         }
 
-        private byte[] BuildWriteBytesPackage(DataType dataType, int db, int startByteAdr, IEnumerable<byte> value, int count)
+        private byte[] BuildWriteBytesPackage(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
         {
             int varCount = count;
             // first create the header
             int packageSize = 35 + count;
-            ByteArray package = new ByteArray(packageSize);
+            var package = new MemoryStream(new byte[packageSize]);
 
-            package.Add(new byte[] { 3, 0 });
+            package.WriteByte(3);
+            package.WriteByte(0);
             //complete package size
-            package.Add(Int.ToByteArray((short)packageSize));
-            package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
-            package.Add(Word.ToByteArray((ushort)(varCount - 1)));
-            package.Add(new byte[] { 0, 0x0e });
-            package.Add(Word.ToByteArray((ushort)(varCount + 4)));
-            package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
-            package.Add(Word.ToByteArray((ushort)varCount));
-            package.Add(Word.ToByteArray((ushort)(db)));
-            package.Add((byte)dataType);
+            package.WriteByteArray(Int.ToByteArray((short)packageSize));
+            package.WriteByteArray(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount - 1)));
+            package.WriteByteArray(new byte[] { 0, 0x0e });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount + 4)));
+            package.WriteByteArray(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+            package.WriteByteArray(Word.ToByteArray((ushort)varCount));
+            package.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            package.WriteByte((byte)dataType);
             var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-            package.Add((byte)overflow);
-            package.Add(Word.ToByteArray((ushort)(startByteAdr * 8)));
-            package.Add(new byte[] { 0, 4 });
-            package.Add(Word.ToByteArray((ushort)(varCount * 8)));
+            package.WriteByte((byte)overflow);
+            package.WriteByteArray(Word.ToByteArray((ushort)(startByteAdr * 8)));
+            package.WriteByteArray(new byte[] { 0, 4 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount * 8)));
 
             // now join the header and the data
-            package.Add(value);
+            package.Write(value, dataOffset, count);
 
-            return package.Array;
+            return package.ToArray();
         }
 
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)

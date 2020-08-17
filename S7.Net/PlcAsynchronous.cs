@@ -268,7 +268,7 @@ namespace S7.Net
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = (int)Math.Min(count, 200);
-                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite), maxToWrite);
+                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
@@ -435,13 +435,13 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, IEnumerable<byte> value, int count)
+        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
         {
 
             try
             {
                 var stream = GetStreamIfAvailable();
-                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, count);
+                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
 
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
