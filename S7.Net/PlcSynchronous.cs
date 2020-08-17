@@ -344,7 +344,6 @@ namespace S7.Net
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
         {
             var stream = GetStreamIfAvailable();
-            byte[] bytes = new byte[count];
             try
             {
                 // first create the header
@@ -360,9 +359,8 @@ namespace S7.Net
                 var s7data = COTP.TSDU.Read(stream);
                 AssertReadResponse(s7data, count);
 
-                for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = s7data[cnt + 18];
-
+                var bytes = new byte[count];
+                Array.Copy(s7data, 18, bytes, 0, count);
                 return bytes;
             }
             catch (Exception exc)

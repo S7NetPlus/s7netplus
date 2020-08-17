@@ -388,8 +388,6 @@ namespace S7.Net
         {
             var stream = GetStreamIfAvailable();
 
-            byte[] bytes = new byte[count];
-
             // first create the header
             int packageSize = 31; 
             var package = new System.IO.MemoryStream(packageSize);
@@ -403,9 +401,8 @@ namespace S7.Net
             var s7data = await COTP.TSDU.ReadAsync(stream);
             AssertReadResponse(s7data, count);
 
-            for (int cnt = 0; cnt < count; cnt++)
-                bytes[cnt] = s7data[cnt + 18];
-
+            var bytes = new byte[count];
+            Array.Copy(s7data, 18, bytes, 0, count);
             return bytes;
         }
 
