@@ -7,6 +7,8 @@ using S7.Net.Types;
 
 namespace S7.Net
 {
+    using System.Threading;
+
     /// <summary>
     /// Creates an instance of S7.Net driver
     /// </summary>
@@ -185,7 +187,7 @@ namespace S7.Net
         {
             // 12 bytes of header data, 12 bytes of parameter data for each dataItem
             if ((dataItems.Count + 1) * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
-            
+
             // 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
             if (GetDataLength(dataItems) + dataItems.Count * 4 + 14 > MaxPDUSize) throw new Exception("Too much data requested for read");
         }
@@ -278,5 +280,10 @@ namespace S7.Net
         }
         #endregion
 
+        public CancellationToken GetDefaultCancellationToken()
+        {
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(0.5));
+            return cancellationTokenSource.Token;
+        }
     }
 }

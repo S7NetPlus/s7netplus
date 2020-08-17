@@ -19,11 +19,11 @@ namespace S7.Net
         /// <param name="offset">the offset in the buffer to read into</param>
         /// <param name="count">the amount of bytes to read into the buffer</param>
         /// <returns>returns the amount of read bytes</returns>
-        public static int ReadFixed(this Stream stream, byte[] buffer, int offset, int count)
+        public static int ReadExact(this Stream stream, byte[] buffer, int offset, int count)
         {
             if (stream is NetworkStream network)
             {
-                return network.ReadFixed(buffer, offset, count, network.ReadTimeout > 0 ? network.ReadTimeout : 500);
+                return network.ReadExact(buffer, offset, count, network.ReadTimeout > 0 ? network.ReadTimeout : 500);
             }
             else if ((stream.CanTimeout && stream.ReadTimeout > 0) || stream.CanSeek)
             {
@@ -58,7 +58,7 @@ namespace S7.Net
         /// <exception cref="TimeoutException">
         ///  Throws timeout exception, when the timeout elapsed, while waiting for available Data
         /// </exception>
-        public static int ReadFixed(this NetworkStream stream, byte[] buffer, int offset, int count, int timeoutMs)
+        public static int ReadExact(this NetworkStream stream, byte[] buffer, int offset, int count, int timeoutMs)
         {
             int read = offset;
             int received = 0;
@@ -94,62 +94,21 @@ namespace S7.Net
         /// <param name="buffer">the buffer to read into</param>
         /// <param name="offset">the offset in the buffer to read into</param>
         /// <param name="count">the amount of bytes to read into the buffer</param>
+        /// <param name="token">the token to abort the operation</param>
         /// <returns>returns the amount of read bytes</returns>
-        public static async Task<int> ReadFixedAsync(this Stream stream, byte[] buffer, int offset, int count)
+        public static async Task<int> ReadExactAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken token)
         {
             int read = offset;
             int received;
             count = Math.Min(count, buffer.Length - offset);
             do
             {
-                received = await stream.ReadAsync(buffer, read, count - read);
+                received = await stream.ReadAsync(buffer, read, count - read, token);
                 read += received;
             }
             while (read < count && received > 0);
 
             return read;
         }
-
-        /// <summary>
-        /// Reads a fixed amount of bytes from the stream into the buffer
-        /// </summary>
-        /// <param name="stream">the Stream to read from</param>
-        /// <param name="buffer">the buffer to read into</param>
-        /// <param name="offset">the offset in the buffer to read into</param>
-        /// <param name="count">the amount of bytes to read into the buffer</param>
-        /// <param name="timeoutMs">The timeout to abort the read</param>
-        /// <returns>returns the amount of read bytes</returns>
-        /// <exception cref="TimeoutException">
-        ///  Throws timeout exception, when the timeout elapsed, while waiting for available Data
-        /// </exception>
-        public static async Task<int> ReadFixedAsync(this NetworkStream stream, byte[] buffer, int offset, int count, int timeoutMs)
-        {
-            int read = offset;
-            int received = 0;
-            count = Math.Min(count, buffer.Length - offset);
-            do
-            {
-                if (stream.DataAvailable)
-                {
-                    received = await stream.ReadAsync(buffer, read, count - read);
-                    read += received;
-                }
-                else
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(10));
-                    timeoutMs -= 10;
-                    received = 1;
-                }
-            }
-            while (timeoutMs > 0 && read < count && received > 0);
-
-            if (read < count && timeoutMs <= 0)
-            {
-                throw new TimeoutException($"Timeout receiving desired size. Missing {count - read} bytes");
-            }
-
-            return read;
-        }
-
     }
 }

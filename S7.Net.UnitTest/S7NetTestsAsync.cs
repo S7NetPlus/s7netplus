@@ -36,6 +36,8 @@ using System.Threading.Tasks;
 
 namespace S7.Net.UnitTest
 {
+    using System.Threading;
+
     public partial class S7NetTests
     {
         #region Tests
@@ -60,8 +62,8 @@ namespace S7.Net.UnitTest
 
             // To write a ushort i don't need any cast, only unboxing must be done
             ushort val = 40000;
-            await plc.WriteAsync("DB1.DBW0", val);
-            ushort result = (ushort)await plc.ReadAsync("DB1.DBW0");
+            await plc.WriteAsync("DB1.DBW0", val, this.token);
+            ushort result = (ushort)await plc.ReadAsync("DB1.DBW0", this.token);
             Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
 
             // To write a short i need to convert it to UShort, then i need to reconvert the readed value to get
@@ -69,8 +71,8 @@ namespace S7.Net.UnitTest
             // Depending if i'm writing on a DWORD or on a DEC, i will see ushort or short value in the plc
             short value = -100;
             Assert.IsTrue(plc.IsConnected, "After connecting, IsConnected must be set to true");
-            await plc.WriteAsync("DB1.DBW0", value.ConvertToUshort());
-            short result2 = ((ushort)await plc.ReadAsync("DB1.DBW0")).ConvertToShort();
+            await plc.WriteAsync("DB1.DBW0", value.ConvertToUshort(), this.token);
+            short result2 = ((ushort)await plc.ReadAsync("DB1.DBW0", this.token)).ConvertToShort();
             Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
         }
 
@@ -86,16 +88,16 @@ namespace S7.Net.UnitTest
 
             // To write a uint I don't need any cast, only unboxing must be done
             int val = 1000;
-            await plc.WriteAsync("DB1.DBD40", val);
-            int result = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToInt();
+            await plc.WriteAsync("DB1.DBD40", val, this.token);
+            int result = ((uint)await plc.ReadAsync("DB1.DBD40", this.token)).ConvertToInt();
             Assert.AreEqual(val, result);
 
             // To write a int I need to convert it to uint, then I need to reconvert the readed value to get
             // the negative sign back
             // Depending if I'm writing on a DBD or on a LONG, I will see uint or int value in the plc
             int value = -60000;
-            await plc.WriteAsync("DB1.DBD60", value);
-            int result2 = ((uint)await plc.ReadAsync("DB1.DBD60")).ConvertToInt();
+            await plc.WriteAsync("DB1.DBD60", value, this.token);
+            int result2 = ((uint)await plc.ReadAsync("DB1.DBD60", this.token)).ConvertToInt();
             Assert.AreEqual(value, result2);
         }
 
@@ -111,20 +113,20 @@ namespace S7.Net.UnitTest
             // Reading and writing a double is quite complicated, because it needs to be converted to DWord before the write,
             // then reconvert to double after the read.
             double val = 35.68729;
-            await plc.WriteAsync("DB1.DBD40", val.ConvertToUInt());
-            double result = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToDouble();
+            await plc.WriteAsync("DB1.DBD40", val.ConvertToUInt(), this.token);
+            double result = ((uint)await plc.ReadAsync("DB1.DBD40", this.token)).ConvertToDouble();
             Assert.AreEqual(val, Math.Round(result, 5)); // float lose precision, so i need to round it
 
             // Reading and writing a float is quite complicated, because it needs to be converted to DWord before the write,
             // then reconvert to float after the read. Float values can contain only 7 digits, so no precision is lost.
             float val2 = 1234567;
-            await plc.WriteAsync("DB1.DBD40", val2.ConvertToUInt());
-            float result2 = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToFloat();
+            await plc.WriteAsync("DB1.DBD40", val2.ConvertToUInt(), this.token);
+            float result2 = ((uint)await plc.ReadAsync("DB1.DBD40", this.token)).ConvertToFloat();
             Assert.AreEqual(val2, result2);
 
             float val3 = 12.34567f;
-            await plc.WriteAsync("DB1.DBD40", val3.ConvertToUInt());
-            float result3 = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToFloat();
+            await plc.WriteAsync("DB1.DBD40", val3.ConvertToUInt(), this.token);
+            float result3 = ((uint)await plc.ReadAsync("DB1.DBD40", this.token)).ConvertToFloat();
             Assert.AreEqual(val3, result3);
         }
 
@@ -147,10 +149,10 @@ namespace S7.Net.UnitTest
                 DWordVariable = 850
             };
 
-            await plc.WriteClassAsync(tc, DB2);
+            await plc.WriteClassAsync(tc, S7NetTests.DB2, this.token);
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            await plc.ReadClassAsync(tc2, DB2);
+            await plc.ReadClassAsync(tc2, S7NetTests.DB2, this.token);
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
@@ -174,10 +176,10 @@ namespace S7.Net.UnitTest
                 ShortVariable04 = new TestClassInnerWithShort { ShortVarialbe00 = -15000 }
             };
 
-            await plc.WriteClassAsync(tc, DB4);
+            await plc.WriteClassAsync(tc, S7NetTests.DB4, this.token);
             TestClassWithNestedClass tc2 = new TestClassWithNestedClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            await plc.ReadClassAsync(tc2, DB4);
+            await plc.ReadClassAsync(tc2, S7NetTests.DB4, this.token);
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
             Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
             Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
@@ -203,9 +205,9 @@ namespace S7.Net.UnitTest
                 RealVariableFloat = -154.789f,
                 DWordVariable = 850
             };
-            plc.WriteStruct(tc, DB2);
+            plc.WriteStruct(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
-            TestStruct tc2 = (TestStruct)await plc.ReadStructAsync(typeof(TestStruct), DB2);
+            TestStruct tc2 = (TestStruct)await plc.ReadStructAsync(typeof(TestStruct), S7NetTests.DB2, this.token);
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
@@ -250,9 +252,9 @@ namespace S7.Net.UnitTest
                 IntVariable110 = 200,
                 IntVariable111 = 201
             };
-            plc.WriteStruct(tc, DB2);
+            plc.WriteStruct(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
-            TestLongStruct tc2 = (TestLongStruct)await plc.ReadStructAsync(typeof(TestLongStruct), DB2);
+            TestLongStruct tc2 = (TestLongStruct)await plc.ReadStructAsync(typeof(TestLongStruct), S7NetTests.DB2, this.token);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -314,10 +316,10 @@ namespace S7.Net.UnitTest
                 IntVariable110 = 200,
                 IntVariable111 = 201
             };
-            await plc.WriteClassAsync(tc, DB2);
+            await plc.WriteClassAsync(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongClass tc2 = new TestLongClass();
-            await plc.ReadClassAsync(tc2, DB2);
+            await plc.ReadClassAsync(tc2, S7NetTests.DB2, this.token);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
             Assert.AreEqual(tc.IntVariable1, tc2.IntVariable1);
             Assert.AreEqual(tc.IntVariable10, tc2.IntVariable10);
@@ -354,8 +356,8 @@ namespace S7.Net.UnitTest
 
             // To write a ushort i don't need any cast, only unboxing must be done
             ushort val = 8192;
-            await plc.WriteAsync("DB2.DBW8192", val);
-            ushort result = (ushort)await plc.ReadAsync("DB2.DBW8192");
+            await plc.WriteAsync("DB2.DBW8192", val, this.token);
+            ushort result = (ushort)await plc.ReadAsync("DB2.DBW8192", this.token);
             Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
 
             // To write a short i need to convert it to UShort, then i need to reconvert the readed value to get
@@ -363,8 +365,8 @@ namespace S7.Net.UnitTest
             // Depending if i'm writing on a DWORD or on a DEC, i will see ushort or short value in the plc
             short value = -8192;
             Assert.IsTrue(plc.IsConnected, "After connecting, IsConnected must be set to true");
-            await plc.WriteAsync("DB2.DBW8192", value.ConvertToUshort());
-            short result2 = ((ushort)await plc.ReadAsync("DB2.DBW8192")).ConvertToShort();
+            await plc.WriteAsync("DB2.DBW8192", value.ConvertToUshort(), this.token);
+            short result2 = ((ushort)await plc.ReadAsync("DB2.DBW8192", this.token)).ConvertToShort();
             Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
         }
 
@@ -378,8 +380,8 @@ namespace S7.Net.UnitTest
 
             // To write a ushort i don't need any cast, only unboxing must be done
             ushort val = 16384;
-            await plc.WriteAsync("DB2.DBW16384", val);
-            ushort result = (ushort)await plc.ReadAsync("DB2.DBW16384");
+            await plc.WriteAsync("DB2.DBW16384", val, this.token);
+            ushort result = (ushort)await plc.ReadAsync("DB2.DBW16384", this.token);
             Assert.AreEqual(val, result, "A ushort goes from 0 to 64512");
 
             // To write a short i need to convert it to UShort, then i need to reconvert the readed value to get
@@ -387,8 +389,8 @@ namespace S7.Net.UnitTest
             // Depending if i'm writing on a DWORD or on a DEC, i will see ushort or short value in the plc
             short value = -16384;
             Assert.IsTrue(plc.IsConnected, "After connecting, IsConnected must be set to true");
-            await plc.WriteAsync("DB2.DBW16384", value.ConvertToUshort());
-            short result2 = ((ushort)await plc.ReadAsync("DB2.DBW16384")).ConvertToShort();
+            await plc.WriteAsync("DB2.DBW16384", value.ConvertToUshort(), this.token);
+            short result2 = ((ushort)await plc.ReadAsync("DB2.DBW16384", this.token)).ConvertToShort();
             Assert.AreEqual(value, result2, "A short goes from -32767 to 32766");
         }
 
@@ -397,36 +399,36 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
             bool val = true;
-            await plc.WriteAsync("DB2.DBX0.5", val);
-            bool result = (bool)await plc.ReadAsync("DB2.DBX0.5");
+            await plc.WriteAsync("DB2.DBX0.5", val, this.token);
+            bool result = (bool)await plc.ReadAsync("DB2.DBX0.5", this.token);
             Assert.AreEqual(val, result);
 
             ushort val1 = 16384;
-            await plc.WriteAsync("DB2.DBW16384", val1);
-            ushort result1 = (ushort)await plc.ReadAsync("DB2.DBW16384");
+            await plc.WriteAsync("DB2.DBW16384", val1, this.token);
+            ushort result1 = (ushort)await plc.ReadAsync("DB2.DBW16384", this.token);
             Assert.AreEqual(val1, result1, "A ushort goes from 0 to 64512");
 
             bool val2 = true;
-            await plc.WriteAsync("DB2.DBX8192.7", val2);
-            bool result2 = (bool)await plc.ReadAsync("DB2.DBX8192.7");
+            await plc.WriteAsync("DB2.DBX8192.7", val2, this.token);
+            bool result2 = (bool)await plc.ReadAsync("DB2.DBX8192.7", this.token);
             Assert.AreEqual(val2, result2);
 
             ushort val3 = 129;
-            await plc.WriteAsync("DB2.DBW16", val3);
-            ushort result3 = (ushort)await plc.ReadAsync("DB2.DBW16");
+            await plc.WriteAsync("DB2.DBW16", val3, this.token);
+            ushort result3 = (ushort)await plc.ReadAsync("DB2.DBW16", this.token);
             Assert.AreEqual(val3, result3, "A ushort goes from 0 to 64512");
 
             byte[] val4 = new byte[] { 0x12, 0x34 };
-            await plc.WriteAsync("DB2.DBB2048", val4[0]);
-            await plc.WriteAsync("DB2.DBB2049", val4[1]);
-            byte result4b0 = (byte)await plc.ReadAsync("DB2.DBB2048");
-            byte result4b1 = (byte)await plc.ReadAsync("DB2.DBB2049");
+            await plc.WriteAsync("DB2.DBB2048", val4[0], this.token);
+            await plc.WriteAsync("DB2.DBB2049", val4[1], this.token);
+            byte result4b0 = (byte)await plc.ReadAsync("DB2.DBB2048", this.token);
+            byte result4b1 = (byte)await plc.ReadAsync("DB2.DBB2049", this.token);
             Assert.AreEqual(val4[0], result4b0);
             Assert.AreEqual(val4[1], result4b1);
 
             bool val6 = true;
-            await plc.WriteAsync("DB2.DBX16384.6", val6);
-            bool result6 = (bool)await plc.ReadAsync("DB2.DBX16384.6");
+            await plc.WriteAsync("DB2.DBX16384.6", val6, this.token);
+            bool result6 = (bool)await plc.ReadAsync("DB2.DBX16384.6", this.token);
             Assert.AreEqual(val6, result6);
 
             var dataItems = new List<DataItem>()
@@ -494,7 +496,7 @@ namespace S7.Net.UnitTest
                 },
             };
 
-            var dataItemsRes = await plc.ReadMultipleVarsAsync(dataItems);
+            var dataItemsRes = await plc.ReadMultipleVarsAsync(dataItems, this.token);
 
             Assert.AreEqual(val, dataItemsRes[0].Value);
             Assert.AreEqual(val1, dataItemsRes[1].Value);
@@ -515,41 +517,41 @@ namespace S7.Net.UnitTest
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
             // tests when writing true/false
-            await plc.WriteAsync("DB1.DBX0.0", false);
-            var boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0");
+            await plc.WriteAsync("DB1.DBX0.0", false, this.token);
+            var boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0", this.token);
             Assert.IsFalse(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX0.0", true);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0");
+            await plc.WriteAsync("DB1.DBX0.0", true, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0", this.token);
             Assert.IsTrue(boolVariable);
 
             // tests when writing 0/1
-            await plc.WriteAsync("DB1.DBX0.0", 0);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0");
+            await plc.WriteAsync("DB1.DBX0.0", 0, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0", this.token);
             Assert.IsFalse(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX0.0", 1);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0");
+            await plc.WriteAsync("DB1.DBX0.0", 1, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.0", this.token);
             Assert.IsTrue(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX0.7", 1);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.7");
+            await plc.WriteAsync("DB1.DBX0.7", 1, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.7", this.token);
             Assert.IsTrue(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX0.7", 0);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.7");
+            await plc.WriteAsync("DB1.DBX0.7", 0, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX0.7", this.token);
             Assert.IsFalse(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX658.0", 1);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX658.0");
+            await plc.WriteAsync("DB1.DBX658.0", 1, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX658.0", this.token);
             Assert.IsTrue(boolVariable);
 
-            await plc.WriteAsync("DB1.DBX658.7", 1);
-            boolVariable = (bool)await plc.ReadAsync("DB1.DBX658.7");
+            await plc.WriteAsync("DB1.DBX658.7", 1, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB1.DBX658.7", this.token);
             Assert.IsTrue(boolVariable);
 
-            await plc.WriteAsync("DB2.DBX9658.0", 1);
-            boolVariable = (bool)await plc.ReadAsync("DB2.DBX9658.0");
+            await plc.WriteAsync("DB2.DBX9658.0", 1, this.token);
+            boolVariable = (bool)await plc.ReadAsync("DB2.DBX9658.0", this.token);
             Assert.IsTrue(boolVariable);
         }
 
@@ -569,11 +571,11 @@ namespace S7.Net.UnitTest
                 DWordVariable = 850
             };
 
-            await plc.WriteClassAsync(tc, DB2);
+            await plc.WriteClassAsync(tc, S7NetTests.DB2, this.token);
 
             TestClassWithPrivateSetters tc2 = new TestClassWithPrivateSetters();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            var res = await plc.ReadClassAsync(tc2, DB2);
+            var res = await plc.ReadClassAsync(tc2, S7NetTests.DB2, this.token);
             tc = (TestClassWithPrivateSetters)res.Item2;
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
@@ -598,7 +600,7 @@ namespace S7.Net.UnitTest
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
                 TestClass tc = new TestClass();
-                var res = await notConnectedPlc.ReadClassAsync(tc, DB2);
+                var res = await notConnectedPlc.ReadClassAsync(tc, S7NetTests.DB2, this.token);
                 Assert.Fail();
             }
         }
@@ -619,13 +621,13 @@ namespace S7.Net.UnitTest
                 DWordVariable = 850
             };
 
-            await plc.WriteClassAsync(tc, DB2);
+            await plc.WriteClassAsync(tc, S7NetTests.DB2, this.token);
 
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             TestClass tc2 = new TestClass();
-            var res = await plc.ReadClassAsync(tc2, DB2);
+            var res = await plc.ReadClassAsync(tc2, S7NetTests.DB2, this.token);
             tc2 = (TestClass)res.Item2;
-            TestClass tc2Generic = await plc.ReadClassAsync<TestClass>(DB2);
+            TestClass tc2Generic = await plc.ReadClassAsync<TestClass>(S7NetTests.DB2, this.token);
 
             Assert.AreEqual(tc2.BitVariable00, tc2Generic.BitVariable00);
             Assert.AreEqual(tc2.BitVariable10, tc2Generic.BitVariable10);
@@ -643,7 +645,7 @@ namespace S7.Net.UnitTest
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-                TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(DB2);
+                TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(S7NetTests.DB2, this.token);
             }
         }
 
@@ -663,11 +665,11 @@ namespace S7.Net.UnitTest
                 DWordVariable = 850
             };
 
-            await plc.WriteClassAsync(tc, DB2);
+            await plc.WriteClassAsync(tc, S7NetTests.DB2, this.token);
 
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            TestClass tc2Generic = await plc.ReadClassAsync<TestClass>(DB2);
-            TestClass tc2GenericWithClassFactory = await plc.ReadClassAsync(() => new TestClass(), DB2);
+            TestClass tc2Generic = await plc.ReadClassAsync<TestClass>(S7NetTests.DB2, this.token);
+            TestClass tc2GenericWithClassFactory = await plc.ReadClassAsync(() => new TestClass(), S7NetTests.DB2, this.token);
 
             Assert.AreEqual(tc2Generic.BitVariable00, tc2GenericWithClassFactory.BitVariable00);
             Assert.AreEqual(tc2Generic.BitVariable10, tc2GenericWithClassFactory.BitVariable10);
@@ -684,7 +686,7 @@ namespace S7.Net.UnitTest
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2);
+                TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), S7NetTests.DB2, this.token);
             }
         }
 
@@ -702,7 +704,7 @@ namespace S7.Net.UnitTest
             tc.BitVariable03 = true;
             tc.ShortVariable04.ShortVarialbe00 = -15000;
 
-            TestClassWithNestedClass tc2 = await plc.ReadClassAsync<TestClassWithNestedClass>(DB4);
+            TestClassWithNestedClass tc2 = await plc.ReadClassAsync<TestClassWithNestedClass>(S7NetTests.DB4, this.token);
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
             Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
             Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
@@ -717,7 +719,7 @@ namespace S7.Net.UnitTest
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2);
+                object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), S7NetTests.DB2, this.token);
             }
         }
 
@@ -737,11 +739,11 @@ namespace S7.Net.UnitTest
                 DWordVariable = 850
             };
 
-            plc.WriteStruct(ts, DB2);
+            plc.WriteStruct(ts, S7NetTests.DB2, this.token);
 
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
-            TestStruct ts2 = (TestStruct)await plc.ReadStructAsync(typeof(TestStruct), DB2);
-            var test = await plc.ReadStructAsync<TestStruct>(DB2);
+            TestStruct ts2 = (TestStruct)await plc.ReadStructAsync(typeof(TestStruct), S7NetTests.DB2, this.token);
+            var test = await plc.ReadStructAsync<TestStruct>(S7NetTests.DB2, this.token);
             TestStruct ts2Generic = test.Value;
 
             Assert.AreEqual(ts2.BitVariable00, ts2Generic.BitVariable00);
@@ -760,7 +762,7 @@ namespace S7.Net.UnitTest
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(DB2);
+                object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(S7NetTests.DB2, this.token);
             }
         }
 
@@ -782,13 +784,13 @@ namespace S7.Net.UnitTest
                 RealVariableFloat = -154.789f,
                 DWordVariable = 850
             };
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
 
             int expectedReadBytes = (int)Types.Class.GetClassSize(tc);
 
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
-            var res = await plc.ReadClassAsync(tc2, DB2);
+            var res = await plc.ReadClassAsync(tc2, S7NetTests.DB2, this.token);
             int actualReadBytes = res.Item1;
 
             Assert.AreEqual(expectedReadBytes, actualReadBytes);
@@ -817,8 +819,8 @@ namespace S7.Net.UnitTest
             tc.UShorts[0] = ushort.MinValue + 1;
             tc.UShorts[1] = ushort.MaxValue;
 
-            plc.WriteClass(tc, DB2);
-            TestClassWithArrays tc2 = await plc.ReadClassAsync<TestClassWithArrays>(DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
+            TestClassWithArrays tc2 = await plc.ReadClassAsync<TestClassWithArrays>(S7NetTests.DB2, this.token);
 
             Assert.AreEqual(tc.Bool, tc2.Bool);
             Assert.AreEqual(tc.BoolValues[0], tc2.BoolValues[0]);
@@ -857,8 +859,8 @@ namespace S7.Net.UnitTest
             tc.CustomTypes[0].Bools[0] = true;
             tc.CustomTypes[1].Bools[1] = true;
 
-            plc.WriteClass(tc, DB2);
-            TestClassWithCustomType tc2 = await plc.ReadClassAsync<TestClassWithCustomType>(DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
+            TestClassWithCustomType tc2 = await plc.ReadClassAsync<TestClassWithCustomType>(S7NetTests.DB2, this.token);
 
             Assert.AreEqual(tc.Int, tc2.Int);
             Assert.AreEqual(tc.CustomType.Bools[0], tc2.CustomType.Bools[0]);
@@ -873,8 +875,8 @@ namespace S7.Net.UnitTest
         public async Task Test_Async_ReadWriteDouble()
         {
             double test_value = 55.66;
-            await plc.WriteAsync("DB1.DBD0", test_value);
-            var helper = await plc.ReadAsync("DB1.DBD0");
+            await plc.WriteAsync("DB1.DBD0", test_value, this.token);
+            var helper = await plc.ReadAsync("DB1.DBD0", this.token);
             double test_value2 = Conversion.ConvertToDouble((uint)helper);
 
             Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
@@ -884,8 +886,8 @@ namespace S7.Net.UnitTest
         public async Task Test_Async_ReadWriteSingle()
         {
             float test_value = 55.6632f;
-            await plc.WriteAsync("DB1.DBD0", test_value);
-            var helper = await plc.ReadAsync("DB1.DBD0");
+            await plc.WriteAsync("DB1.DBD0", test_value, this.token);
+            var helper = await plc.ReadAsync("DB1.DBD0", this.token);
             float test_value2 = Conversion.ConvertToFloat((uint)helper);
 
             Assert.AreEqual(test_value, test_value2, "Compare Write/Read"); //No delta, datatype matches
@@ -903,9 +905,9 @@ namespace S7.Net.UnitTest
                 dataItems.Add((byte)(i % 256));
             }
 
-            await plc.WriteBytesAsync(DataType.DataBlock, 2, 0, dataItems.ToArray());
+            await plc.WriteBytesAsync(DataType.DataBlock, 2, 0, dataItems.ToArray(), this.token);
 
-            var res = await plc.ReadBytesAsync(DataType.DataBlock, 2, 0, count);
+            var res = await plc.ReadBytesAsync(DataType.DataBlock, 2, 0, count, this.token);
 
             for (int x = 0; x < count; x++)
             {

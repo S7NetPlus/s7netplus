@@ -35,6 +35,8 @@ using S7.UnitTest.Helpers;
 #pragma warning disable CS0618
 namespace S7.Net.UnitTest
 {
+    using System.Threading;
+
     [TestClass]
     public partial class S7NetTests : IDisposable
     {
@@ -45,6 +47,7 @@ namespace S7.Net.UnitTest
 
         #region Private fields
         Plc plc;
+        private CancellationToken token;
         #endregion
 
         #region Constructor
@@ -57,6 +60,7 @@ namespace S7.Net.UnitTest
             //ConsoleManager.Show();
             ShutDownServiceS7oiehsx64();
 
+            this.token = this.plc.GetDefaultCancellationToken();
         }
 
         [TestInitialize]
@@ -189,7 +193,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableDouble = -154.789;
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             plc.ReadClass(tc2, DB2);
@@ -218,7 +222,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableDouble = -154.789;
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
-            plc.WriteStruct(tc, DB2);
+            plc.WriteStruct(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestStruct tc2 = (TestStruct)plc.ReadStruct(typeof(TestStruct), DB2);
             Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
@@ -263,7 +267,7 @@ namespace S7.Net.UnitTest
             tc.IntVariable101 = 101;
             tc.IntVariable110 = 200;
             tc.IntVariable111 = 201;
-            plc.WriteStruct(tc, DB2);
+            plc.WriteStruct(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongStruct tc2 = (TestLongStruct)plc.ReadStruct(typeof(TestLongStruct), DB2);
             Assert.AreEqual(tc.IntVariable0, tc2.IntVariable0);
@@ -325,7 +329,7 @@ namespace S7.Net.UnitTest
             tc.IntVariable101 = 101;
             tc.IntVariable110 = 200;
             tc.IntVariable111 = 201;
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestLongClass tc2 = new TestLongClass();
             plc.ReadClass(tc2, DB2);
@@ -579,7 +583,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
 
             TestClassWithPrivateSetters tc2 = new TestClassWithPrivateSetters();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
@@ -624,7 +628,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
 
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             TestClass tc2 = new TestClass();
@@ -667,7 +671,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
 
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             TestClass tc2Generic = plc.ReadClass<TestClass>(DB2);
@@ -732,7 +736,7 @@ namespace S7.Net.UnitTest
                 ShortVariable04 = new TestClassInnerWithShort { ShortVarialbe00 = -15000 }
             };
 
-            plc.WriteClass(tc, DB4);
+            plc.WriteClass(tc, S7NetTests.DB4, this.token);
             TestClassWithNestedClass tc2 = new TestClassWithNestedClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
             plc.ReadClass(tc2, DB4);
@@ -770,7 +774,7 @@ namespace S7.Net.UnitTest
             ts.RealVariableFloat = -154.789f;
             ts.DWordVariable = 850;
 
-            plc.WriteStruct(ts, DB2);
+            plc.WriteStruct(ts, S7NetTests.DB2, this.token);
 
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestStruct ts2 = (TestStruct)plc.ReadStruct(typeof(TestStruct), DB2);
@@ -814,7 +818,7 @@ namespace S7.Net.UnitTest
             tc.RealVariableDouble = -154.789;
             tc.RealVariableFloat = -154.789f;
             tc.DWordVariable = 850;
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
 
             int expectedReadBytes = (int)Types.Class.GetClassSize(tc);
 
@@ -849,7 +853,7 @@ namespace S7.Net.UnitTest
             tc.UShorts[0] = ushort.MinValue + 1;
             tc.UShorts[1] = ushort.MaxValue;
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
             TestClassWithArrays tc2 = plc.ReadClass<TestClassWithArrays>(DB2);
 
             Assert.AreEqual(tc.Bool, tc2.Bool);
@@ -891,7 +895,7 @@ namespace S7.Net.UnitTest
             tc.CustomTypes[0].Bools[0] = true;
             tc.CustomTypes[1].Bools[1] = true;
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
             TestClassWithCustomType tc2 = plc.ReadClass<TestClassWithCustomType>(DB2);
 
             Assert.AreEqual(tc.Int, tc2.Int);
@@ -967,7 +971,7 @@ namespace S7.Net.UnitTest
                 Bool1 = true
             };
 
-            plc.WriteClass(tc, DB2);
+            plc.WriteClass(tc, S7NetTests.DB2, this.token);
             var tc2 = plc.ReadClass<TestSmallClass>(DB2);
 
             Assert.AreEqual(tc.Bool1, tc2.Bool1);

@@ -8,6 +8,8 @@ using S7.Net.Protocol;
 //Implement synchronous methods here
 namespace S7.Net
 {
+    using System.Threading;
+
     public partial class Plc
     {
         /// <summary>
@@ -321,10 +323,11 @@ namespace S7.Net
         /// </summary>
         /// <param name="structValue">The struct to be written</param>
         /// <param name="db">Db address</param>
+        /// <param name="token"></param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        public void WriteStruct(object structValue, int db, int startByteAdr = 0)
+        public void WriteStruct(object structValue, int db, CancellationToken token, int startByteAdr = 0)
         {
-            WriteStructAsync(structValue, db, startByteAdr).GetAwaiter().GetResult();
+            WriteStructAsync(structValue, db, token, startByteAdr).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -332,10 +335,11 @@ namespace S7.Net
         /// </summary>
         /// <param name="classValue">The class to be written</param>
         /// <param name="db">Db address</param>
+        /// <param name="token"></param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
-        public void WriteClass(object classValue, int db, int startByteAdr = 0)
+        public void WriteClass(object classValue, int db, CancellationToken token, int startByteAdr = 0)
         {
-            WriteClassAsync(classValue, db, startByteAdr).GetAwaiter().GetResult();
+            WriteClassAsync(classValue, db, token, startByteAdr).GetAwaiter().GetResult();
         }
 
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)

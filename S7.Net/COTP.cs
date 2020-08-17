@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace S7.Net
 {
+    using System.Threading;
 
     /// <summary>
     /// COTP Protocol functions and types
@@ -63,10 +64,11 @@ namespace S7.Net
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
             /// <param name="stream">The socket to read from</param>
+            /// <param name="token">The cancellation token</param>
             /// <returns>COTP DPDU instance</returns>
-            public static async Task<TPDU> ReadAsync(Stream stream)
+            public static async Task<TPDU> ReadAsync(Stream stream, CancellationToken token)
             {
-                var tpkt = await TPKT.ReadAsync(stream);
+                var tpkt = await TPKT.ReadAsync(stream, token);
                 if (tpkt.Length > 0) return new TPDU(tpkt);
                 return null;
             }
@@ -121,10 +123,11 @@ namespace S7.Net
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
             /// <param name="stream">The stream to read from</param>
+            /// <param name="token">The cancellation Token</param>
             /// <returns>Data in TSDU</returns>
-            public static async Task<byte[]> ReadAsync(Stream stream)
-            {                
-                var segment = await TPDU.ReadAsync(stream);
+            public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken token)
+            {
+                var segment = await TPDU.ReadAsync(stream, token);
                 if (segment == null) return null;
 
                 var buffer = new byte[segment.Data.Length];
@@ -133,7 +136,7 @@ namespace S7.Net
 
                 while (!segment.LastDataUnit)
                 {
-                    segment = await TPDU.ReadAsync(stream);
+                    segment = await TPDU.ReadAsync(stream, token);
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
                     var lastPosition = output.Position;
                     output = new MemoryStream(buffer);

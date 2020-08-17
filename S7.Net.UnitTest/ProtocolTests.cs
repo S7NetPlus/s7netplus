@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace S7.Net.UnitTest
 {
+    using System.Threading;
+
     [TestClass]
     public class ProtocolUnitTest
     {
@@ -21,7 +23,7 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(0x03, t.Version);
             Assert.AreEqual(0x29, t.Length);
             m.Position = 0;
-            t = TPKT.ReadAsync(m).Result;
+            t = TPKT.ReadAsync(m, CancellationToken.None).Result;
             Assert.AreEqual(0x03, t.Version);
             Assert.AreEqual(0x29, t.Length);
         }
@@ -66,7 +68,7 @@ namespace S7.Net.UnitTest
         public async Task TPKT_ReadShortAsync()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff040080"));
-            var t = await TPKT.ReadAsync(m);
+            var t = await TPKT.ReadAsync(m, CancellationToken.None);
          }
 
         [TestMethod]
@@ -77,7 +79,7 @@ namespace S7.Net.UnitTest
             var t = COTP.TSDU.Read(m);
             Assert.IsTrue(expected.SequenceEqual(t));
             m.Position = 0;
-            t = COTP.TSDU.ReadAsync(m).Result;
+            t = COTP.TSDU.ReadAsync(m, CancellationToken.None).Result;
             Assert.IsTrue(expected.SequenceEqual(t));
         }
 
