@@ -997,6 +997,20 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(test_value, test_value2, "Compare Write/Read"); //No delta, datatype matches
         }
 
+        [TestMethod]
+        public void T33_ReadWriteDateTimeLong()
+        {
+            var test_value = System.DateTime.Now;
+            var db = 1;
+            var offset = 0;
+
+            plc.WriteBytes(DataType.DataBlock, db, offset, Types.DateTimeLong.ToByteArray(test_value));
+            var test_value2 = plc.Read(DataType.DataBlock, db, offset, VarType.DateTimeLong, 1);
+            Assert.IsInstanceOfType(test_value2, typeof(System.DateTime));
+
+            Assert.AreEqual(test_value, test_value2, "Compare DateTimeLong Write/Read");
+        }
+
         #endregion
 
         #region Private methods

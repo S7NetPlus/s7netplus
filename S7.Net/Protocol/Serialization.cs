@@ -64,6 +64,8 @@ namespace S7.Net.Protocol
                     return Types.String.ToByteArray(stringVal, stringVal.Length);
                 case "DateTime[]":
                     return Types.DateTime.ToByteArray((System.DateTime[]) value);
+                case "DateTimeLong[]":
+                    return Types.DateTimeLong.ToByteArray((System.DateTime[])value);
                 default:
                     throw new InvalidVariableTypeException();
             }

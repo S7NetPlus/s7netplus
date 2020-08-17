@@ -156,6 +156,15 @@ namespace S7.Net
                     {
                         return DateTime.ToArray(bytes);
                     }
+                case VarType.DateTimeLong:
+                    if (varCount == 1)
+                    {
+                        return DateTimeLong.FromByteArray(bytes);
+                    }
+                    else
+                    {
+                        return DateTimeLong.ToArray(bytes);
+                    }
                 default:
                     return null;
             }
@@ -190,6 +199,8 @@ namespace S7.Net
                     return varCount * 4;
                 case VarType.DateTime:
                     return varCount * 8;
+                case VarType.DateTimeLong:
+                    return varCount * 12;
                 default:
                     return 0;
             }
