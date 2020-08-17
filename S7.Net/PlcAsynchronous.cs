@@ -67,20 +67,20 @@ namespace S7.Net
         /// <returns>Returns the bytes in an array</returns>
         public async Task<byte[]> ReadBytesAsync(DataType dataType, int db, int startByteAdr, int count)
         {
-            List<byte> resultBytes = new List<byte>();
-            int index = startByteAdr;
+            var resultBytes = new byte[count];
+            int index = 0;
             while (count > 0)
             {
                 //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
                 var maxToRead = (int)Math.Min(count, MaxPDUSize - 18);
-                byte[] bytes = await ReadBytesWithSingleRequestAsync(dataType, db, index, maxToRead);
+                byte[] bytes = await ReadBytesWithSingleRequestAsync(dataType, db, index + startByteAdr, maxToRead);
                 if (bytes == null)
-                    return resultBytes.ToArray();
-                resultBytes.AddRange(bytes);
+                    return resultBytes;
+                Array.Copy(bytes, 0, resultBytes, index, maxToRead);
                 count -= maxToRead;
                 index += maxToRead;
             }
-            return resultBytes.ToArray();
+            return resultBytes;
         }
 
         /// <summary>
