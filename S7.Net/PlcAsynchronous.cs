@@ -268,7 +268,7 @@ namespace S7.Net
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = (int)Math.Min(count, 200);
-                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite), maxToWrite);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
@@ -435,40 +435,15 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value)
+        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, IEnumerable<byte> value, int count)
         {
-            var stream = GetStreamIfAvailable();
-
-            byte[] bReceive = new byte[513];
-            int varCount = 0;
 
             try
             {
-                varCount = value.Length;
-                // first create the header
-                int packageSize = 35 + value.Length;
-                ByteArray package = new ByteArray(packageSize);
+                var stream = GetStreamIfAvailable();
+                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, count);
 
-                package.Add(new byte[] { 3, 0, 0 });
-                package.Add((byte)packageSize);
-                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
-                package.Add(Word.ToByteArray((ushort)(varCount - 1)));
-                package.Add(new byte[] { 0, 0x0e });
-                package.Add(Word.ToByteArray((ushort)(varCount + 4)));
-                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
-                package.Add(Word.ToByteArray((ushort)varCount));
-                package.Add(Word.ToByteArray((ushort)(db)));
-                package.Add((byte)dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                package.Add(Word.ToByteArray((ushort)(startByteAdr * 8)));
-                package.Add(new byte[] { 0, 4 });
-                package.Add(Word.ToByteArray((ushort)(varCount * 8)));
-
-                // now join the header and the data
-                package.Add(value);
-
-                await stream.WriteAsync(package.Array, 0, package.Array.Length);
+                await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream);
                 if (s7data == null || s7data[14] != 0xff)
