@@ -129,6 +129,26 @@ namespace S7.Net.UnitTest
         }
 
         /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data);
+
+            var readData = await plc.ReadBytesAsync(DataType.DataBlock, db, 0, data.Length);
+
+            CollectionAssert.AreEqual(data, readData);
+        }
+
+        /// <summary>
         /// Read/Write a class that has the same properties of a DB with the same field in the same order
         /// </summary>
         [TestMethod]
