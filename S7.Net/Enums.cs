@@ -189,8 +189,8 @@
         DateTime,
 
         /// <summary>
-        /// DTL variable type
+        /// DateTimeLong variable type
         /// </summary>
-        Dtl
+        DateTimeLong
     }
 }

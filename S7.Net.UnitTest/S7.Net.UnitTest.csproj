@@ -81,7 +81,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\TestLongStruct.cs" />
     <Compile Include="TypeTests\ClassTests.cs" />
-    <Compile Include="TypeTests\DtlTests.cs" />
+    <Compile Include="TypeTests\DateTimeLongTests.cs" />
     <Compile Include="TypeTests\DateTimeTests.cs" />
     <Compile Include="TypeTests\StringExTests.cs" />
     <Compile Include="TypeTests\StringTests.cs" />

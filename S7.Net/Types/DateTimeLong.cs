@@ -5,9 +5,9 @@ using System.IO;
 namespace S7.Net.Types
 {
     /// <summary>
-    /// Contains the methods to convert between <see cref="T:System.DateTime" /> and S7 representation of DTL values.
+    /// Contains the methods to convert between <see cref="T:System.DateTime" /> and S7 representation of DateTimeLong (DTL) values.
     /// </summary>
-    public static class Dtl
+    public static class DateTimeLong
     {
         /// <summary>
         /// The minimum <see cref="T:System.DateTime" /> value supported by the specification.
@@ -49,7 +49,7 @@ namespace S7.Net.Types
             if (bytes.Length % 12 != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
-                    $"Parsing an array of Dtl requires a multiple of 12 bytes of input data, input data is '{bytes.Length}' long.");
+                    $"Parsing an array of DateTimeLong requires a multiple of 12 bytes of input data, input data is '{bytes.Length}' long.");
             }
 
             var cnt = bytes.Length / 12;
@@ -70,7 +70,7 @@ namespace S7.Net.Types
             if (bytes.Length != 12)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
-                    $"Parsing a Dtl requires exactly 12 bytes of input data, input data is {bytes.Length} bytes long.");
+                    $"Parsing a DateTimeLong requires exactly 12 bytes of input data, input data is {bytes.Length} bytes long.");
             }
 
 
@@ -94,7 +94,7 @@ namespace S7.Net.Types
         /// Converts a <see cref="T:System.DateTime" /> value to a byte array.
         /// </summary>
         /// <param name="dateTime">The DateTime value to convert.</param>
-        /// <returns>A byte array containing the S7 DTL representation of <paramref name="dateTime" />.</returns>
+        /// <returns>A byte array containing the S7 DateTimeLong representation of <paramref name="dateTime" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the value of
         /// <paramref name="dateTime" /> is before <see cref="P:SpecMinimumDateTime" />
@@ -105,13 +105,13 @@ namespace S7.Net.Types
             if (dateTime < SpecMinimumDateTime)
             {
                 throw new ArgumentOutOfRangeException(nameof(dateTime), dateTime,
-                    $"Date time '{dateTime}' is before the minimum '{SpecMinimumDateTime}' supported in S7 DTL representation.");
+                    $"Date time '{dateTime}' is before the minimum '{SpecMinimumDateTime}' supported in S7 DateTimeLong representation.");
             }
 
             if (dateTime > SpecMaximumDateTime)
             {
                 throw new ArgumentOutOfRangeException(nameof(dateTime), dateTime,
-                    $"Date time '{dateTime}' is after the maximum '{SpecMaximumDateTime}' supported in S7 DTL representation.");
+                    $"Date time '{dateTime}' is after the maximum '{SpecMaximumDateTime}' supported in S7 DateTimeLong representation.");
             }
 
             var stream = new MemoryStream(12);
@@ -147,7 +147,7 @@ namespace S7.Net.Types
         /// Converts an array of <see cref="T:System.DateTime" /> values to a byte array.
         /// </summary>
         /// <param name="dateTimes">The DateTime values to convert.</param>
-        /// <returns>A byte array containing the S7 DTL representations of <paramref name="dateTimes" />.</returns>
+        /// <returns>A byte array containing the S7 DateTimeLong representations of <paramref name="dateTimes" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when any value of
         /// <paramref name="dateTimes" /> is before <see cref="P:SpecMinimumDateTime" />
