@@ -106,19 +106,17 @@ namespace S7.Net
                 var segment = TPDU.Read(stream);
 
                 var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
+                Array.Copy(segment.Data, buffer, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = TPDU.Read(stream);
+                    var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
+                    Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
                 }
 
-                return buffer.Take((int)output.Position).ToArray();
+                return buffer;
             }
 
             /// <summary>
@@ -132,18 +130,17 @@ namespace S7.Net
                 var segment = await TPDU.ReadAsync(stream);
 
                 var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
+                Array.Copy(segment.Data, buffer, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = await TPDU.ReadAsync(stream);
+                    var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
+                    Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
                 }
-                return buffer.Take((int)output.Position).ToArray();
+
+                return buffer;
             }
         }
     }
