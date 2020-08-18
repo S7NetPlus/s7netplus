@@ -35,6 +35,33 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        public async Task TPKT_ReadDelayedAsync()
+        {
+            var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
+            var m = new MemoryStream();
+            m.Write(fullMessage, 0, 2);
+            var tcs = new TaskCompletionSource<bool>();
+            tcs.Task.ContinueWith(x => m.Write(fullMessage, 2, fullMessage.Length - 2));
+            var t = TPKT.ReadAsync(m);
+            tcs.TrySetResult(true);
+            await t;
+        }
+
+        [TestMethod]
+        public void TPKT_ReadDelayed()
+        {
+            var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
+            var m = new MemoryStream();
+            m.Write(fullMessage, 0, 2);
+            var tcs = new TaskCompletionSource<bool>();
+            tcs.Task.ContinueWith(x => m.Write(fullMessage, 2, fullMessage.Length - 2));
+
+            Task.Delay(TimeSpan.FromSeconds(0.01)).ContinueWith(x => tcs.TrySetResult(true));
+            var t = TPKT.Read(m);
+            tcs.TrySetResult(true);
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(TPKTInvalidException))]
         public async Task TPKT_ReadShortAsync()
         {
