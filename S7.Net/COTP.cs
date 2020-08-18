@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace S7.Net
 {
@@ -27,17 +26,17 @@ namespace S7.Net
             {
                 TPkt = tPKT;
 
-                var br = new BinaryReader(new MemoryStream(tPKT.Data));
-                HeaderLength = br.ReadByte();
+                HeaderLength = tPKT.Data[0]; // Header length excluding this length byte
                 if (HeaderLength >= 2)
                 {
-                    PDUType = br.ReadByte();
+                    PDUType = tPKT.Data[1];
                     if (PDUType == 0xf0) //DT Data
                     {
-                        var flags = br.ReadByte();
+                        var flags = tPKT.Data[2];
                         TPDUNumber = flags & 0x7F;
                         LastDataUnit = (flags & 0x80) > 0;
-                        Data = br.ReadBytes(tPKT.Length - HeaderLength - 4); //4 = TPKT Size
+                        Data = new byte[tPKT.Data.Length - HeaderLength - 1]; // substract header length byte + header length.
+                        Array.Copy(tPKT.Data, HeaderLength + 1, Data, 0, Data.Length);
                         return;
                     }
                     //TODO: Handle other PDUTypes
