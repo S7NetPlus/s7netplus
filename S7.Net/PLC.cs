@@ -183,10 +183,10 @@ namespace S7.Net
 
         private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
         {
-            // 12 bytes of header data, 12 bytes of parameter data for each dataItem
-            if ((dataItems.Count + 1) * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
+            // send request limit: 19 bytes of header data, 12 bytes of parameter data for each dataItem
+            if (19 + dataItems.Count * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
             
-            // 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
+            // response limit: 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
             if (GetDataLength(dataItems) + dataItems.Count * 4 + 14 > MaxPDUSize) throw new Exception("Too much data requested for read");
         }
 
