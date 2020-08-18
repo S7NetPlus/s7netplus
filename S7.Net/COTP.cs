@@ -105,6 +105,12 @@ namespace S7.Net
             {
                 var segment = TPDU.Read(stream);
 
+                if (segment.LastDataUnit)
+                {
+                    return segment.Data;
+                }
+
+                // More segments are expected, prepare a buffer to store all data
                 var buffer = new byte[segment.Data.Length];
                 Array.Copy(segment.Data, buffer, segment.Data.Length);
 
@@ -129,6 +135,12 @@ namespace S7.Net
             {                
                 var segment = await TPDU.ReadAsync(stream);
 
+                if (segment.LastDataUnit)
+                {
+                    return segment.Data;
+                }
+
+                // More segments are expected, prepare a buffer to store all data
                 var buffer = new byte[segment.Data.Length];
                 Array.Copy(segment.Data, buffer, segment.Data.Length);
 
