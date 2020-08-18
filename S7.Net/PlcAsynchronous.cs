@@ -265,10 +265,7 @@ namespace S7.Net
             int count = value.Length;
             while (count > 0)
             {
-                //TODO: Figure out how to use MaxPDUSize here
-                //Snap7 seems to choke on PDU sizes above 256 even if snap7 
-                //replies with bigger PDU size in connection setup.
-                var maxToWrite = (int)Math.Min(count, 200);
+                var maxToWrite = (int)Math.Min(count, MaxPDUSize - 35);
                 await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
