@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -19,12 +19,11 @@ namespace S7.Net
         /// <returns>returns the amount of read bytes</returns>
         public static int ReadFixed(this Stream stream, byte[] buffer, int offset, int count)
         {
-            int read = offset;
+            int read = 0;
             int received;
-            count = Math.Min(count, buffer.Length - offset);
             do
             {
-                received = stream.Read(buffer, read, count - read);
+                received = stream.Read(buffer, offset + read, count - read);
                 read += received;
             }
             while (read < count && received > 0);
@@ -42,12 +41,11 @@ namespace S7.Net
         /// <returns>returns the amount of read bytes</returns>
         public static async Task<int> ReadFixedAsync(this Stream stream, byte[] buffer, int offset, int count)
         {
-            int read = offset;
+            int read = 0;
             int received;
-            count = Math.Min(count, buffer.Length - offset);
             do
             {
-                received = await stream.ReadAsync(buffer, read, count - read);
+                received = await stream.ReadAsync(buffer, offset + read, count - read);
                 read += received;
             }
             while (read < count && received > 0);

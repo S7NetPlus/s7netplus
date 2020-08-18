@@ -34,32 +34,6 @@ namespace S7.Net.UnitTest
             var t = TPKT.Read(m);
         }
 
-        [TestMethod]
-        public async Task TPKT_ReadDelayedAsync()
-        {
-            var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
-            var m = new MemoryStream();
-            m.Write(fullMessage, 0, 2);
-            var tcs = new TaskCompletionSource<bool>();
-            tcs.Task.ContinueWith(x => m.Write(fullMessage, 2, fullMessage.Length - 2));
-            var t = TPKT.ReadAsync(m);
-            tcs.TrySetResult(true);
-            await t;
-        }
-
-        [TestMethod]
-        public void TPKT_ReadDelayed()
-        {
-            var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
-            var m = new MemoryStream();
-            m.Write(fullMessage, 0, 2);
-            var tcs = new TaskCompletionSource<bool>();
-            tcs.Task.ContinueWith(x => m.Write(fullMessage, 2, fullMessage.Length - 2));
-
-            Task.Delay(TimeSpan.FromSeconds(0.01)).ContinueWith(x => tcs.TrySetResult(true));
-            var t = TPKT.Read(m);
-            tcs.TrySetResult(true);
-        }
 
         [TestMethod]
         [ExpectedException(typeof(TPKTInvalidException))]
@@ -67,7 +41,7 @@ namespace S7.Net.UnitTest
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff040080"));
             var t = await TPKT.ReadAsync(m);
-         }
+        }
 
         [TestMethod]
         public void COTP_ReadTSDU()
@@ -81,7 +55,7 @@ namespace S7.Net.UnitTest
             Assert.IsTrue(expected.SequenceEqual(t));
         }
 
-        private static byte[] StringToByteArray(string hex)
+        public static byte[] StringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)
                              .Where(x => x % 2 == 0)
@@ -89,4 +63,5 @@ namespace S7.Net.UnitTest
                              .ToArray();
         }
     }
+
 }
