@@ -10,14 +10,14 @@ namespace S7.Net
     public static class StreamExtensions
     {
         /// <summary>
-        /// Reads a fixed amount of bytes from the stream into the buffer
+        /// Reads bytes from the stream into the buffer until exactly the requested number of bytes (or EOF) have been read
         /// </summary>
         /// <param name="stream">the Stream to read from</param>
         /// <param name="buffer">the buffer to read into</param>
         /// <param name="offset">the offset in the buffer to read into</param>
         /// <param name="count">the amount of bytes to read into the buffer</param>
         /// <returns>returns the amount of read bytes</returns>
-        public static int ReadFixed(this Stream stream, byte[] buffer, int offset, int count)
+        public static int ReadExact(this Stream stream, byte[] buffer, int offset, int count)
         {
             int read = 0;
             int received;
@@ -32,14 +32,14 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads a fixed amount of bytes from the stream into the buffer
+        /// Reads bytes from the stream into the buffer until exactly the requested number of bytes (or EOF) have been read
         /// </summary>
         /// <param name="stream">the Stream to read from</param>
         /// <param name="buffer">the buffer to read into</param>
         /// <param name="offset">the offset in the buffer to read into</param>
         /// <param name="count">the amount of bytes to read into the buffer</param>
         /// <returns>returns the amount of read bytes</returns>
-        public static async Task<int> ReadFixedAsync(this Stream stream, byte[] buffer, int offset, int count)
+        public static async Task<int> ReadExactAsync(this Stream stream, byte[] buffer, int offset, int count)
         {
             int read = 0;
             int received;

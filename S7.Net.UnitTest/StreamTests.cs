@@ -55,6 +55,9 @@ namespace S7.Net.UnitTest
         }
     }
 
+    /// <summary>
+    /// These tests are intended to test <see cref="StreamExtensions"/> functions and other stream-related special cases.
+    /// </summary>
     [TestClass]
     public class StreamTests
     {

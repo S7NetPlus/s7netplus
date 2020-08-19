@@ -32,14 +32,14 @@ namespace S7.Net
         public static TPKT Read(Stream stream)
         {
             var buf = new byte[4];
-            int len = stream.ReadFixed(buf, 0, 4);
+            int len = stream.ReadExact(buf, 0, 4);
             if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
             var version = buf[0];
             var reserved1 = buf[1];
             var length = buf[2] * 256 + buf[3]; //BigEndian
 
             var data = new byte[length - 4];
-            len = stream.ReadFixed(data, 0, data.Length);
+            len = stream.ReadExact(data, 0, data.Length);
             if (len < data.Length)
                 throw new TPKTInvalidException("TPKT is incomplete / invalid");
 
@@ -60,7 +60,7 @@ namespace S7.Net
         public static async Task<TPKT> ReadAsync(Stream stream)
         {
             var buf = new byte[4];
-            int len = await stream.ReadFixedAsync(buf, 0, 4);
+            int len = await stream.ReadExactAsync(buf, 0, 4);
             if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
 
             var version = buf[0];
@@ -68,7 +68,7 @@ namespace S7.Net
             var length = buf[2] * 256 + buf[3]; //BigEndian
 
             var data = new byte[length - 4];
-            len = await stream.ReadFixedAsync(data, 0, data.Length);
+            len = await stream.ReadExactAsync(data, 0, data.Length);
             if (len < data.Length)
                 throw new TPKTInvalidException("TPKT payload incomplete / invalid");
 
