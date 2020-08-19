@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.Types;
 using System;
+using System.Collections;
+using System.Linq;
 
 namespace S7.Net.UnitTest.TypeTests
 {
@@ -26,6 +28,24 @@ namespace S7.Net.UnitTest.TypeTests
         }
 
         [TestMethod]
+        public void ReadMalformedStringTooShort()
+        {
+            Assert.ThrowsException<PlcException>(() => AssertFromByteArrayEquals("", 1));
+        }
+
+        [TestMethod]
+        public void ReadMalformedStringSizeLargerThanCapacity()
+        {
+            Assert.ThrowsException<PlcException>(() => StringEx.FromByteArray(new byte[] { 3, 5, 0, 1, 2 }));
+        }
+
+        [TestMethod]
+        public void ReadMalformedStringCapacityTooLarge()
+        {
+            Assert.ThrowsException<ArgumentException>(() => AssertToByteArrayAndBackEquals("", 300, 0));
+        }
+
+        [TestMethod]
         public void ReadA()
         {
             AssertFromByteArrayEquals("A", 1, 1, (byte) 'A');
@@ -34,49 +54,49 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void ReadAbc()
         {
-            AssertFromByteArrayEquals("Abc", 1, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertFromByteArrayEquals("Abc", 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
         }
 
         [TestMethod]
         public void WriteNullWithReservedLengthZero()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayEquals(null, 0, 0, 0));
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 0, 0, 0));
         }
 
         [TestMethod]
         public void WriteEmptyStringWithReservedLengthZero()
         {
-            AssertToByteArrayEquals("", 0, 0, 0);
+            AssertToByteArrayAndBackEquals("", 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthZero()
         {
-            AssertToByteArrayEquals("", 0, 0, 0);
+            AssertToByteArrayAndBackEquals("", 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteNullWithReservedLengthOne()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayEquals(null, 1, 1, 0));
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 1, 1, 0));
         }
 
         [TestMethod]
         public void WriteEmptyStringWithReservedLengthOne()
         {
-            AssertToByteArrayEquals("", 1, 1, 0, 0);
+            AssertToByteArrayAndBackEquals("", 1, 1, 0, 0);
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthOne()
         {
-            AssertToByteArrayEquals("A", 1, 1, 1, (byte) 'A');
+            AssertToByteArrayAndBackEquals("A", 1, 1, 1, (byte) 'A');
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthTwo()
         {
-            AssertToByteArrayEquals("A", 2, 2, 1, (byte) 'A', 0);
+            AssertToByteArrayAndBackEquals("A", 2, 2, 1, (byte) 'A', 0);
         }
 
         [TestMethod]
@@ -88,24 +108,28 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAbcWithReservedLengthThree()
         {
-            AssertToByteArrayEquals("Abc", 3, 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertToByteArrayAndBackEquals("Abc", 3, 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
         }
 
         [TestMethod]
         public void WriteAbcWithReservedLengthFour()
         {
-            AssertToByteArrayEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c', 0);
+            AssertToByteArrayAndBackEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c', 0);
         }
 
         private static void AssertFromByteArrayEquals(string expected, params byte[] bytes)
         {
-            Assert.AreEqual(expected, StringEx.FromByteArray(bytes));
+            var convertedString = StringEx.FromByteArray(bytes);
+            Assert.AreEqual(expected, convertedString);
         }
 
-        private static void AssertToByteArrayEquals(string value, int reservedLength, params byte[] expected)
+
+        private static void AssertToByteArrayAndBackEquals(string value, int reservedLength, params byte[] expected)
         {
             var convertedData = StringEx.ToByteArray(value, reservedLength);
             CollectionAssert.AreEqual(expected, convertedData);
+            var convertedBack = StringEx.FromByteArray(convertedData);
+            Assert.AreEqual(value, convertedBack);
         }
     }
 }

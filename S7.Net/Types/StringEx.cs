@@ -17,10 +17,17 @@ namespace S7.Net.Types
         /// <returns></returns>
         public static string FromByteArray(byte[] bytes)
         {
-            if (bytes.Length < 2) return "";
+            if (bytes.Length < 2)
+            {
+                throw new PlcException(ErrorCode.ReadData, "Malformed S7 String / too short");
+            }
 
             int size = bytes[0];
             int length = bytes[1];
+            if (length > size)
+            {
+                throw new PlcException(ErrorCode.ReadData, "Malformed S7 String / length larger than capacity");
+            }
 
             try
             {
