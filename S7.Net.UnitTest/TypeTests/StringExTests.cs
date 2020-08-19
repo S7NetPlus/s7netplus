@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.Types;
+using System;
 
 namespace S7.Net.UnitTest.TypeTests
 {
@@ -39,7 +40,7 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteNullWithReservedLengthZero()
         {
-            AssertToByteArrayEquals(null, 0, 0, 0);
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayEquals(null, 0, 0, 0));
         }
 
         [TestMethod]
@@ -51,19 +52,19 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAWithReservedLengthZero()
         {
-            AssertToByteArrayEquals("A", 0, 0, 0);
+            AssertToByteArrayEquals("", 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteNullWithReservedLengthOne()
         {
-            AssertToByteArrayEquals(null, 1, 1, 0);
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayEquals(null, 1, 1, 0));
         }
 
         [TestMethod]
         public void WriteEmptyStringWithReservedLengthOne()
         {
-            AssertToByteArrayEquals("", 1, 1, 0);
+            AssertToByteArrayEquals("", 1, 1, 0, 0);
         }
 
         [TestMethod]
@@ -75,19 +76,13 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAWithReservedLengthTwo()
         {
-            AssertToByteArrayEquals("A", 2, 2, 1, (byte) 'A');
+            AssertToByteArrayEquals("A", 2, 2, 1, (byte) 'A', 0);
         }
 
         [TestMethod]
-        public void WriteAbcWithReservedLengthOne()
+        public void WriteAbcWithStringLargetThanReservedLength()
         {
-            AssertToByteArrayEquals("Abc", 1, 1, 1, (byte) 'A');
-        }
-
-        [TestMethod]
-        public void WriteAbcWithReservedLengthTwo()
-        {
-            AssertToByteArrayEquals("Abc", 2, 2, 2, (byte) 'A', (byte) 'b');
+            Assert.ThrowsException<ArgumentException>(() => StringEx.ToByteArray("Abc", 2));
         }
 
         [TestMethod]
@@ -99,7 +94,7 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAbcWithReservedLengthFour()
         {
-            AssertToByteArrayEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertToByteArrayEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c', 0);
         }
 
         private static void AssertFromByteArrayEquals(string expected, params byte[] bytes)
@@ -109,7 +104,8 @@ namespace S7.Net.UnitTest.TypeTests
 
         private static void AssertToByteArrayEquals(string value, int reservedLength, params byte[] expected)
         {
-            CollectionAssert.AreEqual(expected, StringEx.ToByteArray(value, reservedLength));
+            var convertedData = StringEx.ToByteArray(value, reservedLength);
+            CollectionAssert.AreEqual(expected, convertedData);
         }
     }
 }
