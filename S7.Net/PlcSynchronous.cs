@@ -87,20 +87,17 @@ namespace S7.Net
         /// <returns>Returns the bytes in an array</returns>
         public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
         {
-            List<byte> resultBytes = new List<byte>();
-            int index = startByteAdr;
+            var result = new byte[count];
+            int index = 0;
             while (count > 0)
             {
                 //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
-                var maxToRead = (int)Math.Min(count, MaxPDUSize - 18);
-                byte[] bytes = ReadBytesWithSingleRequest(dataType, db, index, maxToRead);
-                if (bytes == null)
-                    return resultBytes.ToArray();
-                resultBytes.AddRange(bytes);
+                var maxToRead = Math.Min(count, MaxPDUSize - 18);
+                ReadBytesWithSingleRequest(dataType, db, startByteAdr + index, result, index, maxToRead);
                 count -= maxToRead;
                 index += maxToRead;
             }
-            return resultBytes.ToArray();
+            return result;
         }
 
         /// <summary>
@@ -346,13 +343,13 @@ namespace S7.Net
             WriteClassAsync(classValue, db, startByteAdr).GetAwaiter().GetResult();
         }
 
-        private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
+        private void ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count)
         {
             var stream = GetStreamIfAvailable();
             try
             {
                 // first create the header
-                int packageSize = 31;
+                int packageSize = 19 + 12; // 19 header + 12 for 1 request
                 var package = new System.IO.MemoryStream(packageSize);
                 BuildHeaderPackage(package);
                 // package.Add(0x02);  // datenart
@@ -364,9 +361,7 @@ namespace S7.Net
                 var s7data = COTP.TSDU.Read(stream);
                 AssertReadResponse(s7data, count);
 
-                var bytes = new byte[count];
-                Array.Copy(s7data, 18, bytes, 0, count);
-                return bytes;
+                Array.Copy(s7data, 18, buffer, offset, count);
             }
             catch (Exception exc)
             {

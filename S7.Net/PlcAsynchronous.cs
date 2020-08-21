@@ -77,11 +77,8 @@ namespace S7.Net
             while (count > 0)
             {
                 //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
-                var maxToRead = (int)Math.Min(count, MaxPDUSize - 18);
-                byte[] bytes = await ReadBytesWithSingleRequestAsync(dataType, db, index + startByteAdr, maxToRead);
-                if (bytes == null)
-                    return resultBytes;
-                Array.Copy(bytes, 0, resultBytes, index, maxToRead);
+                var maxToRead = Math.Min(count, MaxPDUSize - 18);
+                await ReadBytesWithSingleRequestAsync(dataType, db, startByteAdr + index, resultBytes, index, maxToRead);
                 count -= maxToRead;
                 index += maxToRead;
             }
@@ -386,7 +383,7 @@ namespace S7.Net
             await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes);
         }
 
-        private async Task<byte[]> ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)
+        private async Task ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count)
         {
             var stream = GetStreamIfAvailable();
 
@@ -403,9 +400,7 @@ namespace S7.Net
             var s7data = await COTP.TSDU.ReadAsync(stream);
             AssertReadResponse(s7data, count);
 
-            var bytes = new byte[count];
-            Array.Copy(s7data, 18, bytes, 0, count);
-            return bytes;
+            Array.Copy(s7data, 18, buffer, offset, count);
         }
 
         /// <summary>
