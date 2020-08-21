@@ -7,8 +7,9 @@
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
     <Copyright>Copyright ©  2014</Copyright>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
@@ -27,8 +28,8 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="snap7.dll">
+  <ItemGroup Condition="'$(RuntimeIdentifier)'=='win-x64'">
+    <None Update="runtimes\win-x64\native\snap7.dll" Link="snap7.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

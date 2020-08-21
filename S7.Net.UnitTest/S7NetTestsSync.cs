@@ -1028,6 +1028,7 @@ namespace S7.Net.UnitTest
         #region Private methods
         private static void ShutDownServiceS7oiehsx64()
         {
+#if NETFRAMEWORK
             ServiceController[] services = ServiceController.GetServices();
             var service = services.FirstOrDefault(s => s.ServiceName == "s7oiehsx64");
             if (service != null)
@@ -1037,6 +1038,7 @@ namespace S7.Net.UnitTest
                     service.Stop();
                 }
             }
+#endif
         }
 
         #region IDisposable Support
