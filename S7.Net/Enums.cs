@@ -164,6 +164,11 @@
         Real,
 
         /// <summary>
+        /// LReal variable type (64 bits, 8 bytes)
+        /// </summary>
+        LReal,
+
+        /// <summary>
         /// String variable type (variable)
         /// </summary>
         String,
