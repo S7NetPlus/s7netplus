@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace S7.UnitTest.Helpers
@@ -8,6 +9,7 @@ namespace S7.UnitTest.Helpers
     /// <summary>
     /// This is a struct that contains more than 200 bytes and that needs 2 plc requests to complete a read/write cycle
     /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
     struct TestLongStruct
     {
         // these variables are not used, but are needed to match the size of the DB

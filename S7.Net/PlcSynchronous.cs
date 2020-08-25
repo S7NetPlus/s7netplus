@@ -133,10 +133,12 @@ namespace S7.Net
 
         /// <summary>
         /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+        /// Requires the struct to have [StructLayout(LayoutKind.Sequential)] attribute
         /// </summary>
         /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <exception cref="ArgumentException">When [StructLayout(LayoutKind.Sequential)] attribute is not set for the struct type</exception>
         /// <returns>Returns a struct that must be cast. If no data has been read, null will be returned</returns>
         public object? ReadStruct(Type structType, int db, int startByteAdr = 0)
         {
@@ -150,10 +152,12 @@ namespace S7.Net
 
         /// <summary>
         /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and returns the struct or null if nothing was read.
+        /// Requires the struct to have [StructLayout(LayoutKind.Sequential)] attribute
         /// </summary>
         /// <typeparam name="T">The struct type</typeparam>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <exception cref="ArgumentException">When [StructLayout(LayoutKind.Sequential)] attribute is not set for the struct type</exception>
         /// <returns>Returns a nullable struct. If nothing was read null will be returned.</returns>
         public T? ReadStruct<T>(int db, int startByteAdr = 0) where T : struct
         {
@@ -323,10 +327,12 @@ namespace S7.Net
 
         /// <summary>
         /// Writes a C# struct to a DB in the PLC
+        /// Requires the struct to have [StructLayout(LayoutKind.Sequential)] attribute
         /// </summary>
         /// <param name="structValue">The struct to be written</param>
         /// <param name="db">Db address</param>
         /// <param name="startByteAdr">Start bytes on the PLC</param>
+        /// <exception cref="ArgumentException">When [StructLayout(LayoutKind.Sequential)] attribute is not set for the struct type</exception>
         public void WriteStruct(object structValue, int db, int startByteAdr = 0)
         {
             WriteStructAsync(structValue, db, startByteAdr).GetAwaiter().GetResult();

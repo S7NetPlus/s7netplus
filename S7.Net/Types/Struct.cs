@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace S7.Net.Types
 {
@@ -8,6 +11,30 @@ namespace S7.Net.Types
     /// </summary>
     public static class Struct
     {
+        private static IEnumerable<FieldInfo> GetFieldsOrdered(Type structType)
+        {
+
+#if !NETSTANDARD1_3
+            var structLayoutAttribute = structType.StructLayoutAttribute;
+            if (structLayoutAttribute == null)
+            {
+                throw new ArgumentException("Please add [StructLayout(LayoutKind.Sequential)] as an attribute to the class you are trying to read or write");
+            }
+            if (structLayoutAttribute.Value != LayoutKind.Sequential)
+            {
+                throw new ArgumentException("Please add [StructLayout(LayoutKind.Sequential)] as an attribute to the class you are trying to read or write");
+            }
+#endif
+
+            var infos = structType
+#if NETSTANDARD1_3
+                .GetTypeInfo().DeclaredFields;
+#else
+                .GetFields().OrderBy(field => field.MetadataToken);
+#endif
+            return infos;
+        }
+
         /// <summary>
         /// Gets the size of the struct in bytes.
         /// </summary>
@@ -17,14 +44,7 @@ namespace S7.Net.Types
         {
             double numBytes = 0.0;
 
-            var infos = structType
-            #if NETSTANDARD1_3
-                .GetTypeInfo().DeclaredFields;
-            #else
-                .GetFields();
-            #endif
-
-            foreach (var info in infos)
+            foreach (var info in GetFieldsOrdered(structType))
             {
                 switch (info.FieldType.Name)
                 {
@@ -90,14 +110,7 @@ namespace S7.Net.Types
             object structValue = Activator.CreateInstance(structType);
 
 
-            var infos = structValue.GetType()
-            #if NETSTANDARD1_3
-                .GetTypeInfo().DeclaredFields;
-            #else
-                .GetFields();
-            #endif
-
-            foreach (var info in infos)
+            foreach (var info in GetFieldsOrdered(structType))
             {
                 switch (info.FieldType.Name)
                 {
@@ -151,10 +164,10 @@ namespace S7.Net.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes],
-                                                                           bytes[(int)numBytes + 1],
+                        info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes + 3],
                                                                            bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3]));
+                                                                           bytes[(int)numBytes + 1],
+                                                                           bytes[(int)numBytes + 0]));
                         numBytes += 4;
                         break;
                     case "Single":
@@ -208,14 +221,7 @@ namespace S7.Net.Types
             int bitPos = 0;
             double numBytes = 0.0;
 
-            var infos = type
-            #if NETSTANDARD1_3
-                .GetTypeInfo().DeclaredFields;
-            #else
-                .GetFields();
-            #endif
-
-            foreach (var info in infos)
+            foreach (var info in GetFieldsOrdered(structValue.GetType()))
             {
                 bytes2 = null;
                 switch (info.FieldType.Name)

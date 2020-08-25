@@ -1,6 +1,8 @@
-﻿
+﻿using System.Runtime.InteropServices;
+
 namespace S7.Net.UnitTest.Helpers
 {
+    [StructLayout(LayoutKind.Sequential)]
     public struct TestStruct
     {
         /// <summary>
@@ -50,6 +52,6 @@ namespace S7.Net.UnitTest.Helpers
         /// <summary>
         /// DB1.DBD16
         /// </summary>
-        public ushort DWordVariable;
+        public uint DWordVariable;
     }
 }

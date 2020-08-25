@@ -225,6 +225,54 @@ namespace S7.Net.UnitTest
 
         /// <summary>
         /// Read/Write a struct that has the same properties of a DB with the same field in the same order
+        /// This test manually checks that the order in the struct should hopefully match what we expect.
+        /// </summary>
+        [TestMethod]
+        public void T34_ReadAndWriteStruct()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestStruct tc = new TestStruct();
+            tc.BitVariable00 = true;
+            tc.BitVariable10 = true;
+            tc.DIntVariable = -100000;
+            tc.IntVariable = -15000;
+            tc.RealVariableDouble = -154.789;
+            tc.RealVariableFloat = -154.789f;
+            tc.DWordVariable = 850;
+            plc.WriteStruct(tc, DB2);
+
+            var structSize = Struct.GetStructSize(typeof(TestStruct));
+            // read data back as a binary array
+            var binaryData = plc.ReadBytes(DataType.DataBlock, 2, 0, structSize);
+
+            // now check with manual knowledge of the expected data offsets that the values match.
+            var intBytes = new byte[2];
+            Array.Copy(binaryData, 2, intBytes, 0, 2);
+            var intValue = Types.Int.FromByteArray(intBytes);
+            Assert.AreEqual(tc.IntVariable, intValue);
+
+
+            var dWordBytes = new byte[4];
+            Array.Copy(binaryData, 16, dWordBytes, 0, 4);
+            var dWordValue = Types.DWord.FromByteArray(dWordBytes);
+            Assert.AreEqual(tc.DWordVariable, dWordValue);
+        }
+
+        /// <summary>
+        /// Read/Write a struct that has the same properties of a DB with the same field in the same order, without [StructLayout(LayoutKind.Sequential)] attribute
+        /// </summary>
+        [TestMethod]
+        public void T35_ReadAndWriteStructWithoutSequentialOrdering()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var myObject = new { Number1 = 5, DateTime1 = System.DateTime.Now };
+            Assert.ThrowsException<ArgumentException>( () => plc.WriteStruct(myObject, DB2), "[StructLayout(LayoutKind.Sequential)]");
+        }
+
+        /// <summary>
+        /// Read/Write a struct that has the same properties of a DB with the same field in the same order
         /// </summary>
         [TestMethod]
         public void T06_ReadAndWriteLongStruct()

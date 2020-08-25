@@ -117,10 +117,12 @@ namespace S7.Net
 
         /// <summary>
         /// Reads all the bytes needed to fill a struct in C#, starting from a certain address, and return an object that can be casted to the struct.
+        /// Requires the struct/class to have [StructLayout(LayoutKind.Sequential)] attribute
         /// </summary>
         /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <exception cref="ArgumentException">When [StructLayout(LayoutKind.Sequential)] attribute is not set for the structType</exception>
         /// <returns>Returns a struct that must be cast.</returns>
         public async Task<object?> ReadStructAsync(Type structType, int db, int startByteAdr = 0)
         {
