@@ -20,7 +20,7 @@ namespace S7.Net.Types
                     BindingFlags.SetProperty |
                     BindingFlags.Public |
                     BindingFlags.Instance)
-                .Where(p => p.GetSetMethod() != null);
+                .Where(p => p.GetSetMethod() != null).OrderBy(p => p.MetadataToken);
 #endif
 
         }
