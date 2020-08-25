@@ -53,5 +53,8 @@ namespace S7.Net.UnitTest.Helpers
         /// DB1.DBD16
         /// </summary>
         public uint DWordVariable;
+
+        public byte ByteVariable;
+        public ushort WordVariable;
     }
 }

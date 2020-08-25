@@ -211,6 +211,8 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.ByteVariable = 231;
+            tc.WordVariable = 21923;
             plc.WriteStruct(tc, DB2);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestStruct tc2 = (TestStruct)plc.ReadStruct(typeof(TestStruct), DB2);
@@ -221,6 +223,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.ByteVariable, tc2.ByteVariable);
+            Assert.AreEqual(tc.WordVariable, tc2.WordVariable);
         }
 
         /// <summary>
