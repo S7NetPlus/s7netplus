@@ -19,6 +19,7 @@ namespace S7.Net
 
             try
             {
+                var stream = GetStreamIfAvailable();
                 stream.Write(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
                 var response = COTP.TPDU.Read(stream);
                 if (response.PDUType != 0xd0) //Connect Confirm
@@ -52,7 +53,7 @@ namespace S7.Net
                 tcpClient = new TcpClient();
                 ConfigureConnection();
                 tcpClient.Connect(IP, Port);
-                stream = tcpClient.GetStream();
+                _stream = tcpClient.GetStream();
             }
             catch (SocketException sex)
             {
@@ -106,7 +107,7 @@ namespace S7.Net
         /// <param name="varType">Type of the variable/s that you are reading</param>
         /// <param name="bitAdr">Address of bit. If you want to read DB1.DBX200.6, set 6 to this parameter.</param>
         /// <param name="varCount"></param>
-        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
+        public object? Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
             byte[] bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
@@ -119,8 +120,8 @@ namespace S7.Net
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
-        /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
-        public object Read(string variable)
+        /// <returns>Returns an object that contains the value. This object must be cast accordingly. If no data has been read, null will be returned</returns>
+        public object? Read(string variable)
         {
             var adr = new PLCAddress(variable);
             return Read(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber);
@@ -132,8 +133,8 @@ namespace S7.Net
         /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <returns>Returns a struct that must be cast.</returns>
-        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
+        /// <returns>Returns a struct that must be cast. If no data has been read, null will be returned</returns>
+        public object? ReadStruct(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Struct.GetStructSize(structType);
             // now read the package
@@ -188,7 +189,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public T ReadClass<T>(int db, int startByteAdr = 0) where T : class
+        public T? ReadClass<T>(int db, int startByteAdr = 0) where T : class
         {
             return ReadClass(() => Activator.CreateInstance<T>(), db, startByteAdr);
         }
@@ -202,7 +203,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public T ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
+        public T? ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
         {
             var instance = classFactory();
             int readBytes = ReadClass(instance, db, startByteAdr);
@@ -340,6 +341,7 @@ namespace S7.Net
 
         private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
         {
+            var stream = GetStreamIfAvailable();
             byte[] bytes = new byte[count];
             try
             {
@@ -375,6 +377,8 @@ namespace S7.Net
         {
             AssertPduSizeForWrite(dataItems);
 
+            var stream = GetStreamIfAvailable();
+
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
             stream.Write(message.Array, 0, length);
@@ -385,6 +389,7 @@ namespace S7.Net
 
         private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
         {
+            var stream = GetStreamIfAvailable();
             int varCount = 0;
             try
             {
@@ -429,6 +434,7 @@ namespace S7.Net
 
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
+            var stream = GetStreamIfAvailable();
             int varCount = 0;
 
             try
@@ -483,6 +489,8 @@ namespace S7.Net
             //Snap7 seems to choke on PDU sizes above 256 even if snap7 
             //replies with bigger PDU size in connection setup.
             AssertPduSizeForRead(dataItems);
+
+            var stream = GetStreamIfAvailable();
 
             try
             {

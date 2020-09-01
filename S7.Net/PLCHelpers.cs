@@ -82,7 +82,7 @@ namespace S7.Net
         /// <param name="varCount"></param>
         /// <param name="bitAdr"></param>
         /// <returns></returns>
-        private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
+        private object? ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
         {
             if (bytes == null || bytes.Length == 0)
                 return null;

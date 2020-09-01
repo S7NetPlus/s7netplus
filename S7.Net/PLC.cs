@@ -15,8 +15,8 @@ namespace S7.Net
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
         
         //TCP connection to device
-        private TcpClient tcpClient;
-        private NetworkStream stream;
+        private TcpClient? tcpClient;
+        private NetworkStream? _stream;
 
         private int readTimeout = System.Threading.Timeout.Infinite;
         private int writeTimeout = System.Threading.Timeout.Infinite;
@@ -24,27 +24,27 @@ namespace S7.Net
         /// <summary>
         /// IP address of the PLC
         /// </summary>
-        public string IP { get; private set; }
+        public string IP { get; }
 
         /// <summary>
         /// PORT Number of the PLC, default is 102
         /// </summary>
-        public int Port { get; private set; }
+        public int Port { get; }
 
         /// <summary>
         /// CPU type of the PLC
         /// </summary>
-        public CpuType CPU { get; private set; }
+        public CpuType CPU { get; }
 
         /// <summary>
         /// Rack of the PLC
         /// </summary>
-        public Int16 Rack { get; private set; }
+        public Int16 Rack { get; }
 
         /// <summary>
         /// Slot of the CPU of the PLC
         /// </summary>
-        public Int16 Slot { get; private set; }
+        public Int16 Slot { get; }
 
         /// <summary>
         /// Max PDU size this cpu supports

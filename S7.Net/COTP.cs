@@ -54,8 +54,11 @@ namespace S7.Net
             public static TPDU Read(Stream stream)
             {
                 var tpkt = TPKT.Read(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
+                if (tpkt.Length == 0)
+                {
+                    throw new TPDUInvalidException("No protocol data received");
+                }
+                return new TPDU(tpkt);
             }
 
             /// <summary>
@@ -67,8 +70,11 @@ namespace S7.Net
             public static async Task<TPDU> ReadAsync(Stream stream)
             {
                 var tpkt = await TPKT.ReadAsync(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
+                if (tpkt.Length == 0)
+                {
+                    throw new TPDUInvalidException("No protocol data received");
+                }
+                return new TPDU(tpkt);
             }
 
             public override string ToString()
@@ -98,7 +104,6 @@ namespace S7.Net
             public static byte[] Read(Stream stream)
             {
                 var segment = TPDU.Read(stream);
-                if (segment == null) return null;
 
                 var buffer = new byte[segment.Data.Length];
                 var output = new MemoryStream(buffer);
@@ -125,7 +130,6 @@ namespace S7.Net
             public static async Task<byte[]> ReadAsync(Stream stream)
             {                
                 var segment = await TPDU.ReadAsync(stream);
-                if (segment == null) return null;
 
                 var buffer = new byte[segment.Data.Length];
                 var output = new MemoryStream(buffer);

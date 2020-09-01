@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using S7.Net.Protocol;
+using System.IO;
 
 namespace S7.Net
 {
@@ -20,9 +21,14 @@ namespace S7.Net
         public async Task OpenAsync()
         {
             await ConnectAsync();
+            var stream = GetStreamIfAvailable();
 
             await stream.WriteAsync(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
             var response = await COTP.TPDU.ReadAsync(stream);
+            if (response == null)
+            {
+                throw new Exception("Error reading Connection Confirm. Malformed TPDU packet");
+            }
             if (response.PDUType != 0xd0) //Connect Confirm
             {
                 throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
@@ -46,8 +52,9 @@ namespace S7.Net
             tcpClient = new TcpClient();
             ConfigureConnection();
             await tcpClient.ConnectAsync(IP, Port);
-            stream = tcpClient.GetStream();
+            _stream = tcpClient.GetStream();
         }
+
 
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
@@ -87,7 +94,7 @@ namespace S7.Net
         /// <param name="varType">Type of the variable/s that you are reading</param>
         /// <param name="bitAdr">Address of bit. If you want to read DB1.DBX200.6, set 6 to this parameter.</param>
         /// <param name="varCount"></param>
-        public async Task<object> ReadAsync(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
+        public async Task<object?> ReadAsync(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
             byte[] bytes = await ReadBytesAsync(dataType, db, startByteAdr, cntBytes);
@@ -100,7 +107,7 @@ namespace S7.Net
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
-        public async Task<object> ReadAsync(string variable)
+        public async Task<object?> ReadAsync(string variable)
         {
             var adr = new PLCAddress(variable);
             return await ReadAsync(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber);
@@ -113,7 +120,7 @@ namespace S7.Net
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>Returns a struct that must be cast.</returns>
-        public async Task<object> ReadStructAsync(Type structType, int db, int startByteAdr = 0)
+        public async Task<object?> ReadStructAsync(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
@@ -168,7 +175,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public async Task<T> ReadClassAsync<T>(int db, int startByteAdr = 0) where T : class
+        public async Task<T?> ReadClassAsync<T>(int db, int startByteAdr = 0) where T : class
         {
             return await ReadClassAsync(() => Activator.CreateInstance<T>(), db, startByteAdr);
         }
@@ -182,7 +189,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public async Task<T> ReadClassAsync<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
+        public async Task<T?> ReadClassAsync<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
         {
             var instance = classFactory();
             var res = await ReadClassAsync(instance, db, startByteAdr);
@@ -208,7 +215,9 @@ namespace S7.Net
             //Snap7 seems to choke on PDU sizes above 256 even if snap7 
             //replies with bigger PDU size in connection setup.
             AssertPduSizeForRead(dataItems);
-            
+
+            var stream = GetStreamIfAvailable();
+
             try
             {
                 // first create the header
@@ -376,6 +385,8 @@ namespace S7.Net
 
         private async Task<byte[]> ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, int count)
         {
+            var stream = GetStreamIfAvailable();
+
             byte[] bytes = new byte[count];
 
             // first create the header
@@ -406,6 +417,8 @@ namespace S7.Net
         {
             AssertPduSizeForWrite(dataItems);
 
+            var stream = GetStreamIfAvailable();
+
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
             await stream.WriteAsync(message.Array, 0, length).ConfigureAwait(false);
@@ -424,6 +437,8 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous write operation.</returns>
         private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value)
         {
+            var stream = GetStreamIfAvailable();
+
             byte[] bReceive = new byte[513];
             int varCount = 0;
 
@@ -469,6 +484,8 @@ namespace S7.Net
 
         private async Task WriteBitWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
+            var stream = GetStreamIfAvailable();
+
             byte[] bReceive = new byte[513];
             int varCount = 0;
 
@@ -509,6 +526,15 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.WriteData, exc);
             }
+        }
+
+        private Stream GetStreamIfAvailable()
+        {
+            if (_stream == null)
+            {
+                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
+            }
+            return _stream;
         }
     }
 }
