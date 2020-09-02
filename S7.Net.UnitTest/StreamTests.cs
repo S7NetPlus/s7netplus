@@ -34,6 +34,10 @@ namespace S7.Net.UnitTest
         int _position = 0;
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (_position >= Data.Length)
+            {
+                return 0;
+            }
             buffer[offset] = Data[_position];
             ++_position;
             return 1;
@@ -80,6 +84,14 @@ namespace S7.Net.UnitTest
             var t = TPKT.Read(m);
             Assert.AreEqual(fullMessage.Length, t.Length);
             Assert.AreEqual(fullMessage.Last(), t.Data.Last());
+        }
+
+        [TestMethod]
+        public void TPKT_ReadStreamTooShort()
+        {
+            var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400");
+            var m = new TestStream1BytePerRead(fullMessage);
+            Assert.ThrowsException<TPKTInvalidException>(() => TPKT.Read(m));
         }
     }
 }

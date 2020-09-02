@@ -33,7 +33,7 @@ namespace S7.Net
         {
             var buf = new byte[4];
             int len = stream.ReadExact(buf, 0, 4);
-            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
+            if (len < 4) throw new TPKTInvalidException($"TPKT header is incomplete / invalid. Received Bytes: {len} expected: {buf.Length}");
             var version = buf[0];
             var reserved1 = buf[1];
             var length = buf[2] * 256 + buf[3]; //BigEndian
@@ -41,7 +41,7 @@ namespace S7.Net
             var data = new byte[length - 4];
             len = stream.ReadExact(data, 0, data.Length);
             if (len < data.Length)
-                throw new TPKTInvalidException("TPKT is incomplete / invalid");
+                throw new TPKTInvalidException($"TPKT payload is incomplete / invalid. Received Bytes: {len} expected: {data.Length}");
 
             return new TPKT
             (
