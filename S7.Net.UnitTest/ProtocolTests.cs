@@ -34,13 +34,14 @@ namespace S7.Net.UnitTest
             var t = TPKT.Read(m);
         }
 
+
         [TestMethod]
         [ExpectedException(typeof(TPKTInvalidException))]
         public async Task TPKT_ReadShortAsync()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff040080"));
             var t = await TPKT.ReadAsync(m);
-         }
+        }
 
         [TestMethod]
         public void COTP_ReadTSDU()
@@ -54,7 +55,7 @@ namespace S7.Net.UnitTest
             Assert.IsTrue(expected.SequenceEqual(t));
         }
 
-        private static byte[] StringToByteArray(string hex)
+        public static byte[] StringToByteArray(string hex)
         {
             return Enumerable.Range(0, hex.Length)
                              .Where(x => x % 2 == 0)
@@ -62,4 +63,5 @@ namespace S7.Net.UnitTest
                              .ToArray();
         }
     }
+
 }
