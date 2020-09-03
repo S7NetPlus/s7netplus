@@ -743,6 +743,26 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
         }
 
+        /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public void T33_WriteLargeByteArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            plc.WriteBytes(DataType.DataBlock, db, 0, data);
+
+            var readData = plc.ReadBytes(DataType.DataBlock, db, 0, data.Length);
+
+            CollectionAssert.AreEqual(data, readData);
+        }
+
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
