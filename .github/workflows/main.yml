@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request
+  push
+
+env:
+  solution: S7.sln
+  
+jobs:
+
+  CI:
+    name: CI-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      configuration: Release
+      artifacts: ${{ github.workspace }}/artifacts
+    strategy:
+      matrix:
+        os: [windows-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.2
+        with:
+            versionSpec: '5.2.x'
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+
+      - name: Build
+        run: dotnet build --nologo --verbosity m /p:AssemblyVersion="${{ steps.gitversion.outputs.assemblySemVer }}" /p:FileVersion="${{ steps.gitversion.outputs.majorMinorPatch }}" /p:InformationalVersion="${{ steps.gitversion.outputs.informationalVersion }}" /p:Configuration="${{ env.configuration }}" "${{ env.solution }}"
+
+      - name: Test
+        run: dotnet pack "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
+
+      - name: Pack
+        run: dotnet test "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: NugetPackage
+          path: ${{ env.artifacts }}/**
