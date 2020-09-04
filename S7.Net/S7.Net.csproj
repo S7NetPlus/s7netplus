@@ -18,7 +18,6 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>Enable</Nullable>
     <DebugType>portable</DebugType>
-    <EmbedAllSources>true</EmbedAllSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
