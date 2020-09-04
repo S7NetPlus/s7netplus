@@ -111,9 +111,14 @@ namespace S7.Net
                         return DInt.ToArray(bytes);
                 case VarType.Real:
                     if (varCount == 1)
-                        return Types.Single.FromByteArray(bytes);
+                        return Types.Real.FromByteArray(bytes);
                     else
-                        return Types.Single.ToArray(bytes);
+                        return Types.Real.ToArray(bytes);
+                case VarType.LReal:
+                    if (varCount == 1)
+                        return Types.LReal.FromByteArray(bytes);
+                    else
+                        return Types.LReal.ToArray(bytes);
 
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
@@ -192,6 +197,7 @@ namespace S7.Net
                 case VarType.DInt:
                 case VarType.Real:
                     return varCount * 4;
+                case VarType.LReal:
                 case VarType.DateTime:
                     return varCount * 8;
                 case VarType.DateTimeLong:

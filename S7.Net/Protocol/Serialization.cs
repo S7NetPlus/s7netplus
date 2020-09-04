@@ -37,10 +37,10 @@ namespace S7.Net.Protocol
                     return Types.DInt.ToByteArray((Int32)value);
                 case "UInt32":
                     return Types.DWord.ToByteArray((UInt32)value);
-                case "Double":
-                    return Types.Double.ToByteArray((double)value);
                 case "Single":
-                    return Types.Single.ToByteArray((float)value);
+                    return Types.Real.ToByteArray((float)value);
+                case "Double":
+                    return Types.LReal.ToByteArray((double)value);
                 case "DateTime":
                     return Types.DateTime.ToByteArray((System.DateTime) value);
                 case "Byte[]":
@@ -53,10 +53,10 @@ namespace S7.Net.Protocol
                     return Types.DInt.ToByteArray((Int32[])value);
                 case "UInt32[]":
                     return Types.DWord.ToByteArray((UInt32[])value);
-                case "Double[]":
-                    return Types.Double.ToByteArray((double[])value);
                 case "Single[]":
-                    return Types.Single.ToByteArray((float[])value);
+                    return Types.Real.ToByteArray((float[])value);
+                case "Double[]":
+                    return Types.LReal.ToByteArray((double[])value);
                 case "String":
                     // Hack: This is backwards compatible with the old code, but functionally it's broken
                     // if the consumer does not pay attention to string length.
