@@ -500,13 +500,11 @@ namespace S7.Net
         /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
         /// Values are stored in the property "Value" of the dataItem and are already converted.
         /// If you don't want the conversion, just create a dataItem of bytes. 
-        /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+        /// The number of DataItems as well as the total size of the requested data can not exceed a certain limit (protocol restriction).
         /// </summary>
-        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
-            //Snap7 seems to choke on PDU sizes above 256 even if snap7 
-            //replies with bigger PDU size in connection setup.
             AssertPduSizeForRead(dataItems);
 
             var stream = GetStreamIfAvailable();
