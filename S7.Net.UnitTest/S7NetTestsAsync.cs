@@ -876,17 +876,6 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.CustomTypes[1].Bools[1], tc2.CustomTypes[1].Bools[1]);
         }
 
-        //[TestMethod]
-        //public async Task Test_Async_ReadWriteDouble()
-        //{
-        //    double test_value = 55.66;
-        //    await plc.WriteAsync("DB1.DBD0", test_value);
-        //    var helper = await plc.ReadAsync("DB1.DBD0");
-        //    double test_value2 = Conversion.ConvertToDouble((uint)helper);
-
-        //    Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
-        //}
-
         [TestMethod]
         public async Task Test_Async_ReadWriteSingle()
         {

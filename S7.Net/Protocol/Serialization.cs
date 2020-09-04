@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using S7.Net.Types;
 
 namespace S7.Net.Protocol
