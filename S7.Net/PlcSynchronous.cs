@@ -1,9 +1,11 @@
 ﻿using S7.Net.Types;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using S7.Net.Protocol;
+using S7.Net.Helper;
 
 //Implement synchronous methods here
 namespace S7.Net
@@ -19,6 +21,7 @@ namespace S7.Net
 
             try
             {
+                var stream = GetStreamIfAvailable();
                 stream.Write(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
                 var response = COTP.TPDU.Read(stream);
                 if (response.PDUType != 0xd0) //Connect Confirm
@@ -31,10 +34,15 @@ namespace S7.Net
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null)
                     throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
+                if (s7data.Length < 2)
+                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
                 //Check for S7 Ack Data
                 if (s7data[1] != 0x03)
                     throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
+
+                if (s7data.Length < 20)
+                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
                 MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
             }
@@ -52,7 +60,7 @@ namespace S7.Net
                 tcpClient = new TcpClient();
                 ConfigureConnection();
                 tcpClient.Connect(IP, Port);
-                stream = tcpClient.GetStream();
+                _stream = tcpClient.GetStream();
             }
             catch (SocketException sex)
             {
@@ -79,20 +87,17 @@ namespace S7.Net
         /// <returns>Returns the bytes in an array</returns>
         public byte[] ReadBytes(DataType dataType, int db, int startByteAdr, int count)
         {
-            List<byte> resultBytes = new List<byte>();
-            int index = startByteAdr;
+            var result = new byte[count];
+            int index = 0;
             while (count > 0)
             {
                 //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
-                var maxToRead = (int)Math.Min(count, MaxPDUSize - 18);
-                byte[] bytes = ReadBytesWithSingleRequest(dataType, db, index, maxToRead);
-                if (bytes == null)
-                    return resultBytes.ToArray();
-                resultBytes.AddRange(bytes);
+                var maxToRead = Math.Min(count, MaxPDUSize - 18);
+                ReadBytesWithSingleRequest(dataType, db, startByteAdr + index, result, index, maxToRead);
                 count -= maxToRead;
                 index += maxToRead;
             }
-            return resultBytes.ToArray();
+            return result;
         }
 
         /// <summary>
@@ -106,7 +111,7 @@ namespace S7.Net
         /// <param name="varType">Type of the variable/s that you are reading</param>
         /// <param name="bitAdr">Address of bit. If you want to read DB1.DBX200.6, set 6 to this parameter.</param>
         /// <param name="varCount"></param>
-        public object Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
+        public object? Read(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
             byte[] bytes = ReadBytes(dataType, db, startByteAdr, cntBytes);
@@ -119,8 +124,8 @@ namespace S7.Net
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
-        /// <returns>Returns an object that contains the value. This object must be cast accordingly.</returns>
-        public object Read(string variable)
+        /// <returns>Returns an object that contains the value. This object must be cast accordingly. If no data has been read, null will be returned</returns>
+        public object? Read(string variable)
         {
             var adr = new PLCAddress(variable);
             return Read(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber);
@@ -132,8 +137,8 @@ namespace S7.Net
         /// <param name="structType">Type of the struct to be readed (es.: TypeOf(MyStruct)).</param>
         /// <param name="db">Address of the DB.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <returns>Returns a struct that must be cast.</returns>
-        public object ReadStruct(Type structType, int db, int startByteAdr = 0)
+        /// <returns>Returns a struct that must be cast. If no data has been read, null will be returned</returns>
+        public object? ReadStruct(Type structType, int db, int startByteAdr = 0)
         {
             int numBytes = Struct.GetStructSize(structType);
             // now read the package
@@ -188,7 +193,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public T ReadClass<T>(int db, int startByteAdr = 0) where T : class
+        public T? ReadClass<T>(int db, int startByteAdr = 0) where T : class
         {
             return ReadClass(() => Activator.CreateInstance<T>(), db, startByteAdr);
         }
@@ -202,7 +207,7 @@ namespace S7.Net
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
-        public T ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
+        public T? ReadClass<T>(Func<T> classFactory, int db, int startByteAdr = 0) where T : class
         {
             var instance = classFactory();
             int readBytes = ReadClass(instance, db, startByteAdr);
@@ -231,7 +236,7 @@ namespace S7.Net
                 //Snap7 seems to choke on PDU sizes above 256 even if snap7 
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
-                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Skip(localIndex).Take(maxToWrite).ToArray());
+                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
@@ -338,27 +343,25 @@ namespace S7.Net
             WriteClassAsync(classValue, db, startByteAdr).GetAwaiter().GetResult();
         }
 
-        private byte[] ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, int count)
+        private void ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count)
         {
-            byte[] bytes = new byte[count];
+            var stream = GetStreamIfAvailable();
             try
             {
                 // first create the header
-                int packageSize = 31;
-                ByteArray package = new ByteArray(packageSize);
-                package.Add(ReadHeaderPackage());
+                int packageSize = 19 + 12; // 19 header + 12 for 1 request
+                var package = new System.IO.MemoryStream(packageSize);
+                BuildHeaderPackage(package);
                 // package.Add(0x02);  // datenart
-                package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
+                BuildReadDataRequestPackage(package, dataType, db, startByteAdr, count);
 
-                stream.Write(package.Array, 0, package.Array.Length);
+                var dataToSend = package.ToArray();
+                stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
                 AssertReadResponse(s7data, count);
 
-                for (int cnt = 0; cnt < count; cnt++)
-                    bytes[cnt] = s7data[cnt + 18];
-
-                return bytes;
+                Array.Copy(s7data, 18, buffer, offset, count);
             }
             catch (Exception exc)
             {
@@ -375,6 +378,8 @@ namespace S7.Net
         {
             AssertPduSizeForWrite(dataItems);
 
+            var stream = GetStreamIfAvailable();
+
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
             stream.Write(message.Array, 0, length);
@@ -383,37 +388,14 @@ namespace S7.Net
             S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
-        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value)
+        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
         {
-            int varCount = 0;
             try
             {
-                varCount = value.Length;
-                // first create the header
-                int packageSize = 35 + value.Length;
-                ByteArray package = new ByteArray(packageSize);
+                var stream = GetStreamIfAvailable();
+                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
 
-                package.Add(new byte[] { 3, 0 });
-                //complete package size
-                package.Add(Int.ToByteArray((short)packageSize));
-                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
-                package.Add(Word.ToByteArray((ushort)(varCount - 1)));
-                package.Add(new byte[] { 0, 0x0e });
-                package.Add(Word.ToByteArray((ushort)(varCount + 4)));
-                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
-                package.Add(Word.ToByteArray((ushort)varCount));
-                package.Add(Word.ToByteArray((ushort)(db)));
-                package.Add((byte)dataType);
-                var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                package.Add(Word.ToByteArray((ushort)(startByteAdr * 8)));
-                package.Add(new byte[] { 0, 4 });
-                package.Add(Word.ToByteArray((ushort)(varCount * 8)));
-
-                // now join the header and the data
-                package.Add(value);
-
-                stream.Write(package.Array, 0, package.Array.Length);
+                stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null || s7data[14] != 0xff)
@@ -427,42 +409,85 @@ namespace S7.Net
             }
         }
 
+        private byte[] BuildWriteBytesPackage(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
+        {
+            int varCount = count;
+            // first create the header
+            int packageSize = 35 + varCount;
+            var package = new MemoryStream(new byte[packageSize]);
+
+            package.WriteByte(3);
+            package.WriteByte(0);
+            //complete package size
+            package.WriteByteArray(Int.ToByteArray((short)packageSize));
+            package.WriteByteArray(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount - 1)));
+            package.WriteByteArray(new byte[] { 0, 0x0e });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount + 4)));
+            package.WriteByteArray(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+            package.WriteByteArray(Word.ToByteArray((ushort)varCount));
+            package.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            package.WriteByte((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.WriteByte((byte)overflow);
+            package.WriteByteArray(Word.ToByteArray((ushort)(startByteAdr * 8)));
+            package.WriteByteArray(new byte[] { 0, 4 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount * 8)));
+
+            // now join the header and the data
+            package.Write(value, dataOffset, count);
+
+            return package.ToArray();
+        }
+
+        private byte[] BuildWriteBitPackage(DataType dataType, int db, int startByteAdr, bool bitValue, int bitAdr)
+        {
+            var stream = GetStreamIfAvailable();
+            var value = new[] { bitValue ? (byte)1 : (byte)0 };
+            int varCount = 1;
+            // first create the header
+            int packageSize = 35 + varCount;
+            var package = new MemoryStream(new byte[packageSize]);
+
+            package.WriteByte(3);
+            package.WriteByte(0);
+            //complete package size
+            package.WriteByteArray(Int.ToByteArray((short)packageSize));
+            package.WriteByteArray(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount - 1)));
+            package.WriteByteArray(new byte[] { 0, 0x0e });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount + 4)));
+            package.WriteByteArray(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x01 }); //ending 0x01 is used for writing a sinlge bit
+            package.WriteByteArray(Word.ToByteArray((ushort)varCount));
+            package.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            package.WriteByte((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.WriteByte((byte)overflow);
+            package.WriteByteArray(Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
+            package.WriteByteArray(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount)));
+
+            // now join the header and the data
+            package.WriteByteArray(value);
+
+            return package.ToArray();
+        }
+
+
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
-            int varCount = 0;
-
+            var stream = GetStreamIfAvailable();
             try
             {
-                var value = new[] {bitValue ? (byte) 1 : (byte) 0};
-                varCount = value.Length;
-                // first create the header
-                int packageSize = 35 + value.Length;
-                ByteArray package = new ByteArray(packageSize);
+                var dataToSend = BuildWriteBitPackage(dataType, db, startByteAdr, bitValue, bitAdr);
 
-                package.Add(new byte[] { 3, 0, 0 });
-                package.Add((byte)packageSize);
-                package.Add(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
-                package.Add(Word.ToByteArray((ushort)(varCount - 1)));
-                package.Add(new byte[] { 0, 0x0e });
-                package.Add(Word.ToByteArray((ushort)(varCount + 4)));
-                package.Add(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x01 }); //ending 0x01 is used for writing a sinlge bit
-                package.Add(Word.ToByteArray((ushort)varCount));
-                package.Add(Word.ToByteArray((ushort)(db)));
-                package.Add((byte)dataType);
-                int overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-                package.Add((byte)overflow);
-                package.Add(Word.ToByteArray((ushort)(startByteAdr * 8 + bitAdr)));
-                package.Add(new byte[] { 0, 0x03 }); //ending 0x03 is used for writing a sinlge bit
-                package.Add(Word.ToByteArray((ushort)(varCount)));
-
-                // now join the header and the data
-                package.Add(value);
-
-                stream.Write(package.Array, 0, package.Array.Length);
+                stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
                 if (s7data == null || s7data[14] != 0xff)
+                {
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
+                }
             }
             catch (Exception exc)
             {
@@ -484,19 +509,22 @@ namespace S7.Net
             //replies with bigger PDU size in connection setup.
             AssertPduSizeForRead(dataItems);
 
+            var stream = GetStreamIfAvailable();
+
             try
             {
                 // first create the header
                 int packageSize = 19 + (dataItems.Count * 12);
-                ByteArray package = new ByteArray(packageSize);
-                package.Add(ReadHeaderPackage(dataItems.Count));
+                var package = new System.IO.MemoryStream(packageSize);
+                BuildHeaderPackage(package, dataItems.Count);
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
                 {
-                    package.Add(CreateReadDataRequestPackage(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count)));
+                    BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count));
                 }
 
-                stream.Write(package.Array, 0, package.Array.Length);
+                var dataToSend = package.ToArray();
+                stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream); //TODO use Async
                 if (s7data == null || s7data[14] != 0xff)

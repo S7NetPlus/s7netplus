@@ -89,4 +89,25 @@ namespace S7.Net
         }
         #endif
     }
+
+    internal class TPDUInvalidException : Exception
+    {
+        public TPDUInvalidException() : base()
+        {
+        }
+
+        public TPDUInvalidException(string message) : base(message)
+        {
+        }
+
+        public TPDUInvalidException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+#if NET_FULL
+        protected TPDUInvalidException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+#endif
+    }
 }

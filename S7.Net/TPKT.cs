@@ -10,10 +10,19 @@ namespace S7.Net
     /// </summary>
     internal class TPKT
     {
+
+
         public byte Version;
         public byte Reserved1;
         public int Length;
         public byte[] Data;
+        private TPKT(byte version, byte reserved1, int length, byte[] data)
+        {
+            Version = version;
+            Reserved1 = reserved1;
+            Length = length;
+            Data = data;
+        }
 
         /// <summary>
         /// Reads a TPKT from the socket
@@ -23,22 +32,24 @@ namespace S7.Net
         public static TPKT Read(Stream stream)
         {
             var buf = new byte[4];
-            int len = stream.Read(buf, 0, 4);
-            if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
-            var pkt = new TPKT
-            {
-                Version = buf[0],
-                Reserved1 = buf[1],
-                Length = buf[2] * 256 + buf[3] //BigEndian
-            };
-            if (pkt.Length > 0)
-            {
-                pkt.Data = new byte[pkt.Length - 4];
-                len = stream.Read(pkt.Data, 0, pkt.Length - 4);
-                if (len < pkt.Length - 4)
-                    throw new TPKTInvalidException("TPKT is incomplete / invalid");
-            }
-            return pkt;
+            int len = stream.ReadExact(buf, 0, 4);
+            if (len < 4) throw new TPKTInvalidException($"TPKT header is incomplete / invalid. Received Bytes: {len} expected: {buf.Length}");
+            var version = buf[0];
+            var reserved1 = buf[1];
+            var length = buf[2] * 256 + buf[3]; //BigEndian
+
+            var data = new byte[length - 4];
+            len = stream.ReadExact(data, 0, data.Length);
+            if (len < data.Length)
+                throw new TPKTInvalidException($"TPKT payload is incomplete / invalid. Received Bytes: {len} expected: {data.Length}");
+
+            return new TPKT
+            (
+                version: version,
+                reserved1: reserved1,
+                length: length,
+                data: data
+            );
         }
 
         /// <summary>
@@ -49,21 +60,25 @@ namespace S7.Net
         public static async Task<TPKT> ReadAsync(Stream stream)
         {
             var buf = new byte[4];
-            int len = await stream.ReadAsync(buf, 0, 4);
+            int len = await stream.ReadExactAsync(buf, 0, 4);
             if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
-            var pkt = new TPKT
-            {
-                Version = buf[0],
-                Reserved1 = buf[1],
-                Length = buf[2] * 256 + buf[3] //BigEndian
-            };
-            if (pkt.Length > 0)
-            {
-                pkt.Data = new byte[pkt.Length - 4];
-                len = await stream.ReadAsync(pkt.Data, 0, pkt.Length - 4);
-                if (len < pkt.Length - 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
-            }
-            return pkt;
+
+            var version = buf[0];
+            var reserved1 = buf[1];
+            var length = buf[2] * 256 + buf[3]; //BigEndian
+
+            var data = new byte[length - 4];
+            len = await stream.ReadExactAsync(data, 0, data.Length);
+            if (len < data.Length)
+                throw new TPKTInvalidException("TPKT payload incomplete / invalid");
+
+            return new TPKT
+            (
+                version: version,
+                reserved1: reserved1,
+                length: length,
+                data: data
+            );
         }
 
         public override string ToString()

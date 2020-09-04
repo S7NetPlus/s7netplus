@@ -129,6 +129,26 @@ namespace S7.Net.UnitTest
         }
 
         /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data);
+
+            var readData = await plc.ReadBytesAsync(DataType.DataBlock, db, 0, data.Length);
+
+            CollectionAssert.AreEqual(data, readData);
+        }
+
+        /// <summary>
         /// Read/Write a class that has the same properties of a DB with the same field in the same order
         /// </summary>
         [TestMethod]
@@ -591,15 +611,13 @@ namespace S7.Net.UnitTest
 
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadBytesReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
                 TestClass tc = new TestClass();
-                var res = await notConnectedPlc.ReadClassAsync(tc, DB2);
-                Assert.Fail();
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync(tc, DB2));
             }
         }
 
@@ -637,13 +655,12 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-                TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync<TestClass>(DB2));
             }
         }
 
@@ -678,13 +695,12 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericAndClassFactoryThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2));
             }
         }
 
@@ -711,13 +727,12 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2));
             }
         }
 
@@ -754,13 +769,12 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructWithGenericThrowsExceptionIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadStructAsync<TestStruct>(DB2));
             }
         }
 

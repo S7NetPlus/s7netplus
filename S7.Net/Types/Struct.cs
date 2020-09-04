@@ -70,7 +70,7 @@ namespace S7.Net.Types
         /// <param name="structType">The struct type</param>
         /// <param name="bytes">The array of bytes</param>
         /// <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
-        public static object FromBytes(Type structType, byte[] bytes)
+        public static object? FromBytes(Type structType, byte[] bytes)
         {
             if (bytes == null)
                 return null;
@@ -198,7 +198,7 @@ namespace S7.Net.Types
 
             int size = Struct.GetStructSize(type);
             byte[] bytes = new byte[size];
-            byte[] bytes2 = null;
+            byte[]? bytes2 = null;
 
             int bytePos = 0;
             int bitPos = 0;

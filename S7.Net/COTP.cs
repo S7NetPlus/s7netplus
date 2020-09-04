@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace S7.Net
 {
@@ -27,17 +26,17 @@ namespace S7.Net
             {
                 TPkt = tPKT;
 
-                var br = new BinaryReader(new MemoryStream(tPKT.Data));
-                HeaderLength = br.ReadByte();
+                HeaderLength = tPKT.Data[0]; // Header length excluding this length byte
                 if (HeaderLength >= 2)
                 {
-                    PDUType = br.ReadByte();
+                    PDUType = tPKT.Data[1];
                     if (PDUType == 0xf0) //DT Data
                     {
-                        var flags = br.ReadByte();
+                        var flags = tPKT.Data[2];
                         TPDUNumber = flags & 0x7F;
                         LastDataUnit = (flags & 0x80) > 0;
-                        Data = br.ReadBytes(tPKT.Length - HeaderLength - 4); //4 = TPKT Size
+                        Data = new byte[tPKT.Data.Length - HeaderLength - 1]; // substract header length byte + header length.
+                        Array.Copy(tPKT.Data, HeaderLength + 1, Data, 0, Data.Length);
                         return;
                     }
                     //TODO: Handle other PDUTypes
@@ -54,8 +53,11 @@ namespace S7.Net
             public static TPDU Read(Stream stream)
             {
                 var tpkt = TPKT.Read(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
+                if (tpkt.Length == 0)
+                {
+                    throw new TPDUInvalidException("No protocol data received");
+                }
+                return new TPDU(tpkt);
             }
 
             /// <summary>
@@ -67,8 +69,11 @@ namespace S7.Net
             public static async Task<TPDU> ReadAsync(Stream stream)
             {
                 var tpkt = await TPKT.ReadAsync(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
+                if (tpkt.Length == 0)
+                {
+                    throw new TPDUInvalidException("No protocol data received");
+                }
+                return new TPDU(tpkt);
             }
 
             public override string ToString()
@@ -98,22 +103,25 @@ namespace S7.Net
             public static byte[] Read(Stream stream)
             {
                 var segment = TPDU.Read(stream);
-                if (segment == null) return null;
 
+                if (segment.LastDataUnit)
+                {
+                    return segment.Data;
+                }
+
+                // More segments are expected, prepare a buffer to store all data
                 var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
+                Array.Copy(segment.Data, buffer, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = TPDU.Read(stream);
+                    var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
+                    Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
                 }
 
-                return buffer.Take((int)output.Position).ToArray();
+                return buffer;
             }
 
             /// <summary>
@@ -125,21 +133,25 @@ namespace S7.Net
             public static async Task<byte[]> ReadAsync(Stream stream)
             {                
                 var segment = await TPDU.ReadAsync(stream);
-                if (segment == null) return null;
 
+                if (segment.LastDataUnit)
+                {
+                    return segment.Data;
+                }
+
+                // More segments are expected, prepare a buffer to store all data
                 var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
+                Array.Copy(segment.Data, buffer, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
                     segment = await TPDU.ReadAsync(stream);
+                    var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
+                    Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
                 }
-                return buffer.Take((int)output.Position).ToArray();
+
+                return buffer;
             }
         }
     }

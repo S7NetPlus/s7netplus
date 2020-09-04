@@ -1,4 +1,5 @@
-﻿using S7.Net.Types;
+﻿using S7.Net.Helper;
+using S7.Net.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,21 +14,18 @@ namespace S7.Net
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        private ByteArray ReadHeaderPackage(int amount = 1)
+        private void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
             //header size = 19 bytes
-            var package = new Types.ByteArray(19);
-            package.Add(new byte[] { 0x03, 0x00 });
+            stream.WriteByteArray(new byte[] { 0x03, 0x00 });
             //complete package size
-            package.Add(Types.Int.ToByteArray((short)(19 + (12 * amount))));
-            package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            stream.WriteByteArray(Types.Int.ToByteArray((short)(19 + (12 * amount))));
+            stream.WriteByteArray(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
-            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
-            package.Add(new byte[] { 0x00, 0x00, 0x04 });
+            stream.WriteByteArray(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
+            stream.WriteByteArray(new byte[] { 0x00, 0x00, 0x04 });
             //amount of requests
-            package.Add((byte)amount);
-
-            return package;
+            stream.WriteByte((byte)amount);
         }
 
         /// <summary>
@@ -39,39 +37,36 @@ namespace S7.Net
         /// <param name="startByteAdr">Start address of the byte</param>
         /// <param name="count">Number of bytes to be read</param>
         /// <returns></returns>
-        private ByteArray CreateReadDataRequestPackage(DataType dataType, int db, int startByteAdr, int count = 1)
+        private void BuildReadDataRequestPackage(System.IO.MemoryStream stream, DataType dataType, int db, int startByteAdr, int count = 1)
         {
             //single data req = 12
-            var package = new Types.ByteArray(12);
-            package.Add(new byte[] { 0x12, 0x0a, 0x10 });
+            stream.WriteByteArray(new byte[] { 0x12, 0x0a, 0x10 });
             switch (dataType)
             {
                 case DataType.Timer:
                 case DataType.Counter:
-                    package.Add((byte)dataType);
+                    stream.WriteByte((byte)dataType);
                     break;
                 default:
-                    package.Add(0x02);
+                    stream.WriteByte(0x02);
                     break;
             }
 
-            package.Add(Word.ToByteArray((ushort)(count)));
-            package.Add(Word.ToByteArray((ushort)(db)));
-            package.Add((byte)dataType);
+            stream.WriteByteArray(Word.ToByteArray((ushort)(count)));
+            stream.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            stream.WriteByte((byte)dataType);
             var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-            package.Add((byte)overflow);
+            stream.WriteByte((byte)overflow);
             switch (dataType)
             {
                 case DataType.Timer:
                 case DataType.Counter:
-                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)(startByteAdr)));
                     break;
                 default:
-                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
                     break;
             }
-
-            return package;
         }
 
         /// <summary>
@@ -82,7 +77,7 @@ namespace S7.Net
         /// <param name="varCount"></param>
         /// <param name="bitAdr"></param>
         /// <returns></returns>
-        private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
+        private object? ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
         {
             if (bytes == null || bytes.Length == 0)
                 return null;

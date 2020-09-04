@@ -91,7 +91,7 @@ namespace S7.Net.Protocol
 
             IList<byte> itemResults = new ArraySegment<byte>(message, 14, dataItems.Length);
 
-            List<Exception> errors = null;
+            List<Exception>? errors = null;
 
             for (int i = 0; i < dataItems.Length; i++)
             {

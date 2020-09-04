@@ -106,9 +106,9 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
+        private static object? GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
         {
-            object value = null;
+            object? value = null;
 
             switch (propertyType.Name)
             {
@@ -245,7 +245,7 @@ namespace S7.Net.Types
         {
             int bytePos = 0;
             int bitPos = 0;
-            byte[] bytes2 = null;
+            byte[]? bytes2 = null;
 
             switch (propertyValue.GetType().Name)
             {
