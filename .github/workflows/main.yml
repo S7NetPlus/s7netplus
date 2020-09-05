@@ -1,8 +1,7 @@
 name: CI
 
 on:
-  pull_request
-  push
+  [pull_request, push]
 
 env:
   solution: S7.sln
@@ -36,14 +35,17 @@ jobs:
         with:
           dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
 
+      - name: Restore
+        run: dotnet restore
+
       - name: Build
-        run: dotnet build --nologo --verbosity m /p:AssemblyVersion="${{ steps.gitversion.outputs.assemblySemVer }}" /p:FileVersion="${{ steps.gitversion.outputs.majorMinorPatch }}" /p:InformationalVersion="${{ steps.gitversion.outputs.informationalVersion }}" /p:Configuration="${{ env.configuration }}" "${{ env.solution }}"
+        run: dotnet build --nologo --no-restore --verbosity m /p:AssemblyVersion="${{ steps.gitversion.outputs.assemblySemVer }}" /p:FileVersion="${{ steps.gitversion.outputs.majorMinorPatch }}" /p:InformationalVersion="${{ steps.gitversion.outputs.informationalVersion }}" /p:Configuration="${{ env.configuration }}" "${{ env.solution }}"
 
       - name: Test
-        run: dotnet pack "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
+        run: dotnet test --no-restore --verbosity normal "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
 
       - name: Pack
-        run: dotnet test "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
+        run: dotnet pack "${{ env.solution }}" -c "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
