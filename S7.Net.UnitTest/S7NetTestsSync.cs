@@ -6,9 +6,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.UnitTest;
-using System.ServiceProcess;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
+#if NETFRAMEWORK
+using System.ServiceProcess;
+#endif
 
 #endregion
 
@@ -41,6 +43,7 @@ namespace S7.Net.UnitTest
         #region Constants
         const int DB2 = 2;
         const int DB4 = 4;
+        const short TestServerPort = 31122;
         #endregion
 
         #region Private fields
@@ -53,16 +56,24 @@ namespace S7.Net.UnitTest
         /// </summary>
         public S7NetTests()
         {
-            plc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
+            plc = CreatePlc();
             //ConsoleManager.Show();
             ShutDownServiceS7oiehsx64();
 
         }
 
+        private static Plc CreatePlc()
+        {
+            return new Plc(CpuType.S7300, "localhost", 0, 2)
+            {
+                Port = TestServerPort
+            };
+        }
+
         [TestInitialize]
         public void Setup()
         {
-            S7TestServer.Start();
+            S7TestServer.Start(TestServerPort);
             plc.Open();
         }
 
@@ -931,9 +942,9 @@ namespace S7.Net.UnitTest
         {
             plc.Close();
             S7TestServer.Stop();
-            S7TestServer.Start();
+            S7TestServer.Start(TestServerPort);
 
-            var reachablePlc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
+            var reachablePlc = CreatePlc();
             Assert.IsTrue(reachablePlc.IsAvailable);
         }
 
@@ -1028,6 +1039,7 @@ namespace S7.Net.UnitTest
         #region Private methods
         private static void ShutDownServiceS7oiehsx64()
         {
+#if NETFRAMEWORK
             ServiceController[] services = ServiceController.GetServices();
             var service = services.FirstOrDefault(s => s.ServiceName == "s7oiehsx64");
             if (service != null)
@@ -1037,6 +1049,7 @@ namespace S7.Net.UnitTest
                     service.Stop();
                 }
             }
+#endif
         }
 
         #region IDisposable Support

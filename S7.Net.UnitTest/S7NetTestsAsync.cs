@@ -6,10 +6,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.UnitTest;
-using System.ServiceProcess;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Threading.Tasks;
+#if NETFRAMEWORK
+using System.ServiceProcess;
+#endif
 using System.Threading;
 
 #endregion

@@ -18,8 +18,8 @@ namespace S7.Net
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
 
-        private int readTimeout = System.Threading.Timeout.Infinite;
-        private int writeTimeout = System.Threading.Timeout.Infinite;
+        private int readTimeout = 0; // default no timeout
+        private int writeTimeout = 0; // default no timeout
 
         /// <summary>
         /// IP address of the PLC
@@ -29,7 +29,7 @@ namespace S7.Net
         /// <summary>
         /// PORT Number of the PLC, default is 102
         /// </summary>
-        public int Port { get; }
+        public int Port { get; set; }
 
         /// <summary>
         /// CPU type of the PLC
