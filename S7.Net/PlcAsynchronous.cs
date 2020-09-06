@@ -268,6 +268,10 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.ReadData, socketException);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception exc)
             {
                 throw new PlcException(ErrorCode.ReadData, exc);
@@ -484,6 +488,10 @@ namespace S7.Net
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception exc)
             {
                 throw new PlcException(ErrorCode.WriteData, exc);
@@ -505,6 +513,10 @@ namespace S7.Net
                 {
                     throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception exc)
             {
