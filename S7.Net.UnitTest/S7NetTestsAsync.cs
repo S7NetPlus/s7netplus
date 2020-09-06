@@ -10,6 +10,7 @@ using System.ServiceProcess;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Threading.Tasks;
+using System.Threading;
 
 #endregion
 
@@ -907,6 +908,42 @@ namespace S7.Net.UnitTest
             {
                 Assert.AreEqual(x % 256, res[x], string.Format("Bit {0} failed", x));
             }
+        }
+
+        /// <summary>
+        /// Write a large amount of data and test cancellation
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArrayWithCancellation()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var cancellationSource = new CancellationTokenSource();
+            var cancellationToken = cancellationSource.Token;
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
+            try
+            {
+                await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
+            }
+            catch(TaskCanceledException)
+            {
+                // everything is good, that is the exception we expect
+                Console.WriteLine("Task was cancelled as expected.");
+                return;
+            }
+            catch(Exception e)
+            {
+                Assert.Fail($"Wrong exception type received. Expected {typeof(TaskCanceledException)}, received {e.GetType()}.");
+            }
+
+            // Depending on how tests run, this can also just succeed without getting cancelled at all. Do nothing in this case.
+            Console.WriteLine("Task was not cancelled as expected.");
         }
         #endregion
     }
