@@ -241,8 +241,8 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
             plc.WriteStruct(tc, DB2);
 
@@ -258,7 +258,7 @@ namespace S7.Net.UnitTest
 
 
             var dWordBytes = new byte[4];
-            Array.Copy(binaryData, 16, dWordBytes, 0, 4);
+            Array.Copy(binaryData, 20, dWordBytes, 0, 4);
             var dWordValue = Types.DWord.FromByteArray(dWordBytes);
             Assert.AreEqual(tc.DWordVariable, dWordValue);
         }
