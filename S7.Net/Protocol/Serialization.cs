@@ -75,9 +75,9 @@ namespace S7.Net.Protocol
         {
             var start = startByte * 8 + bitNumber;
             buffer[index + 2] = (byte)start;
-            start = start >> 8;
+            start >>= 8;
             buffer[index + 1] = (byte)start;
-            start = start >> 8;
+            start >>= 8;
             buffer[index] = (byte)start;
         }
 

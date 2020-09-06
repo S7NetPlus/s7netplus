@@ -289,9 +289,9 @@ namespace S7.Net
             if (bitAdr != -1)
             {
                 //Must be writing a bit value as bitAdr is specified
-                if (value is bool)
+                if (value is bool boolean)
                 {
-                    WriteBit(dataType, db, startByteAdr, bitAdr, (bool) value);
+                    WriteBit(dataType, db, startByteAdr, bitAdr, boolean);
                 }
                 else if (value is int intValue)
                 {
@@ -442,7 +442,6 @@ namespace S7.Net
 
         private byte[] BuildWriteBitPackage(DataType dataType, int db, int startByteAdr, bool bitValue, int bitAdr)
         {
-            var stream = GetStreamIfAvailable();
             var value = new[] { bitValue ? (byte)1 : (byte)0 };
             int varCount = 1;
             // first create the header
