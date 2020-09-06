@@ -24,7 +24,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts an array of T repesented as S7 binary data to an array of T
         /// </summary>
-        public static T[] ToArray<T>(byte[] bytes, Func<byte[], T> converter)
+        public static T[] ToArray<T>(byte[] bytes, Func<byte[], T> converter) where T : struct
         {
             var typeSize = Marshal.SizeOf(default(T));
             var entries = bytes.Length / typeSize;
