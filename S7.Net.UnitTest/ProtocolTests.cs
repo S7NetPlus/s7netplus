@@ -13,15 +13,17 @@ namespace S7.Net.UnitTest
     [TestClass]
     public class ProtocolUnitTest
     {
+        private TestContext TestContext { get; set; }
+
         [TestMethod]
-        public void TPKT_Read()
+        public async Task TPKT_Read()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd"));
             var t = TPKT.Read(m);
             Assert.AreEqual(0x03, t.Version);
             Assert.AreEqual(0x29, t.Length);
             m.Position = 0;
-            t = TPKT.ReadAsync(m).Result;
+            t = await TPKT.ReadAsync(m, TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(0x03, t.Version);
             Assert.AreEqual(0x29, t.Length);
         }
@@ -40,7 +42,7 @@ namespace S7.Net.UnitTest
         public async Task TPKT_ReadShortAsync()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff040080"));
-            var t = await TPKT.ReadAsync(m);
+            var t = await TPKT.ReadAsync(m, TestContext.CancellationTokenSource.Token);
         }
 
         [TestMethod]
@@ -51,7 +53,7 @@ namespace S7.Net.UnitTest
             var t = COTP.TSDU.Read(m);
             Assert.IsTrue(expected.SequenceEqual(t));
             m.Position = 0;
-            t = COTP.TSDU.ReadAsync(m).Result;
+            t = COTP.TSDU.ReadAsync(m, TestContext.CancellationTokenSource.Token).Result;
             Assert.IsTrue(expected.SequenceEqual(t));
         }
 

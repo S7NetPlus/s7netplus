@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace S7.Net
@@ -66,9 +67,9 @@ namespace S7.Net
             /// </summary>
             /// <param name="stream">The socket to read from</param>
             /// <returns>COTP DPDU instance</returns>
-            public static async Task<TPDU> ReadAsync(Stream stream)
+            public static async Task<TPDU> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
-                var tpkt = await TPKT.ReadAsync(stream);
+                var tpkt = await TPKT.ReadAsync(stream, cancellationToken);
                 if (tpkt.Length == 0)
                 {
                     throw new TPDUInvalidException("No protocol data received");
@@ -130,9 +131,9 @@ namespace S7.Net
             /// </summary>
             /// <param name="stream">The stream to read from</param>
             /// <returns>Data in TSDU</returns>
-            public static async Task<byte[]> ReadAsync(Stream stream)
+            public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {                
-                var segment = await TPDU.ReadAsync(stream);
+                var segment = await TPDU.ReadAsync(stream, cancellationToken);
 
                 if (segment.LastDataUnit)
                 {
@@ -145,7 +146,7 @@ namespace S7.Net
 
                 while (!segment.LastDataUnit)
                 {
-                    segment = await TPDU.ReadAsync(stream);
+                    segment = await TPDU.ReadAsync(stream, cancellationToken);
                     var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
                     Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
