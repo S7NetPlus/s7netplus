@@ -75,26 +75,6 @@ namespace S7.Net
                 if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
             }
         }
-        
-        /// <summary>
-        /// Returns true if a connection to the PLC can be established
-        /// </summary>
-        public bool IsAvailable
-        {
-            //TODO: Fix This
-            get
-            {
-                try
-                {
-                    OpenAsync().GetAwaiter().GetResult();
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
 
         /// <summary>
         /// Checks if the socket is connected and polls the other peer (the PLC) to see if it's connected.
