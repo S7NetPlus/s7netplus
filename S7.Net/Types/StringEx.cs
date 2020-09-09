@@ -17,10 +17,17 @@ namespace S7.Net.Types
         /// <returns></returns>
         public static string FromByteArray(byte[] bytes)
         {
-            if (bytes.Length < 2) return "";
+            if (bytes.Length < 2)
+            {
+                throw new PlcException(ErrorCode.ReadData, "Malformed S7 String / too short");
+            }
 
             int size = bytes[0];
             int length = bytes[1];
+            if (length > size)
+            {
+                throw new PlcException(ErrorCode.ReadData, "Malformed S7 String / length larger than capacity");
+            }
 
             try
             {
@@ -43,18 +50,21 @@ namespace S7.Net.Types
         /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="reservedLength"/> + 2.</returns>
         public static byte[] ToByteArray(string value, int reservedLength)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (reservedLength > byte.MaxValue) throw new ArgumentException($"The maximum string length supported is {byte.MaxValue}.");
 
-            var length = value?.Length;
-            if (length > reservedLength) length = reservedLength;
+            var bytes = Encoding.ASCII.GetBytes(value);
+            if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
 
-            var bytes = new byte[(length ?? 0) + 2];
-            bytes[0] = (byte) reservedLength;
-
-            if (value == null) return bytes;
-
-            bytes[1] = (byte) Encoding.ASCII.GetBytes(value, 0, length.Value, bytes, 2);
-            return bytes;
+            var buffer = new byte[2 + reservedLength];
+            Array.Copy(bytes, 0, buffer, 2, bytes.Length);
+            buffer[0] = (byte)reservedLength;
+            buffer[1] = (byte)bytes.Length;
+            return buffer;
         }
     }
 }
