@@ -91,7 +91,7 @@ namespace S7.Net
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
             byte[] bytes = await ReadBytesAsync(dataType, db, startByteAdr, cntBytes);
-            return ParseBytes(varType, bytes, varCount, bitAdr);
+            return ParseBytes(varType, bytes, varCount, bitAdr, CPU);
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace S7.Net
             package.Add(ReadHeaderPackage());
             // package.Add(0x02);  // datenart
             package.Add(CreateReadDataRequestPackage(dataType, db, startByteAdr, count));
-
+            
             await stream.WriteAsync(package.Array, 0, package.Array.Length);
 
             var s7data = await COTP.TSDU.ReadAsync(stream);

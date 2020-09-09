@@ -1,22 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace S7.Net.Types
 {
     /// <summary>
     /// Contains the methods to convert between <see cref="T:System.DateTime"/> and S7 representation of datetime values.
+    /// Supported variant in S71200 & S71500
     /// </summary>
-    public static class DateTime
+    public static class DateTimeLong
     {
         /// <summary>
         /// The minimum <see cref="T:System.DateTime"/> value supported by the specification.
         /// </summary>
-        public static readonly System.DateTime SpecMinimumDateTime = new System.DateTime(1990, 1, 1);
+        public static readonly System.DateTime SpecMinimumDateTime = new System.DateTime(1970, 1, 1);
 
         /// <summary>
         /// The maximum <see cref="T:System.DateTime"/> value supported by the specification.
+        /// Min max per: https://support.industry.siemens.com/cs/mdm/109773506?c=93833257483&lc=en-WW
+        /// Min .: DTL # 1970-01-01-00: 00: 00.0
+        /// Max.: DTL # 2262-04-11-23: 47: 16.854775807
         /// </summary>
-        public static readonly System.DateTime SpecMaximumDateTime = new System.DateTime(2089, 12, 31, 23, 59, 59, 999);
+        public static readonly System.DateTime SpecMaximumDateTime = new System.DateTime(2262, 04, 11, 23, 47, 15, 999);
 
         /// <summary>
         /// Parses a <see cref="T:System.DateTime"/> value from bytes.
@@ -41,36 +46,26 @@ namespace S7.Net.Types
         ///   <paramref name="bytes"/> is outside the valid range of values.</exception>
         public static System.DateTime[] ToArray(byte[] bytes)
         {
-            if (bytes.Length % 8 != 0)
+            if (bytes.Length % 12 != 0)
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
-                    $"Parsing an array of DateTime requires a multiple of 8 bytes of input data, input data is '{bytes.Length}' long.");
+                    $"Parsing an array of DateTime requires a multiple of 12 bytes of input data, input data is '{bytes.Length}' long.");
 
-            var cnt = bytes.Length / 8;
-            var result = new System.DateTime[bytes.Length / 8];
+            var cnt = bytes.Length / 12;
+            var result = new System.DateTime[bytes.Length / 12];
 
             for (var i = 0; i < cnt; i++)
-                result[i] = FromByteArrayImpl(new ArraySegment<byte>(bytes, i * 8, 8));
+                result[i] = FromByteArrayImpl(new ArraySegment<byte>(bytes, i * 12, 12));
 
             return result;
         }
 
         private static System.DateTime FromByteArrayImpl(IList<byte> bytes)
         {
-            if (bytes.Count != 8)
+            if (bytes.Count != 12)
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Count,
-                    $"Parsing a DateTime requires exactly 8 bytes of input data, input data is {bytes.Count} bytes long.");
+                    $"Parsing a DateTime requires exactly 12 bytes of input data, input data is {bytes.Count} bytes long.");
 
-            int DecodeBcd(byte input) => 10 * (input >> 4) + (input & 0b00001111);
-
-            int ByteToYear(byte bcdYear)
-            {
-                var input = DecodeBcd(bcdYear);
-                if (input < 90) return input + 2000;
-                if (input < 100) return input + 1900;
-
-                throw new ArgumentOutOfRangeException(nameof(bcdYear), bcdYear,
-                    $"Value '{input}' is higher than the maximum '99' of S7 date and time representation.");
-            }
+            byte[] byteArray = bytes.ToArray();
 
             int AssertRangeInclusive(int input, byte min, byte max, string field)
             {
@@ -83,18 +78,22 @@ namespace S7.Net.Types
 
                 return input;
             }
+            byte[] yrBytes = new byte[2];
+            Array.Copy(byteArray, 0, yrBytes, 0, 2);
 
-            var year = ByteToYear(bytes[0]);
-            var month = AssertRangeInclusive(DecodeBcd(bytes[1]), 1, 12, "month");
-            var day = AssertRangeInclusive(DecodeBcd(bytes[2]), 1, 31, "day of month");
-            var hour = AssertRangeInclusive(DecodeBcd(bytes[3]), 0, 23, "hour");
-            var minute = AssertRangeInclusive(DecodeBcd(bytes[4]), 0, 59, "minute");
-            var second = AssertRangeInclusive(DecodeBcd(bytes[5]), 0, 59, "second");
-            var hsec = AssertRangeInclusive(DecodeBcd(bytes[6]), 0, 99, "first two millisecond digits");
-            var msec = AssertRangeInclusive(bytes[7] >> 4, 0, 9, "third millisecond digit");
-            var dayOfWeek = AssertRangeInclusive(bytes[7] & 0b00001111, 1, 7, "day of week");
+            var year =  BitConverter.ToInt16(yrBytes.Reverse().ToArray(), 0);
+            var month = AssertRangeInclusive(Convert.ToInt16(bytes[2]), 1, 12, "month");
+            var day = AssertRangeInclusive(Convert.ToInt16(bytes[3]), 1, 31, "day of month");
+            var hour = AssertRangeInclusive(Convert.ToInt16(bytes[5]), 0, 23, "hour");
+            var minute = AssertRangeInclusive(Convert.ToInt16(bytes[6]), 0, 59, "minute");
+            var second = AssertRangeInclusive(Convert.ToInt16(bytes[7]), 0, 59, "second");
 
-            return new System.DateTime(year, month, day, hour, minute, second, hsec * 10 + msec);
+            // Parse the Milliseconds
+            byte[] msBytes = new byte[4];
+            Array.Copy(byteArray, 8, msBytes, 0, 4);
+            var msec = BitConverter.ToInt32(msBytes.Reverse().ToArray(), 0);
+
+            return new System.DateTime(year, month, day, hour, minute, second, msec, DateTimeKind.Utc);
         }
 
         /// <summary>
@@ -107,50 +106,52 @@ namespace S7.Net.Types
         ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>
         public static byte[] ToByteArray(System.DateTime dateTime)
         {
-            byte EncodeBcd(int value)
-            {
-                return (byte)((value / 10 << 4) | value % 10);
-            }
-
             if (dateTime < SpecMinimumDateTime)
                 throw new ArgumentOutOfRangeException(nameof(dateTime), dateTime,
                     $"Date time '{dateTime}' is before the minimum '{SpecMinimumDateTime}' supported in S7 date time representation.");
 
-            if (dateTime > SpecMaximumDateTime)
-                throw new ArgumentOutOfRangeException(nameof(dateTime), dateTime,
-                    $"Date time '{dateTime}' is after the maximum '{SpecMaximumDateTime}' supported in S7 date time representation.");
-
-            byte MapYear(int year) => (byte)(year < 2000 ? year - 1900 : year - 2000);
-
-            int DayOfWeekToInt(DayOfWeek dayOfWeek) => (int)dayOfWeek + 1;
-
-            return new[]
-            {
-                EncodeBcd(MapYear(dateTime.Year)),
-                EncodeBcd(dateTime.Month),
-                EncodeBcd(dateTime.Day),
-                EncodeBcd(dateTime.Hour),
-                EncodeBcd(dateTime.Minute),
-                EncodeBcd(dateTime.Second),
-                EncodeBcd(dateTime.Millisecond / 10),
-                (byte) (dateTime.Millisecond % 10 << 4 | DayOfWeekToInt(dateTime.DayOfWeek))
-            };
+            byte[] dtl = new byte[0];
+                
+            byte[] Year = Int.ToByteArray((short) dateTime.Year);
+            byte Month = Convert.ToByte(Int.CWord(dateTime.Month));
+            byte Day = Convert.ToByte(Int.CWord(dateTime.Day));
+            byte DoW = Convert.ToByte(Int.CWord((short)dateTime.DayOfWeek+1));
+            byte Hour = Convert.ToByte(Int.CWord(dateTime.Hour));
+            byte Minute = Convert.ToByte(Int.CWord(dateTime.Minute));
+            byte Second = Convert.ToByte(Int.CWord(dateTime.Second));
+            byte[] Milliseconds = DInt.ToByteArray(dateTime.Millisecond * 1000000);
+            byte[] ret = dtl.Concat(Year)
+                            .Concat(AsByteArray(Month))
+                            .Concat(AsByteArray(Day))
+                            .Concat(AsByteArray(DoW))
+                            .Concat(AsByteArray(Hour))
+                            .Concat(AsByteArray(Minute))
+                            .Concat(AsByteArray(Second))
+                            .Concat(Milliseconds).ToArray();
+            return ret;
         }
 
         /// <summary>
         /// Converts an array of <see cref="T:System.DateTime"/> values to a byte array.
         /// </summary>
         /// <param name="dateTimes">The DateTime values to convert.</param>
-        /// <returns>A byte array containing the S7 date time representations of <paramref name="dateTime"/>.</returns>
+        /// <returns>A byte array containing the S7 date time long (DTL) representations of <paramref name="dateTime"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when any value of
         ///   <paramref name="dateTimes"/> is before <see cref="P:SpecMinimumDateTime"/>
         ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>
         public static byte[] ToByteArray(System.DateTime[] dateTimes)
         {
-            var bytes = new List<byte>(dateTimes.Length * 8);
+            var bytes = new List<byte>(dateTimes.Length * 12);
             foreach (var dateTime in dateTimes) bytes.AddRange(ToByteArray(dateTime));
 
             return bytes.ToArray();
+        }
+
+        private static byte[] AsByteArray(byte b)
+        {
+            byte[] _ret = new byte[1];
+            _ret[0] = b;
+            return _ret;
         }
     }
 }

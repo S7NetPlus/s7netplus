@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DateTime = S7.Net.Types.DateTime;
 
 namespace S7.Net
 {
@@ -82,7 +81,7 @@ namespace S7.Net
         /// <param name="varCount"></param>
         /// <param name="bitAdr"></param>
         /// <returns></returns>
-        private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
+        private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0, CpuType cpu = CpuType.S71200)
         {
             if (bytes == null || bytes.Length == 0)
                 return null;
@@ -148,14 +147,37 @@ namespace S7.Net
                         return Bit.ToBitArray(bytes, varCount);
                     }
                 case VarType.DateTime:
-                    if (varCount == 1)
+                    
+                    switch (cpu)
                     {
-                        return DateTime.FromByteArray(bytes);
+                        // S71200/1500 use DTL format
+                        case CpuType.S71200:
+                        case CpuType.S71500:
+                            if (varCount == 1)
+                            {
+                                return DateTimeLong.FromByteArray(bytes);
+                            }
+                            else
+                            {
+                                return DateTimeLong.ToArray(bytes);
+                            }
+
+                        // S7200/300/400 use DT format
+                        case CpuType.S7200:
+                        case CpuType.Logo0BA8:
+                        case CpuType.S7300:
+                        case CpuType.S7400:
+                        default:
+                            if (varCount == 1)
+                            {
+                                return S7.Net.Types.DateTime.FromByteArray(bytes);
+                            }
+                            else
+                            {
+                                return S7.Net.Types.DateTime.ToArray(bytes);
+                            }
                     }
-                    else
-                    {
-                        return DateTime.ToArray(bytes);
-                    }
+
                 default:
                     return null;
             }
@@ -167,7 +189,7 @@ namespace S7.Net
         /// <param name="varType"></param>
         /// <param name="varCount"></param>
         /// <returns>Byte lenght of variable</returns>
-        private int VarTypeToByteLength(VarType varType, int varCount = 1)
+        private int VarTypeToByteLength(VarType varType, int varCount = 1, CpuType cpu = CpuType.S71200)
         {
             switch (varType)
             {
@@ -189,7 +211,19 @@ namespace S7.Net
                 case VarType.Real:
                     return varCount * 4;
                 case VarType.DateTime:
-                    return varCount * 8;
+                    switch (cpu)
+                    {
+                        case CpuType.S71200:
+                        case CpuType.S71500:
+                            return varCount * 12;
+                        case CpuType.S7200:
+                        case CpuType.Logo0BA8:
+                        case CpuType.S7300:
+                        case CpuType.S7400:
+                        default:
+                            return varCount * 8;
+                    }
+                    
                 default:
                     return 0;
             }
@@ -202,7 +236,7 @@ namespace S7.Net
             };
         }
 
-        private void ParseDataIntoDataItems(byte[] s7data, List<DataItem> dataItems)
+        private void ParseDataIntoDataItems(byte[] s7data, List<DataItem> dataItems, CpuType cpu = CpuType.S71200)
         {
             int offset = 14;
             foreach (var dataItem in dataItems)
@@ -219,7 +253,8 @@ namespace S7.Net
                     dataItem.VarType,
                     s7data.Skip(offset).Take(byteCnt).ToArray(),
                     dataItem.Count,
-                    dataItem.BitAdr
+                    dataItem.BitAdr,
+                    cpu
                 );
 
                 // next Item
