@@ -5,8 +5,8 @@ on:
   
 jobs:
 
-  CI:
-    name: CI-${{ matrix.os }}-${{ matrix.test-framework }}
+  build_test:
+    name: test-${{ matrix.os }}-${{ matrix.test-framework }}
     runs-on: ${{ matrix.os }}
     env:
       configuration: Release
@@ -31,18 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.2
-        with:
-            versionSpec: '5.2.x'
-
-      - name: Use GitVersion
-        id: gitversion # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v0.9.2
-
       - name: Install Snap7
         if: ${{ matrix.installSnap7 }}
         run: |
@@ -60,14 +48,41 @@ jobs:
 
       - name: Build
         if: ${{ matrix.build }}
-        run: dotnet build --nologo --no-restore --verbosity m /p:AssemblyVersion="${{ steps.gitversion.outputs.assemblySemVer }}" /p:FileVersion="${{ steps.gitversion.outputs.majorMinorPatch }}" /p:InformationalVersion="${{ steps.gitversion.outputs.informationalVersion }}" --configuration "${{ env.configuration }}"
+        run: dotnet build --no-restore --configuration "${{ env.configuration }}"
 
       - name: Test
         run: dotnet test --no-restore --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
 
+
+  deploy:
+    name: Deploy
+    needs: build_test
+    runs-on: windows-latest
+    if: ${{ false }} # not active right now
+    
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.2
+        with:
+            versionSpec: '5.2.x'
+
+      - name: Use GitVersion
+        id: gitversion # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v0.9.2
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+        
       - name: Pack
         if: ${{ matrix.pack }}
-        run: dotnet pack --configuration "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" --no-build -o "${{ env.artifacts }}"
+        run: dotnet pack --configuration "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" -o "${{ env.artifacts }}"
 
       - name: Upload Artifacts
         if: ${{ matrix.pack }}
