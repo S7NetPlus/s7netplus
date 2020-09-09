@@ -44,4 +44,4 @@ jobs:
           dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
 
       - name: Test
-        run: dotnet test --no-restore --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
+        run: dotnet test --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
