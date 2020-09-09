@@ -324,9 +324,9 @@ namespace S7.Net
             if (bitAdr != -1)
             {
                 //Must be writing a bit value as bitAdr is specified
-                if (value is bool)
+                if (value is bool boolean)
                 {
-                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, (bool) value);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, boolean);
                 }
                 else if (value is int intValue)
                 {
