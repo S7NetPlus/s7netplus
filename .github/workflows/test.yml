@@ -1,0 +1,47 @@
+name: Test
+
+on:
+  [pull_request, push]
+  
+jobs:
+
+  build_test:
+    name: test-${{ matrix.os }}-${{ matrix.test-framework }}
+    runs-on: ${{ matrix.os }}
+    env:
+      configuration: Release
+      artifacts: ${{ github.workspace }}/artifacts
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        test-framework: [netcoreapp3.1]
+        include:
+          - os: ubuntu-latest
+            installSnap7: true
+          - os: macos-latest
+            installSnap7: true
+          - os: windows-latest
+            test-framework: net452
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Snap7 Linux
+        if: ${{ matrix.installSnap7 && matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo add-apt-repository ppa:gijzelaar/snap7
+          sudo apt-get update
+          sudo apt-get install libsnap7-1 libsnap7-dev
+          
+      - name: Install Snap7 MacOs
+        if: ${{ matrix.installSnap7 && matrix.os == 'macos-latest' }}
+        run: |
+          brew install snap7
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
