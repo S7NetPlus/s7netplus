@@ -16,17 +16,11 @@ jobs:
         os: [windows-latest, ubuntu-latest]
         test-framework: [net452, netcoreapp3.1]
         include:
-          - os: windows-latest
-            test-framework: net452
-            pack: true
-            build: true
           - os: ubuntu-latest
             installSnap7: true
-
         exclude:
           - os: ubuntu-latest
             test-framework: net452
-
 
     steps:
       - uses: actions/checkout@v2
@@ -42,13 +36,6 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
-
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        if: ${{ matrix.build }}
-        run: dotnet build --no-restore --configuration "${{ env.configuration }}"
 
       - name: Test
         run: dotnet test --no-restore --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
