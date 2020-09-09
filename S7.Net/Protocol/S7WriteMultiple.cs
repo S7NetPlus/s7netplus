@@ -17,7 +17,6 @@ namespace S7.Net.Protocol
                 (ushort) (2 + paramSize));
 
             var paramOffset = Header.Template.Length;
-            var dataOffset = paramOffset + paramSize;
             var data = new ByteArray();
 
             var itemCount = 0;
