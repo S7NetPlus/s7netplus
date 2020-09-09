@@ -1,5 +1,9 @@
 name: Deploy
 
+on: 
+  release:
+    types: release
+
 jobs:
   deploy:
     name: Deploy
