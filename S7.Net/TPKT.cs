@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace S7.Net
@@ -57,10 +58,10 @@ namespace S7.Net
         /// </summary>
         /// <param name="stream">The stream to read from</param>
         /// <returns>Task TPKT Instace</returns>
-        public static async Task<TPKT> ReadAsync(Stream stream)
+        public static async Task<TPKT> ReadAsync(Stream stream, CancellationToken cancellationToken)
         {
             var buf = new byte[4];
-            int len = await stream.ReadExactAsync(buf, 0, 4);
+            int len = await stream.ReadExactAsync(buf, 0, 4, cancellationToken);
             if (len < 4) throw new TPKTInvalidException("TPKT is incomplete / invalid");
 
             var version = buf[0];
@@ -68,7 +69,7 @@ namespace S7.Net
             var length = buf[2] * 256 + buf[3]; //BigEndian
 
             var data = new byte[length - 4];
-            len = await stream.ReadExactAsync(data, 0, data.Length);
+            len = await stream.ReadExactAsync(data, 0, data.Length, cancellationToken);
             if (len < data.Length)
                 throw new TPKTInvalidException("TPKT payload incomplete / invalid");
 
