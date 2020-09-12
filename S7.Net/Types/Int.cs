@@ -10,15 +10,15 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts a S7 Int (2 bytes) to short (Int16)
         /// </summary>
-        public static short FromByteArray(byte[] bytes)
+        public static short FromByteArray(byte[] bytes, int offset = 0)
         {
-            if (bytes.Length != 2)
+            if (bytes.Length < offset + 2)
             {
-                throw new ArgumentException("Wrong number of bytes. Bytes array must contain 2 bytes.");
+                throw new ArgumentException($"Wrong number of bytes. Bytes array must contain at least {offset+2} bytes.");
             }
             // bytes[0] -> HighByte
             // bytes[1] -> LowByte
-            return (short)((int)(bytes[1]) | ((int)(bytes[0]) << 8));
+            return (short)(bytes[offset + 1] | (bytes[offset + 0] << 8));
         }
 
 

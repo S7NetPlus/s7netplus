@@ -11,6 +11,11 @@ namespace S7.Net
     /// </summary>
     internal class COTP
     {
+        public enum PduType : byte
+        {
+            Data = 0xf0,
+            ConnectionConfirmed = 0xd0
+        }
         /// <summary>
         /// Describes a COTP TPDU (Transport protocol data unit)
         /// </summary>
@@ -18,7 +23,7 @@ namespace S7.Net
         {
             public TPKT TPkt { get; }
             public byte HeaderLength;
-            public byte PDUType;
+            public PduType PDUType;
             public int TPDUNumber;
             public byte[] Data;
             public bool LastDataUnit;
@@ -30,8 +35,8 @@ namespace S7.Net
                 HeaderLength = tPKT.Data[0]; // Header length excluding this length byte
                 if (HeaderLength >= 2)
                 {
-                    PDUType = tPKT.Data[1];
-                    if (PDUType == 0xf0) //DT Data
+                    PDUType = (PduType)tPKT.Data[1];
+                    if (PDUType == PduType.Data) //DT Data
                     {
                         var flags = tPKT.Data[2];
                         TPDUNumber = flags & 0x7F;

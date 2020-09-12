@@ -17,34 +17,9 @@ namespace S7.Net
         /// </summary>
         public void Open()
         {
-            Connect();
-
             try
             {
-                var stream = GetStreamIfAvailable();
-                stream.Write(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
-                var response = COTP.TPDU.Read(stream);
-                if (response.PDUType != 0xd0) //Connect Confirm
-                {
-                    throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
-                }
-
-                stream.Write(GetS7ConnectionSetup(), 0, 25);
-
-                var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null)
-                    throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
-                if (s7data.Length < 2)
-                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
-
-                //Check for S7 Ack Data
-                if (s7data[1] != 0x03)
-                    throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
-
-                if (s7data.Length < 20)
-                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
-
-                MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
+                OpenAsync().Wait();
             }
             catch (Exception exc)
             {
@@ -53,28 +28,6 @@ namespace S7.Net
             }
         }
 
-        private void Connect()
-        {
-            try
-            {
-                tcpClient = new TcpClient();
-                ConfigureConnection();
-                tcpClient.Connect(IP, Port);
-                _stream = tcpClient.GetStream();
-            }
-            catch (SocketException sex)
-            {
-                // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
-                throw new PlcException(
-                    sex.SocketErrorCode == SocketError.TimedOut
-                        ? ErrorCode.IPAddressNotAvailable
-                        : ErrorCode.ConnectionError, sex);
-            }
-            catch (Exception ex)
-            {
-                throw new PlcException(ErrorCode.ConnectionError, ex);
-            }
-        }
 
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.

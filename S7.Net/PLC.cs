@@ -85,7 +85,7 @@ namespace S7.Net
             {
                 try
                 {
-                    Connect();
+                    ConnectAsync().Wait();
                     return true;
                 }
                 catch
