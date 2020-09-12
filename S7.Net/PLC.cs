@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Protocol;
 using S7.Net.Types;
 
 
@@ -234,11 +235,32 @@ namespace S7.Net
 
             if (s7Data.Length < 15) throw NotEnoughBytes();
 
-            if (s7Data[14] != 0xff)
-                throw new PlcException(ErrorCode.ReadData,
-                    $"Invalid response from PLC: '{BitConverter.ToString(s7Data)}'.");
+            ValidateResponseCode((ReadWriteErrorCode)s7Data[14]);
 
             if (s7Data.Length < expectedLength) throw NotEnoughBytes();
+        }
+
+        internal static void ValidateResponseCode(ReadWriteErrorCode statusCode)
+        {
+            switch (statusCode)
+            {
+                case ReadWriteErrorCode.ObjectDoesNotExist:
+                    throw new Exception($"Received error from PLC: Object does not exist.");
+                case ReadWriteErrorCode.DataTypeInconsistent:
+                    throw new Exception($"Received error from PLC: Data type inconsistent.");
+                case ReadWriteErrorCode.DataTypeNotSupported:
+                    throw new Exception($"Received error from PLC: Data type not supported.");
+                case ReadWriteErrorCode.AccessingObjectNotAllowed:
+                    throw new Exception($"Received error from PLC: Accessing object not allowed.");
+                case ReadWriteErrorCode.AddressOutOfRange:
+                    throw new Exception($"Received error from PLC: Address out of range.");
+                case ReadWriteErrorCode.HardwareFault:
+                    throw new Exception($"Received error from PLC: Hardware fault.");
+                case ReadWriteErrorCode.Success:
+                    break;
+                default:
+                    throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
+            }
         }
 
         #region IDisposable Support

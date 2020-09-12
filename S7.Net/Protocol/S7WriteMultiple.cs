@@ -94,11 +94,16 @@ namespace S7.Net.Protocol
 
             for (int i = 0; i < dataItems.Length; i++)
             {
-                var result = itemResults[i];
-                if (result == 0xff) continue;
+                try
+                {
+                    Plc.ValidateResponseCode((ReadWriteErrorCode)itemResults[i]);
+                }
+                catch(Exception e)
+                {
+                    if (errors == null) errors = new List<Exception>();
+                    errors.Add(new Exception($"Write of dataItem {dataItems[i]} failed: {e.Message}."));
+                }
 
-                if (errors == null) errors = new List<Exception>();
-                errors.Add(new Exception($"Write of dataItem {dataItems[i]} failed with error code {result}."));
             }
 
             if (errors != null)
