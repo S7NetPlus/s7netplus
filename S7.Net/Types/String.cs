@@ -1,7 +1,7 @@
 ﻿namespace S7.Net.Types
 {
     /// <summary>
-    /// Contains the methods to convert from S7 strings to C# strings
+    /// Contains the methods to convert from S7 Array of Chars (like a const char[N] C-String) to C# strings
     /// </summary>
     public class String
     {
