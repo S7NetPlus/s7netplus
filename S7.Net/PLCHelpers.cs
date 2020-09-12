@@ -14,7 +14,7 @@ namespace S7.Net
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        private void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
+        private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
             //header size = 19 bytes
             stream.WriteByteArray(new byte[] { 0x03, 0x00 });
@@ -37,7 +37,7 @@ namespace S7.Net
         /// <param name="startByteAdr">Start address of the byte</param>
         /// <param name="count">Number of bytes to be read</param>
         /// <returns></returns>
-        private void BuildReadDataRequestPackage(System.IO.MemoryStream stream, DataType dataType, int db, int startByteAdr, int count = 1)
+        private static void BuildReadDataRequestPackage(System.IO.MemoryStream stream, DataType dataType, int db, int startByteAdr, int count = 1)
         {
             //single data req = 12
             stream.WriteByteArray(new byte[] { 0x12, 0x0a, 0x10 });
@@ -176,7 +176,7 @@ namespace S7.Net
         /// <param name="varType"></param>
         /// <param name="varCount"></param>
         /// <returns>Byte lenght of variable</returns>
-        private int VarTypeToByteLength(VarType varType, int varCount = 1)
+        internal static int VarTypeToByteLength(VarType varType, int varCount = 1)
         {
             switch (varType)
             {

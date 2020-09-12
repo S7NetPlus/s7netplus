@@ -262,20 +262,10 @@ namespace S7.Net
 
             try
             {
-                // first create the header
-                int packageSize = 19 + (dataItems.Count * 12);
-                var package = new System.IO.MemoryStream(packageSize);
-                BuildHeaderPackage(package, dataItems.Count);
-                // package.Add(0x02);  // datenart
-                foreach (var dataItem in dataItems)
-                {
-                    BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, VarTypeToByteLength(dataItem.VarType, dataItem.Count));
-                }
-
-                var dataToSend = package.ToArray();
+                var dataToSend = BuildReadRequestPackage(dataItems.Select(d=> new DataRequestItem(d)).ToList());
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken); //TODO use Async
+                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
                 ParseDataIntoDataItems(s7data, dataItems);
@@ -293,6 +283,20 @@ namespace S7.Net
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
             return dataItems;
+        }
+
+        private static byte[] BuildReadRequestPackage(IList<DataRequestItem> dataItems)
+        {                
+            // first create the header
+            int packageSize = 19 + (dataItems.Count * 12);
+            var package = new System.IO.MemoryStream(packageSize);
+            BuildHeaderPackage(package, dataItems.Count);
+            // package.Add(0x02);  // datenart
+            foreach (var dataItem in dataItems)
+            {
+                BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAddress, dataItem.ByteLength);
+            }
+            return package.ToArray();
         }
 
         /// <summary>
@@ -444,14 +448,7 @@ namespace S7.Net
         {
             var stream = GetStreamIfAvailable();
 
-            // first create the header
-            int packageSize = 31; 
-            var package = new System.IO.MemoryStream(packageSize);
-            BuildHeaderPackage(package);
-            // package.Add(0x02);  // datenart
-            BuildReadDataRequestPackage(package, dataType, db, startByteAdr, count);
-
-            var dataToSend = package.ToArray();
+            var dataToSend = BuildReadRequestPackage(new [] { new DataRequestItem(dataType, db, startByteAdr, count)});
             await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
 
             var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
