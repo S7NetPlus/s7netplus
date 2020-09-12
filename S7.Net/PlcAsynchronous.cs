@@ -33,7 +33,7 @@ namespace S7.Net
             }
             catch(Exception)
             {
-                stream.Close();
+                stream.Dispose();
             }
         }
 
