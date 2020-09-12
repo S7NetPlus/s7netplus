@@ -64,10 +64,7 @@ namespace S7.Net.UnitTest
 
         private static Plc CreatePlc()
         {
-            return new Plc(CpuType.S7300, "localhost", 0, 2)
-            {
-                Port = TestServerPort
-            };
+            return new Plc(CpuType.S7300, "localhost", TestServerPort, 0, 2);
         }
 
         [TestInitialize]

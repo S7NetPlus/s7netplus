@@ -29,7 +29,7 @@ namespace S7.Net
         /// <summary>
         /// PORT Number of the PLC, default is 102
         /// </summary>
-        public int Port { get; set; }
+        public int Port { get; }
 
         /// <summary>
         /// CPU type of the PLC
