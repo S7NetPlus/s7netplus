@@ -1,16 +1,10 @@
 ﻿#region Using
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using S7.Net;
 using S7.Net.UnitTest.Helpers;
-using S7.Net.UnitTest;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
-#if NETFRAMEWORK
-using System.ServiceProcess;
-#endif
 
 #endregion
 
@@ -57,8 +51,6 @@ namespace S7.Net.UnitTest
         public S7NetTests()
         {
             plc = CreatePlc();
-            //ConsoleManager.Show();
-            ShutDownServiceS7oiehsx64();
 
         }
 
@@ -1034,20 +1026,6 @@ namespace S7.Net.UnitTest
         #endregion
 
         #region Private methods
-        private static void ShutDownServiceS7oiehsx64()
-        {
-#if NETFRAMEWORK
-            ServiceController[] services = ServiceController.GetServices();
-            var service = services.FirstOrDefault(s => s.ServiceName == "s7oiehsx64");
-            if (service != null)
-            {
-                if (service.Status == ServiceControllerStatus.Running)
-                {
-                    service.Stop();
-                }
-            }
-#endif
-        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

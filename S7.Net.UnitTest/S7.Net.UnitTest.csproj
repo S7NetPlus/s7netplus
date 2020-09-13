@@ -25,10 +25,6 @@
     <ProjectReference Include="..\S7.Net\S7.Net.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net452'">
-    <Reference Include="System.ServiceProcess" />
-  </ItemGroup>
-
   <ItemGroup>
     <None Update="runtimes\win-x64\native\snap7.dll" Link="snap7.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

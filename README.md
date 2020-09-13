@@ -36,6 +36,5 @@ PM> Install-Package S7netplus
 
 ## Running the tests
 
-Unit tests use Snap7 server, so port 102 must be not in use.
-If you have Siemens Step7 installed, the service s7oiehsx64 is stopped when running unit tests.
-You have to restart the service manually if you need it.
+Unit tests use Snap7 server.
+On Windows, the DLL is included with the test project. On other platforms, Snap7 must be installed manually before running tests.
