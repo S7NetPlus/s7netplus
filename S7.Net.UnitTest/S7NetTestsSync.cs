@@ -38,6 +38,7 @@ namespace S7.Net.UnitTest
         const int DB2 = 2;
         const int DB4 = 4;
         const short TestServerPort = 31122;
+        const string TestServerIp = "127.0.0.1";
         #endregion
 
         #region Private fields
@@ -56,7 +57,7 @@ namespace S7.Net.UnitTest
 
         private static Plc CreatePlc()
         {
-            return new Plc(CpuType.S7300, "localhost", TestServerPort, 0, 2);
+            return new Plc(CpuType.S7300, TestServerIp, TestServerPort, 0, 2);
         }
 
         [TestInitialize]
