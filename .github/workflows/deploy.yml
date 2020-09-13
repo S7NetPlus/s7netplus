@@ -1,0 +1,43 @@
+name: Deploy
+
+on: 
+  release:
+    types: release
+
+jobs:
+  deploy:
+    name: Deploy
+    needs: build_test
+    runs-on: windows-latest
+    if: ${{ false }} # not active right now
+    
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.2
+        with:
+            versionSpec: '5.2.x'
+
+      - name: Use GitVersion
+        id: gitversion # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v0.9.2
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+        
+      - name: Pack
+        if: ${{ matrix.pack }}
+        run: dotnet pack --configuration "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" -o "${{ env.artifacts }}"
+
+      - name: Upload Artifacts
+        if: ${{ matrix.pack }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: NugetPackage
+          path: ${{ env.artifacts }}/**
