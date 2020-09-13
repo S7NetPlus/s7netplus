@@ -9,6 +9,8 @@ jobs:
     name: Deploy
     needs: build_test
     runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO : 1
     if: ${{ false }} # not active right now
     
     steps:
@@ -33,7 +35,7 @@ jobs:
         
       - name: Pack
         if: ${{ matrix.pack }}
-        run: dotnet pack --configuration "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" -o "${{ env.artifacts }}"
+        run: dotnet pack --nologo --configuration "${{ env.configuration }}" /p:Version="${{ steps.gitversion.outputs.nuGetVersion }}" -o "${{ env.artifacts }}"
 
       - name: Upload Artifacts
         if: ${{ matrix.pack }}

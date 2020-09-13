@@ -11,6 +11,7 @@ jobs:
     env:
       configuration: Release
       artifacts: ${{ github.workspace }}/artifacts
+      DOTNET_NOLOGO : 1
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -47,4 +48,4 @@ jobs:
         run: dotnet restore S7.Net.UnitTest
         
       - name: Test
-        run: dotnet test --no-restore --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
+        run: dotnet test --no-restore --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
