@@ -245,17 +245,17 @@ namespace S7.Net
             switch (statusCode)
             {
                 case ReadWriteErrorCode.ObjectDoesNotExist:
-                    throw new Exception($"Received error from PLC: Object does not exist.");
+                    throw new Exception("Received error from PLC: Object does not exist.");
                 case ReadWriteErrorCode.DataTypeInconsistent:
-                    throw new Exception($"Received error from PLC: Data type inconsistent.");
+                    throw new Exception("Received error from PLC: Data type inconsistent.");
                 case ReadWriteErrorCode.DataTypeNotSupported:
-                    throw new Exception($"Received error from PLC: Data type not supported.");
+                    throw new Exception("Received error from PLC: Data type not supported.");
                 case ReadWriteErrorCode.AccessingObjectNotAllowed:
-                    throw new Exception($"Received error from PLC: Accessing object not allowed.");
+                    throw new Exception("Received error from PLC: Accessing object not allowed.");
                 case ReadWriteErrorCode.AddressOutOfRange:
-                    throw new Exception($"Received error from PLC: Address out of range.");
+                    throw new Exception("Received error from PLC: Address out of range.");
                 case ReadWriteErrorCode.HardwareFault:
-                    throw new Exception($"Received error from PLC: Hardware fault.");
+                    throw new Exception("Received error from PLC: Hardware fault.");
                 case ReadWriteErrorCode.Success:
                     break;
                 default:
