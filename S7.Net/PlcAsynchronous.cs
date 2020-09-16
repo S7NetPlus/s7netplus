@@ -259,8 +259,7 @@ namespace S7.Net
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken); //TODO use Async
-                if (s7data == null || s7data[14] != 0xff)
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
                 ParseDataIntoDataItems(s7data, dataItems);
             }
@@ -483,10 +482,7 @@ namespace S7.Net
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
-                if (s7data == null || s7data[14] != 0xff)
-                {
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
-                }
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (OperationCanceledException)
             {
@@ -509,10 +505,7 @@ namespace S7.Net
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
-                if (s7data == null || s7data[14] != 0xff)
-                {
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
-                }
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (OperationCanceledException)
             {
