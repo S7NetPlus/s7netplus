@@ -7,13 +7,15 @@ using S7.Net;
 
 using System.IO;
 using System.Threading.Tasks;
+using S7.Net.Protocol;
+using System.Collections;
 
 namespace S7.Net.UnitTest
 {
     [TestClass]
     public class ProtocolUnitTest
     {
-        private TestContext TestContext { get; set; }
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public async Task TPKT_Read()
@@ -63,6 +65,32 @@ namespace S7.Net.UnitTest
                              .Where(x => x % 2 == 0)
                              .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
                              .ToArray();
+        }
+
+
+        [TestMethod]
+        public void TestResponseCode()
+        {
+            var expected = StringToByteArray("320700000400000800080001120411440100ff09000400000000");
+            var m = new MemoryStream(StringToByteArray("0300000702f0000300000702f0000300002102f080320700000400000800080001120411440100ff09000400000000"));
+            var t = COTP.TSDU.Read(m);
+            Assert.IsTrue(expected.SequenceEqual(t));
+
+
+            // Test all possible byte values. Everything except 0xff should throw an exception.
+            var testData = Enumerable.Range(0, 256).Select(i => new { StatusCode = (ReadWriteErrorCode)i, ThrowsException = i != (byte)ReadWriteErrorCode.Success });
+
+            foreach (var entry in testData)
+            {
+                if (entry.ThrowsException)
+                {
+                    Assert.ThrowsException<Exception>(() => Plc.ValidateResponseCode(entry.StatusCode));
+                }
+                else
+                {
+                    Plc.ValidateResponseCode(entry.StatusCode);
+                }
+            }
         }
     }
 

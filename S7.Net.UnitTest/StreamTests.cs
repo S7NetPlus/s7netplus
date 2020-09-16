@@ -65,7 +65,7 @@ namespace S7.Net.UnitTest
     [TestClass]
     public class StreamTests
     {
-        private TestContext TestContext { get; set; }
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public async Task TPKT_ReadRestrictedStreamAsync()

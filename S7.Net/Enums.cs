@@ -169,14 +169,14 @@
         LReal,
 
         /// <summary>
-        /// String variable type (variable)
+        /// Char Array / C-String variable type (variable)
         /// </summary>
         String,
 
         /// <summary>
-        /// String variable type (variable)
+        /// S7 String variable type (variable)
         /// </summary>
-        StringEx,
+        S7String,
 
         /// <summary>
         /// Timer variable type

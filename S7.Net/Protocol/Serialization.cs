@@ -18,8 +18,8 @@ namespace S7.Net.Protocol
                 throw new Exception($"DataItem.Value is null, cannot serialize. StartAddr={dataItem.StartByteAdr} VarType={dataItem.VarType}");
             }
             if (dataItem.Value is string s)
-                return dataItem.VarType == VarType.StringEx
-                    ? StringEx.ToByteArray(s, dataItem.Count)
+                return dataItem.VarType == VarType.S7String
+                    ? S7String.ToByteArray(s, dataItem.Count)
                     : Types.String.ToByteArray(s, dataItem.Count);
 
             return SerializeValue(dataItem.Value);
