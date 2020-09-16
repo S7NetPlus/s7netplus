@@ -74,7 +74,7 @@ namespace S7.Net
             /// <returns>COTP DPDU instance</returns>
             public static async Task<TPDU> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
-                var tpkt = await TPKT.ReadAsync(stream, cancellationToken);
+                var tpkt = await TPKT.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
                 if (tpkt.Length == 0)
                 {
                     throw new TPDUInvalidException("No protocol data received");
@@ -138,7 +138,7 @@ namespace S7.Net
             /// <returns>Data in TSDU</returns>
             public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {                
-                var segment = await TPDU.ReadAsync(stream, cancellationToken);
+                var segment = await TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
 
                 if (segment.LastDataUnit)
                 {
@@ -151,7 +151,7 @@ namespace S7.Net
 
                 while (!segment.LastDataUnit)
                 {
-                    segment = await TPDU.ReadAsync(stream, cancellationToken);
+                    segment = await TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
                     var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
                     Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);

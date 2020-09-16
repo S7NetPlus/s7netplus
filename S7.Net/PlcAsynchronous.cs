@@ -24,11 +24,11 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous open operation.</returns>
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
-            var stream = await ConnectAsync();
+            var stream = await ConnectAsync().ConfigureAwait(false);
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await EstablishConnection(stream, cancellationToken);
+                await EstablishConnection(stream, cancellationToken).ConfigureAwait(false);
                 _stream = stream;
             }
             catch(Exception)
@@ -41,21 +41,21 @@ namespace S7.Net
         {
             tcpClient = new TcpClient();
             ConfigureConnection();
-            await tcpClient.ConnectAsync(IP, Port);
+            await tcpClient.ConnectAsync(IP, Port).ConfigureAwait(false);
             return tcpClient.GetStream();
         }
 
         private async Task EstablishConnection(NetworkStream stream, CancellationToken cancellationToken)
         {
-            await RequestConnection(stream, cancellationToken);
-            await SetupConnection(stream, cancellationToken);
+            await RequestConnection(stream, cancellationToken).ConfigureAwait(false);
+            await SetupConnection(stream, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task RequestConnection(NetworkStream stream, CancellationToken cancellationToken)
         {
             var requestData = ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot);
-            await stream.WriteAsync(requestData, 0, requestData.Length);
-            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken);
+            await stream.WriteAsync(requestData, 0, requestData.Length).ConfigureAwait(false);
+            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
             if (response.PDUType != COTP.PduType.ConnectionConfirmed)
             {
                 throw new InvalidDataException("Connection request was denied", response.TPkt.Data, 1, 0x0d);
@@ -65,9 +65,9 @@ namespace S7.Net
         private async Task SetupConnection(NetworkStream stream, CancellationToken cancellationToken)
         {
             var setupData = GetS7ConnectionSetup();
-            await stream.WriteAsync(setupData, 0, setupData.Length);
+            await stream.WriteAsync(setupData, 0, setupData.Length).ConfigureAwait(false);
 
-            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
+            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
             if (s7data.Length < 2)
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 

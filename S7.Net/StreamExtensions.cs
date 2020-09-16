@@ -46,7 +46,7 @@ namespace S7.Net
             int received;
             do
             {
-                received = await stream.ReadAsync(buffer, offset + read, count - read, cancellationToken);
+                received = await stream.ReadAsync(buffer, offset + read, count - read, cancellationToken).ConfigureAwait(false);
                 read += received;
             }
             while (read < count && received > 0);
