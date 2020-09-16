@@ -1,4 +1,5 @@
 ﻿using S7.Net.Helper;
+using S7.Net.Protocol.S7;
 using S7.Net.Types;
 using System;
 using System.Collections.Generic;
@@ -243,7 +244,7 @@ namespace S7.Net
             }
         }
 
-        private static byte[] BuildReadRequestPackage(IList<DataRequestItem> dataItems)
+        private static byte[] BuildReadRequestPackage(IList<DataItemAddress> dataItems)
         {
             int packageSize = 19 + (dataItems.Count * 12);
             var package = new System.IO.MemoryStream(packageSize);

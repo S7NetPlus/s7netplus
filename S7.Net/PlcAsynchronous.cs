@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using S7.Net.Protocol;
 using System.IO;
 using System.Threading;
+using S7.Net.Protocol.S7;
 
 namespace S7.Net
 {
@@ -262,7 +263,7 @@ namespace S7.Net
 
             try
             {
-                var dataToSend = BuildReadRequestPackage(dataItems.Select(d=> new DataRequestItem(d)).ToList());
+                var dataToSend = BuildReadRequestPackage(dataItems.Select(d => DataItem.GetDataItemAddress(d)).ToList());
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
 
                 var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
@@ -435,7 +436,7 @@ namespace S7.Net
         {
             var stream = GetStreamIfAvailable();
 
-            var dataToSend = BuildReadRequestPackage(new [] { new DataRequestItem(dataType, db, startByteAdr, count)});
+            var dataToSend = BuildReadRequestPackage(new [] { new DataItemAddress(dataType, db, startByteAdr, count)});
             await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
 
             var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);

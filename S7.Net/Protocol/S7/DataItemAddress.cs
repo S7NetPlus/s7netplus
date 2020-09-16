@@ -1,11 +1,11 @@
-﻿
-using S7.Net.Types;
-
-namespace S7.Net
+﻿namespace S7.Net.Protocol.S7
 {
-    internal class DataRequestItem
+    /// <summary>
+    /// Represents an area of memory in the PLC
+    /// </summary>
+    internal class DataItemAddress
     {
-        public DataRequestItem(DataType dataType, int db, int startByteAddress, int byteLength)
+        public DataItemAddress(DataType dataType, int db, int startByteAddress, int byteLength)
         {
             DataType = dataType;
             DB = db;
@@ -13,11 +13,6 @@ namespace S7.Net
             ByteLength = byteLength;
         }
 
-        public DataRequestItem(DataItem dataItem)
-            : this(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, Plc.VarTypeToByteLength(dataItem.VarType, dataItem.Count))
-        {
-
-        }
 
         /// <summary>
         /// Memory area to read 
