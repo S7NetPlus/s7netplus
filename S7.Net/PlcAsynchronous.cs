@@ -79,11 +79,7 @@ namespace S7.Net
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
             // TODO: check if this should not rather be UInt16.
-            MaxPDUSize = Types.Int.FromByteArray(s7data, 18);
-            if (MaxPDUSize <= 0 )
-            {
-                throw new PlcException(ErrorCode.ConnectionError, "Communication Setup resulted in non-positive PDU size.");
-            }
+            MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
         }
 
 
