@@ -7,7 +7,7 @@ using System.Linq;
 namespace S7.Net.UnitTest.TypeTests
 {
     [TestClass]
-    public class StringExTests
+    public class S7StringTests
     {
         [TestMethod]
         public void ReadEmptyStringWithZeroByteLength()
@@ -36,7 +36,7 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void ReadMalformedStringSizeLargerThanCapacity()
         {
-            Assert.ThrowsException<PlcException>(() => StringEx.FromByteArray(new byte[] { 3, 5, 0, 1, 2 }));
+            Assert.ThrowsException<PlcException>(() => S7String.FromByteArray(new byte[] { 3, 5, 0, 1, 2 }));
         }
 
         [TestMethod]
@@ -102,7 +102,7 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAbcWithStringLargetThanReservedLength()
         {
-            Assert.ThrowsException<ArgumentException>(() => StringEx.ToByteArray("Abc", 2));
+            Assert.ThrowsException<ArgumentException>(() => S7String.ToByteArray("Abc", 2));
         }
 
         [TestMethod]
@@ -119,16 +119,16 @@ namespace S7.Net.UnitTest.TypeTests
 
         private static void AssertFromByteArrayEquals(string expected, params byte[] bytes)
         {
-            var convertedString = StringEx.FromByteArray(bytes);
+            var convertedString = S7String.FromByteArray(bytes);
             Assert.AreEqual(expected, convertedString);
         }
 
 
         private static void AssertToByteArrayAndBackEquals(string value, int reservedLength, params byte[] expected)
         {
-            var convertedData = StringEx.ToByteArray(value, reservedLength);
+            var convertedData = S7String.ToByteArray(value, reservedLength);
             CollectionAssert.AreEqual(expected, convertedData);
-            var convertedBack = StringEx.FromByteArray(convertedData);
+            var convertedBack = S7String.FromByteArray(convertedData);
             Assert.AreEqual(value, convertedBack);
         }
     }

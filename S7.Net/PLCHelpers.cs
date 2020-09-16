@@ -122,8 +122,8 @@ namespace S7.Net
 
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
-                case VarType.StringEx:
-                    return StringEx.FromByteArray(bytes);
+                case VarType.S7String:
+                    return S7String.FromByteArray(bytes);
 
                 case VarType.Timer:
                     if (varCount == 1)
@@ -186,7 +186,7 @@ namespace S7.Net
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
                     return varCount;
-                case VarType.StringEx:
+                case VarType.S7String:
                     return varCount + 2;
                 case VarType.Word:
                 case VarType.Timer:
