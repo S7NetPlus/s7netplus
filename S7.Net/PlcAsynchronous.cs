@@ -79,7 +79,7 @@ namespace S7.Net
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
             // TODO: check if this should not rather be UInt16.
-            MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
+            MaxPDUSize = s7data[18] * 256 + s7data[19];
         }
 
 
