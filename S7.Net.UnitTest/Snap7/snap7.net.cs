@@ -36,11 +36,8 @@ namespace Snap7
 
     public class S7Consts
     {
-        #if __MonoCS__  // Assuming that we are using Unix release of Mono (otherwise modify it)
-        public const string Snap7LibName = "libsnap7.so";
-        #else
-        public const string Snap7LibName = "snap7.dll";
-        #endif
+        public const string Snap7LibName = "snap7";
+
         //------------------------------------------------------------------------------
         //                                  PARAMS LIST            
         //------------------------------------------------------------------------------
