@@ -242,5 +242,20 @@ namespace S7.Net
                     offset++;
             }
         }
+
+        private static byte[] BuildReadRequestPackage(IList<DataRequestItem> dataItems)
+        {
+            int packageSize = 19 + (dataItems.Count * 12);
+            var package = new System.IO.MemoryStream(packageSize);
+
+            BuildHeaderPackage(package, dataItems.Count);
+
+            foreach (var dataItem in dataItems)
+            {
+                BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAddress, dataItem.ByteLength);
+            }
+
+            return package.ToArray();
+        }
     }
 }

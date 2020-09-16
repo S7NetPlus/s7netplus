@@ -285,19 +285,6 @@ namespace S7.Net
             return dataItems;
         }
 
-        private static byte[] BuildReadRequestPackage(IList<DataRequestItem> dataItems)
-        {                
-            // first create the header
-            int packageSize = 19 + (dataItems.Count * 12);
-            var package = new System.IO.MemoryStream(packageSize);
-            BuildHeaderPackage(package, dataItems.Count);
-            // package.Add(0x02);  // datenart
-            foreach (var dataItem in dataItems)
-            {
-                BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAddress, dataItem.ByteLength);
-            }
-            return package.ToArray();
-        }
 
         /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
