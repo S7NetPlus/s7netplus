@@ -19,7 +19,7 @@ namespace S7.Net
         {
             try
             {
-                OpenAsync().Wait();
+                OpenAsync().GetAwaiter().GetResult();
             }
             catch (Exception exc)
             {
