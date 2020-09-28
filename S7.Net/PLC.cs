@@ -50,7 +50,7 @@ namespace S7.Net
         /// <summary>
         /// Max PDU size this cpu supports
         /// </summary>
-        public Int16 MaxPDUSize { get; set; }
+        public int MaxPDUSize { get; private set; }
 
         /// <summary>Gets or sets the amount of time that a read operation blocks waiting for data from PLC.</summary>
         /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
@@ -86,7 +86,7 @@ namespace S7.Net
             {
                 try
                 {
-                    Connect();
+                    OpenAsync().GetAwaiter().GetResult();
                     return true;
                 }
                 catch

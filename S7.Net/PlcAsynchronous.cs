@@ -24,26 +24,50 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous open operation.</returns>
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
-            await ConnectAsync();
-            cancellationToken.ThrowIfCancellationRequested();
-            var stream = GetStreamIfAvailable();
-            
-            await stream.WriteAsync(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
-            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken);
-            if (response == null)
+            var stream = await ConnectAsync().ConfigureAwait(false);
+            try
             {
-                throw new Exception("Error reading Connection Confirm. Malformed TPDU packet");
+                cancellationToken.ThrowIfCancellationRequested();
+                await EstablishConnection(stream, cancellationToken).ConfigureAwait(false);
+                _stream = stream;
             }
-            if (response.PDUType != 0xd0) //Connect Confirm
+            catch(Exception)
             {
-                throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
+                stream.Dispose();
             }
+        }
 
-            await stream.WriteAsync(GetS7ConnectionSetup(), 0, 25);
+        private async Task<NetworkStream> ConnectAsync()
+        {
+            tcpClient = new TcpClient();
+            ConfigureConnection();
+            await tcpClient.ConnectAsync(IP, Port).ConfigureAwait(false);
+            return tcpClient.GetStream();
+        }
 
-            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
-            if (s7data == null)
-                throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
+        private async Task EstablishConnection(NetworkStream stream, CancellationToken cancellationToken)
+        {
+            await RequestConnection(stream, cancellationToken).ConfigureAwait(false);
+            await SetupConnection(stream, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task RequestConnection(NetworkStream stream, CancellationToken cancellationToken)
+        {
+            var requestData = ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot);
+            await stream.WriteAsync(requestData, 0, requestData.Length).ConfigureAwait(false);
+            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            if (response.PDUType != COTP.PduType.ConnectionConfirmed)
+            {
+                throw new InvalidDataException("Connection request was denied", response.TPkt.Data, 1, 0x0d);
+            }
+        }
+
+        private async Task SetupConnection(NetworkStream stream, CancellationToken cancellationToken)
+        {
+            var setupData = GetS7ConnectionSetup();
+            await stream.WriteAsync(setupData, 0, setupData.Length).ConfigureAwait(false);
+
+            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
             if (s7data.Length < 2)
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
@@ -54,15 +78,8 @@ namespace S7.Net
             if (s7data.Length < 20)
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
-            MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
-        }
-
-        private async Task ConnectAsync()
-        {
-            tcpClient = new TcpClient();
-            ConfigureConnection();
-            await tcpClient.ConnectAsync(IP, Port);
-            _stream = tcpClient.GetStream();
+            // TODO: check if this should not rather be UInt16.
+            MaxPDUSize = s7data[18] * 256 + s7data[19];
         }
 
 
