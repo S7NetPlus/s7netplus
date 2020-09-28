@@ -107,11 +107,35 @@ namespace S7.Net
             {
                 try
                 {
+                    bool clientConnected = false;
+
                     if (tcpClient == null)
                         return false;
 
                     //TODO: Actually check communication by sending an empty TPDU
-                    return tcpClient.Connected;
+                    if (tcpClient.Client.Poll(0,SelectMode.SelectRead))
+                    {
+                        byte[] buffer = new byte[1];                        
+                        if (tcpClient.Client.Receive(buffer, SocketFlags.Peek) == 0)
+                        {
+                            // client disconnected
+                            clientConnected = false;                            
+                        }
+                        else
+                        {
+                            // client connected
+                            clientConnected = true;                            
+                        }
+                    }
+
+                    if (clientConnected)
+                    {
+                        return tcpClient.Connected;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 catch { return false; }
             }
