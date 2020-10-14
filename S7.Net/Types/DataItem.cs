@@ -1,4 +1,5 @@
-﻿using System;
+﻿using S7.Net.Protocol.S7;
+using System;
 
 namespace S7.Net.Types
 {
@@ -93,6 +94,11 @@ namespace S7.Net.Types
             }
 
             return dataItem;
+        }
+
+        internal static DataItemAddress GetDataItemAddress(DataItem dataItem)
+        {
+            return new DataItemAddress(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, Plc.VarTypeToByteLength(dataItem.VarType, dataItem.Count));
         }
     }
 }
