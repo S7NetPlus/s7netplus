@@ -35,6 +35,7 @@ namespace S7.Net
             catch(Exception)
             {
                 stream.Dispose();
+                throw;
             }
         }
 
