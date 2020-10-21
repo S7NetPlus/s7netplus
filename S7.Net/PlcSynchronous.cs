@@ -481,5 +481,39 @@ namespace S7.Net
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
         }
+        
+        /// <summary>
+        /// Pings a Plc address
+        /// </summary>
+        /// <param name="timeOut">Default value 2000 milliSeconds</param>
+        /// <returns></returns>
+        public bool Ping(int timeOut = 2000)
+        {
+            if (!CheckValidIpAddress())
+                throw new PingException("Not a valid IP-string");
+
+            using (Ping pinger = new Ping())
+            {
+                var Pingable = false;
+                try
+                {
+                    PingReply reply = pinger.Send(IP, timeOut);
+                    Pingable = reply.Status == IPStatus.Success;
+
+                    if (!Pingable)
+                        return Pingable;
+                }
+                catch (PingException)
+                {
+                    if (!Pingable)
+                        return Pingable;
+                }
+                finally
+                {
+                    pinger.Dispose();
+                }
+                return Pingable;
+            }
+        }
     }
 }
