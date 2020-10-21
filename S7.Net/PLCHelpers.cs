@@ -258,5 +258,24 @@ namespace S7.Net
 
             return package.ToArray();
         }
+        
+        /// <summary>
+        /// Returns True if valid IP address-string
+        /// </summary>
+        /// <returns></returns>
+        internal bool CheckValidIpAddress()
+        {
+            //  Split string by ".", check that array length is 4
+            string[] arrOctets = IP.Split('.');
+            if (arrOctets.Length != 4)
+                return false;
+
+            //Check each substring checking that parses to byte
+            foreach (string strOctet in arrOctets)
+                if (!byte.TryParse(strOctet, out _))
+                    return false;
+
+            return true;
+        }
     }
 }
