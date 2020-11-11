@@ -162,6 +162,7 @@ namespace S7.Net
             if (tcpClient != null)
             {
                 if (tcpClient.Connected) tcpClient.Close();
+                tcpClient = null; // Can not reuse TcpClient once connection gets closed.
             }
         }
 
