@@ -35,12 +35,12 @@ namespace S7.Net.UnitTest.Helpers
         /// <summary>
         /// DB1.DBD4
         /// </summary>
-        public double RealVariableDouble;
+        public double LRealVariable;
 
         /// <summary>
         /// DB1.DBD8
         /// </summary>
-        public float RealVariableFloat;
+        public float RealVariable;
 
         /// <summary>
         /// DB1.DBD12

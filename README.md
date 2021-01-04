@@ -12,8 +12,6 @@ to my request for committing code, I decided to pick up where he left off here o
 ## Documentation
 Check the Wiki and feel free to edit it: https://github.com/killnine/s7netplus/wiki
 
-S7.Net Plus has a [User Manual](https://github.com/killnine/s7netplus/blob/master/Documentation/Documentation.pdf), check it out.
-
 ## Supported PLC
 
 + Compatible S7 PLC (S7-200, S7-300, S7-400, S7-1200, S7-1500)
@@ -36,6 +34,5 @@ PM> Install-Package S7netplus
 
 ## Running the tests
 
-Unit tests use Snap7 server, so port 102 must be not in use.
-If you have Siemens Step7 installed, the service s7oiehsx64 is stopped when running unit tests.
-You have to restart the service manually if you need it.
+Unit tests use Snap7 server.
+On Windows, the DLL is included with the test project. On other platforms, Snap7 must be installed manually before running tests.

@@ -17,34 +17,9 @@ namespace S7.Net
         /// </summary>
         public void Open()
         {
-            Connect();
-
             try
             {
-                var stream = GetStreamIfAvailable();
-                stream.Write(ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot), 0, 22);
-                var response = COTP.TPDU.Read(stream);
-                if (response.PDUType != 0xd0) //Connect Confirm
-                {
-                    throw new InvalidDataException("Error reading Connection Confirm", response.TPkt.Data, 1, 0x0d);
-                }
-
-                stream.Write(GetS7ConnectionSetup(), 0, 25);
-
-                var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null)
-                    throw new WrongNumberOfBytesException("No data received in response to Communication Setup");
-                if (s7data.Length < 2)
-                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
-
-                //Check for S7 Ack Data
-                if (s7data[1] != 0x03)
-                    throw new InvalidDataException("Error reading Communication Setup response", s7data, 1, 0x03);
-
-                if (s7data.Length < 20)
-                    throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
-
-                MaxPDUSize = (short)(s7data[18] * 256 + s7data[19]);
+                OpenAsync().GetAwaiter().GetResult();
             }
             catch (Exception exc)
             {
@@ -53,28 +28,6 @@ namespace S7.Net
             }
         }
 
-        private void Connect()
-        {
-            try
-            {
-                tcpClient = new TcpClient();
-                ConfigureConnection();
-                tcpClient.Connect(IP, Port);
-                _stream = tcpClient.GetStream();
-            }
-            catch (SocketException sex)
-            {
-                // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms740668(v=vs.85).aspx
-                throw new PlcException(
-                    sex.SocketErrorCode == SocketError.TimedOut
-                        ? ErrorCode.IPAddressNotAvailable
-                        : ErrorCode.ConnectionError, sex);
-            }
-            catch (Exception ex)
-            {
-                throw new PlcException(ErrorCode.ConnectionError, ex);
-            }
-        }
 
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
@@ -289,9 +242,9 @@ namespace S7.Net
             if (bitAdr != -1)
             {
                 //Must be writing a bit value as bitAdr is specified
-                if (value is bool)
+                if (value is bool boolean)
                 {
-                    WriteBit(dataType, db, startByteAdr, bitAdr, (bool) value);
+                    WriteBit(dataType, db, startByteAdr, bitAdr, boolean);
                 }
                 else if (value is int intValue)
                 {
@@ -398,10 +351,7 @@ namespace S7.Net
                 stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null || s7data[14] != 0xff)
-                {
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
-                }
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
             {
@@ -442,7 +392,6 @@ namespace S7.Net
 
         private byte[] BuildWriteBitPackage(DataType dataType, int db, int startByteAdr, bool bitValue, int bitAdr)
         {
-            var stream = GetStreamIfAvailable();
             var value = new[] { bitValue ? (byte)1 : (byte)0 };
             int varCount = 1;
             // first create the header
@@ -484,10 +433,7 @@ namespace S7.Net
                 stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream);
-                if (s7data == null || s7data[14] != 0xff)
-                {
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
-                }
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
             {
@@ -500,13 +446,11 @@ namespace S7.Net
         /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
         /// Values are stored in the property "Value" of the dataItem and are already converted.
         /// If you don't want the conversion, just create a dataItem of bytes. 
-        /// DataItems must not be more than 20 (protocol restriction) and bytes must not be more than 200 + 22 of header (protocol restriction).
+        /// The number of DataItems as well as the total size of the requested data can not exceed a certain limit (protocol restriction).
         /// </summary>
-        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read. Maximum 20 dataitems are accepted.</param>
+        /// <param name="dataItems">List of dataitems that contains the list of variables that must be read.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
-            //Snap7 seems to choke on PDU sizes above 256 even if snap7 
-            //replies with bigger PDU size in connection setup.
             AssertPduSizeForRead(dataItems);
 
             var stream = GetStreamIfAvailable();
@@ -527,8 +471,8 @@ namespace S7.Net
                 stream.Write(dataToSend, 0, dataToSend.Length);
 
                 var s7data = COTP.TSDU.Read(stream); //TODO use Async
-                if (s7data == null || s7data[14] != 0xff)
-                    throw new PlcException(ErrorCode.WrongNumberReceivedBytes);
+
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
                 ParseDataIntoDataItems(s7data, dataItems);
             }

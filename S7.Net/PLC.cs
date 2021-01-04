@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Protocol;
 using S7.Net.Types;
 
 
@@ -18,8 +19,8 @@ namespace S7.Net
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
 
-        private int readTimeout = System.Threading.Timeout.Infinite;
-        private int writeTimeout = System.Threading.Timeout.Infinite;
+        private int readTimeout = 0; // default no timeout
+        private int writeTimeout = 0; // default no timeout
 
         /// <summary>
         /// IP address of the PLC
@@ -49,7 +50,7 @@ namespace S7.Net
         /// <summary>
         /// Max PDU size this cpu supports
         /// </summary>
-        public Int16 MaxPDUSize { get; set; }
+        public int MaxPDUSize { get; private set; }
 
         /// <summary>Gets or sets the amount of time that a read operation blocks waiting for data from PLC.</summary>
         /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
@@ -85,7 +86,7 @@ namespace S7.Net
             {
                 try
                 {
-                    Connect();
+                    OpenAsync().GetAwaiter().GetResult();
                     return true;
                 }
                 catch
@@ -183,11 +184,13 @@ namespace S7.Net
 
         private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
         {
-            // 12 bytes of header data, 12 bytes of parameter data for each dataItem
-            if ((dataItems.Count + 1) * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
-            
-            // 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
-            if (GetDataLength(dataItems) + dataItems.Count * 4 + 14 > MaxPDUSize) throw new Exception("Too much data requested for read");
+            // send request limit: 19 bytes of header data, 12 bytes of parameter data for each dataItem
+            var requiredRequestSize = 19 + dataItems.Count * 12;
+            if (requiredRequestSize > MaxPDUSize) throw new Exception($"Too many vars requested for read. Request size ({requiredRequestSize}) is larger than protocol limit ({MaxPDUSize}).");
+
+            // response limit: 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
+            var requiredResponseSize = GetDataLength(dataItems) + dataItems.Count * 4 + 14;
+            if (requiredResponseSize > MaxPDUSize) throw new Exception($"Too much data requested for read. Response size ({requiredResponseSize}) is larger than protocol limit ({MaxPDUSize}).");
         }
 
         private void AssertPduSizeForWrite(ICollection<DataItem> dataItems)
@@ -232,11 +235,32 @@ namespace S7.Net
 
             if (s7Data.Length < 15) throw NotEnoughBytes();
 
-            if (s7Data[14] != 0xff)
-                throw new PlcException(ErrorCode.ReadData,
-                    $"Invalid response from PLC: '{BitConverter.ToString(s7Data)}'.");
+            ValidateResponseCode((ReadWriteErrorCode)s7Data[14]);
 
             if (s7Data.Length < expectedLength) throw NotEnoughBytes();
+        }
+
+        internal static void ValidateResponseCode(ReadWriteErrorCode statusCode)
+        {
+            switch (statusCode)
+            {
+                case ReadWriteErrorCode.ObjectDoesNotExist:
+                    throw new Exception("Received error from PLC: Object does not exist.");
+                case ReadWriteErrorCode.DataTypeInconsistent:
+                    throw new Exception("Received error from PLC: Data type inconsistent.");
+                case ReadWriteErrorCode.DataTypeNotSupported:
+                    throw new Exception("Received error from PLC: Data type not supported.");
+                case ReadWriteErrorCode.AccessingObjectNotAllowed:
+                    throw new Exception("Received error from PLC: Accessing object not allowed.");
+                case ReadWriteErrorCode.AddressOutOfRange:
+                    throw new Exception("Received error from PLC: Address out of range.");
+                case ReadWriteErrorCode.HardwareFault:
+                    throw new Exception("Received error from PLC: Hardware fault.");
+                case ReadWriteErrorCode.Success:
+                    break;
+                default:
+                    throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
+            }
         }
 
         #region IDisposable Support

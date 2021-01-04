@@ -29,7 +29,7 @@ namespace S7.Net.UnitTest.Helpers
             Console.WriteLine(Server.EventText(ref Event));
         }
 
-        public static void Start()
+        public static void Start(short port)
         {
             Server = new S7Server();
             // Share some resources with our virtual PLC
@@ -59,7 +59,14 @@ namespace S7.Net.UnitTest.Helpers
             // Start the server onto the default adapter.
             // To select an adapter we have to use Server->StartTo("192.168.x.y").
             // Start() is the same of StartTo("0.0.0.0");       
+
+            Server.SetParam(S7Consts.p_u16_LocalPort, ref port);
+
             int Error = Server.Start();
+            if (Error != 0)
+            {
+                throw new Exception($"Error starting Snap7 server: {Server.ErrorText(Error)}");
+            }
             //if (Error == 0)
             //{
             //    // Now the server is running ... wait a key to terminate

@@ -164,14 +164,19 @@
         Real,
 
         /// <summary>
-        /// String variable type (variable)
+        /// LReal variable type (64 bits, 8 bytes)
+        /// </summary>
+        LReal,
+
+        /// <summary>
+        /// Char Array / C-String variable type (variable)
         /// </summary>
         String,
 
         /// <summary>
-        /// String variable type (variable)
+        /// S7 String variable type (variable)
         /// </summary>
-        StringEx,
+        S7String,
 
         /// <summary>
         /// Timer variable type

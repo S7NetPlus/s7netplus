@@ -65,13 +65,14 @@ namespace S7.Net.UnitTest
     [TestClass]
     public class StreamTests
     {
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public async Task TPKT_ReadRestrictedStreamAsync()
         {
             var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
             var m = new TestStream1BytePerRead(fullMessage);
-            var t = await TPKT.ReadAsync(m);
+            var t = await TPKT.ReadAsync(m, TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(fullMessage.Length, t.Length);
             Assert.AreEqual(fullMessage.Last(), t.Data.Last());
         }

@@ -50,11 +50,16 @@ namespace S7.Net.Types
                         numBytes += 4;
                         break;
                     case "Single":
-                    case "Double":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         numBytes += 4;
+                        break;
+                    case "Double":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += 8;
                         break;
                     default:
                         numBytes += GetStructSize(info.FieldType);
@@ -152,27 +157,26 @@ namespace S7.Net.Types
                                                                            bytes[(int)numBytes + 3]));
                         numBytes += 4;
                         break;
-                    case "Double":
-                        numBytes = Math.Ceiling(numBytes);
-                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                            numBytes++;
-                        // hier auswerten
-                        info.SetValue(structValue, Double.FromByteArray(new byte[] { bytes[(int)numBytes],
-                                                                           bytes[(int)numBytes + 1],
-                                                                           bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3] }));
-                        numBytes += 4;
-                        break;
                     case "Single":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // hier auswerten
-                        info.SetValue(structValue, Single.FromByteArray(new byte[] { bytes[(int)numBytes],
+                        info.SetValue(structValue, Real.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3] }));
                         numBytes += 4;
+                        break;
+                    case "Double":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        // hier auswerten
+                        var data = new byte[8];
+                        Array.Copy(bytes, (int)numBytes, data, 0, 8);
+                        info.SetValue(structValue, LReal.FromByteArray(data));
+                        numBytes += 8;
                         break;
                     default:
                         var buffer = new byte[GetStructSize(info.FieldType)];
@@ -244,11 +248,11 @@ namespace S7.Net.Types
                     case "UInt32":
                         bytes2 = DWord.ToByteArray((UInt32)info.GetValue(structValue));
                         break;
-                    case "Double":
-                        bytes2 = Double.ToByteArray((double)info.GetValue(structValue));
-                        break;
                     case "Single":
-                        bytes2 = Single.ToByteArray((float)info.GetValue(structValue));
+                        bytes2 = Real.ToByteArray((float)info.GetValue(structValue));
+                        break;
+                    case "Double":
+                        bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
                         break;
                 }
                 if (bytes2 != null)
