@@ -8,7 +8,7 @@ namespace S7.Net.UnitTest.TypeTests
     {
         private static readonly DateTime SampleDateTime = new DateTime(1993, 12, 25, 8, 12, 34, 567);
 
-        private static readonly byte[] SampleByteArray = {0x07, 0xC9, 0x0C, 0x19, 0x07, 0x08, 0x0C, 0x22, 0x21, 0xCB, 0xBB, 0xC0 };
+        private static readonly byte[] SampleByteArray = { 0x07, 0xC9, 0x0C, 0x19, 0x07, 0x08, 0x0C, 0x22, 0x21, 0xCB, 0xBB, 0xC0 };
 
         private static readonly byte[] SpecMinByteArray =
         {

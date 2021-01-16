@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace S7.UnitTest.Helpers
-{ 
+{
     /// <summary>
     /// This is a class that contains more than 200 bytes and that needs 2 plc requests to complete a read/write cycle
     /// </summary>

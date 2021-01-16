@@ -927,13 +927,13 @@ namespace S7.Net.UnitTest
             {
                 await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
                 // everything is good, that is the exception we expect
                 Console.WriteLine("Task was cancelled as expected.");
                 return;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Assert.Fail($"Wrong exception type received. Expected {typeof(TaskCanceledException)}, received {e.GetType()}.");
             }

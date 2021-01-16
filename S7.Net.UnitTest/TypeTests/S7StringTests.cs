@@ -24,7 +24,7 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void ReadEmptyStringWithOneByteGarbage()
         {
-            AssertFromByteArrayEquals("", 1, 0, (byte) 'a');
+            AssertFromByteArrayEquals("", 1, 0, (byte)'a');
         }
 
         [TestMethod]
@@ -48,13 +48,13 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void ReadA()
         {
-            AssertFromByteArrayEquals("A", 1, 1, (byte) 'A');
+            AssertFromByteArrayEquals("A", 1, 1, (byte)'A');
         }
 
         [TestMethod]
         public void ReadAbc()
         {
-            AssertFromByteArrayEquals("Abc", 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertFromByteArrayEquals("Abc", 3, 3, (byte)'A', (byte)'b', (byte)'c');
         }
 
         [TestMethod]
@@ -90,13 +90,13 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAWithReservedLengthOne()
         {
-            AssertToByteArrayAndBackEquals("A", 1, 1, 1, (byte) 'A');
+            AssertToByteArrayAndBackEquals("A", 1, 1, 1, (byte)'A');
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthTwo()
         {
-            AssertToByteArrayAndBackEquals("A", 2, 2, 1, (byte) 'A', 0);
+            AssertToByteArrayAndBackEquals("A", 2, 2, 1, (byte)'A', 0);
         }
 
         [TestMethod]
@@ -108,13 +108,13 @@ namespace S7.Net.UnitTest.TypeTests
         [TestMethod]
         public void WriteAbcWithReservedLengthThree()
         {
-            AssertToByteArrayAndBackEquals("Abc", 3, 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertToByteArrayAndBackEquals("Abc", 3, 3, 3, (byte)'A', (byte)'b', (byte)'c');
         }
 
         [TestMethod]
         public void WriteAbcWithReservedLengthFour()
         {
-            AssertToByteArrayAndBackEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c', 0);
+            AssertToByteArrayAndBackEquals("Abc", 4, 4, 3, (byte)'A', (byte)'b', (byte)'c', 0);
         }
 
         private static void AssertFromByteArrayEquals(string expected, params byte[] bytes)

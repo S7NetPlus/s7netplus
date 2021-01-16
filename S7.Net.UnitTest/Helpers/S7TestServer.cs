@@ -87,7 +87,7 @@ namespace S7.Net.UnitTest.Helpers
             //        low and so it's considered "privileged".
         }
 
-        public static void Stop() 
+        public static void Stop()
         {
             int Error = Server.Stop();
         }
