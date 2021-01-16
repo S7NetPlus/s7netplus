@@ -22,7 +22,7 @@
 
             return bytes;
         }
-        
+
         /// <summary>
         /// Converts S7 bytes to a string
         /// </summary>

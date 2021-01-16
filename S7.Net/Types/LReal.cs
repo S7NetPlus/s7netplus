@@ -52,6 +52,6 @@ namespace S7.Net.Types
         /// Converts an array of S7 LReal to an array of double
         /// </summary>
         public static double[] ToArray(byte[] bytes) => TypeHelper.ToArray(bytes, FromByteArray);
-        
+
     }
 }

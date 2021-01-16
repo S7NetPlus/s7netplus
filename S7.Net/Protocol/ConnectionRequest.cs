@@ -50,7 +50,7 @@ namespace S7.Net.Protocol
                     bSend1[14] = 0x00;
                     //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
                     bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
+                    bSend1[18] = (byte)((rack << 5) | (int)slot);
                     break;
                 case CpuType.S71500:
                     // Eigener Tsap
@@ -58,7 +58,7 @@ namespace S7.Net.Protocol
                     bSend1[14] = 0x02;
                     // Fredmer Tsap
                     bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
+                    bSend1[18] = (byte)((rack << 5) | (int)slot);
                     break;
                 default:
                     throw new Exception("Wrong CPU Type Secified");

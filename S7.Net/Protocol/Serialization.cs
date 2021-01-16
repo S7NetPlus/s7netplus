@@ -46,7 +46,7 @@ namespace S7.Net.Protocol
                 case "Double":
                     return Types.LReal.ToByteArray((double)value);
                 case "DateTime":
-                    return Types.DateTime.ToByteArray((System.DateTime) value);
+                    return Types.DateTime.ToByteArray((System.DateTime)value);
                 case "Byte[]":
                     return (byte[])value;
                 case "Int16[]":
@@ -64,10 +64,10 @@ namespace S7.Net.Protocol
                 case "String":
                     // Hack: This is backwards compatible with the old code, but functionally it's broken
                     // if the consumer does not pay attention to string length.
-                    var stringVal = (string) value;
+                    var stringVal = (string)value;
                     return Types.String.ToByteArray(stringVal, stringVal.Length);
                 case "DateTime[]":
-                    return Types.DateTime.ToByteArray((System.DateTime[]) value);
+                    return Types.DateTime.ToByteArray((System.DateTime[])value);
                 case "DateTimeLong[]":
                     return Types.DateTimeLong.ToByteArray((System.DateTime[])value);
                 default:

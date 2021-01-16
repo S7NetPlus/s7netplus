@@ -38,7 +38,7 @@ namespace S7.Net.Types
                     $"Failed to parse {VarType.S7String} from data. Following fields were read: size: '{size}', actual length: '{length}', total number of bytes (including header): '{bytes.Length}'.",
                     e);
             }
-            
+
         }
 
         /// <summary>

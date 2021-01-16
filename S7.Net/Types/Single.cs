@@ -63,6 +63,6 @@ namespace S7.Net.Types
 
             return values;
         }
-        
+
     }
 }

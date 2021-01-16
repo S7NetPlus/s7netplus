@@ -14,7 +14,7 @@ namespace S7.Net
     public partial class Plc : IDisposable
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
+
         //TCP connection to device
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
@@ -75,7 +75,7 @@ namespace S7.Net
                 if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
             }
         }
-        
+
         /// <summary>
         /// Returns true if a connection to the PLC can be established
         /// </summary>
@@ -259,7 +259,7 @@ namespace S7.Net
                 case ReadWriteErrorCode.Success:
                     break;
                 default:
-                    throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
+                    throw new Exception($"Invalid response from PLC: statusCode={(byte)statusCode}.");
             }
         }
 

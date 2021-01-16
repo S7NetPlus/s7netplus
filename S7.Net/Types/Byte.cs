@@ -14,7 +14,7 @@ namespace S7.Net.Types
         {
             return new byte[] { value }; ;
         }
-       
+
         /// <summary>
         /// Converts a byte array to byte
         /// </summary>
@@ -28,6 +28,6 @@ namespace S7.Net.Types
             }
             return bytes[0];
         }
-        
+
     }
 }

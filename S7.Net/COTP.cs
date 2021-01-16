@@ -137,7 +137,7 @@ namespace S7.Net
             /// <param name="stream">The stream to read from</param>
             /// <returns>Data in TSDU</returns>
             public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken cancellationToken)
-            {                
+            {
                 var segment = await TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
 
                 if (segment.LastDataUnit)

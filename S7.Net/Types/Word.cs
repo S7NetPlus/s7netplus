@@ -38,7 +38,7 @@ namespace S7.Net.Types
             byte[] bytes = new byte[2];
 
             bytes[1] = (byte)(value & 0xFF);
-            bytes[0] = (byte)((value>>8) & 0xFF);
+            bytes[0] = (byte)((value >> 8) & 0xFF);
 
             return bytes;
         }
@@ -59,11 +59,11 @@ namespace S7.Net.Types
         /// </summary>
         public static UInt16[] ToArray(byte[] bytes)
         {
-            UInt16[] values = new UInt16[bytes.Length/2];
+            UInt16[] values = new UInt16[bytes.Length / 2];
 
             int counter = 0;
-            for (int cnt = 0; cnt < bytes.Length/2; cnt++)
-                values[cnt] = FromByteArray(new byte[] {bytes[counter++], bytes[counter++]});
+            for (int cnt = 0; cnt < bytes.Length / 2; cnt++)
+                values[cnt] = FromByteArray(new byte[] { bytes[counter++], bytes[counter++] });
 
             return values;
         }

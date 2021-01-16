@@ -2,9 +2,9 @@
 
 namespace S7.Net
 {
-    #if NET_FULL
+#if NET_FULL
     [Serializable]
-    #endif
+#endif
     public class PlcException : Exception
     {
         public ErrorCode ErrorCode { get; }
@@ -28,12 +28,12 @@ namespace S7.Net
             ErrorCode = errorCode;
         }
 
-        #if NET_FULL
+#if NET_FULL
         protected PlcException(System.Runtime.Serialization.SerializationInfo info,
             System.Runtime.Serialization.StreamingContext context) : base(info, context)
         {
             ErrorCode = (ErrorCode) info.GetInt32(nameof(ErrorCode));
         }
-        #endif
+#endif
     }
 }

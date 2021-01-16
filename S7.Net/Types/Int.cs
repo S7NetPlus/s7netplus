@@ -29,7 +29,7 @@ namespace S7.Net.Types
         {
             byte[] bytes = new byte[2];
 
-            bytes[0] = (byte) (value >> 8 & 0xFF);
+            bytes[0] = (byte)(value >> 8 & 0xFF);
             bytes[1] = (byte)(value & 0xFF);
 
             return bytes;
@@ -43,10 +43,10 @@ namespace S7.Net.Types
             byte[] bytes = new byte[value.Length * 2];
             int bytesPos = 0;
 
-            for(int i=0; i< value.Length; i++)
+            for (int i = 0; i < value.Length; i++)
             {
                 bytes[bytesPos++] = (byte)((value[i] >> 8) & 0xFF);
-                bytes[bytesPos++] = (byte) (value[i] & 0xFF);
+                bytes[bytesPos++] = (byte)(value[i] & 0xFF);
             }
             return bytes;
         }
@@ -66,7 +66,7 @@ namespace S7.Net.Types
 
             return values;
         }
-        
+
         /// <summary>
         /// Converts a C# int value to a C# short value, to be used as word.
         /// </summary>

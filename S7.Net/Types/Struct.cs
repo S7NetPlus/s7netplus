@@ -18,11 +18,11 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
             var infos = structType
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -91,11 +91,11 @@ namespace S7.Net.Types
 
 
             var infos = structValue.GetType()
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -209,11 +209,11 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
             var infos = type
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {

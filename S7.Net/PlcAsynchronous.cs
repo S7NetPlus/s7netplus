@@ -32,7 +32,7 @@ namespace S7.Net
                 await EstablishConnection(stream, cancellationToken).ConfigureAwait(false);
                 _stream = stream;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 stream.Dispose();
                 throw;
@@ -437,7 +437,7 @@ namespace S7.Net
         {
             var stream = GetStreamIfAvailable();
 
-            var dataToSend = BuildReadRequestPackage(new [] { new DataItemAddress(dataType, db, startByteAdr, count)});
+            var dataToSend = BuildReadRequestPackage(new[] { new DataItemAddress(dataType, db, startByteAdr, count) });
             await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
 
             var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
