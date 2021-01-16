@@ -13,7 +13,7 @@ namespace S7.Net.Protocol
 
         public static byte[] SerializeDataItem(DataItem dataItem)
         {
-            if (dataItem.Value == null)
+            if (dataItem.Value is null)
             {
                 throw new Exception($"DataItem.Value is null, cannot serialize. StartAddr={dataItem.StartByteAdr} VarType={dataItem.VarType}");
             }

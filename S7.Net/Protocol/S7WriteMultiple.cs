@@ -101,13 +101,13 @@ namespace S7.Net.Protocol
                 }
                 catch (Exception e)
                 {
-                    if (errors == null) errors = new List<Exception>();
+                    if (errors is null) errors = new List<Exception>();
                     errors.Add(new Exception($"Write of dataItem {dataItems[i]} failed: {e.Message}."));
                 }
 
             }
 
-            if (errors != null)
+            if (errors is not null)
                 throw new AggregateException(
                     $"Write failed for {errors.Count} items. See the innerExceptions for details.", errors);
         }

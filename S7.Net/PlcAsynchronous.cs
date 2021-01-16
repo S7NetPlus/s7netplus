@@ -522,7 +522,7 @@ namespace S7.Net
 
         private Stream GetStreamIfAvailable()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
             }

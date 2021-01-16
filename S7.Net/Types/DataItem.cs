@@ -87,7 +87,7 @@ namespace S7.Net.Types
             if (typeof(T).IsArray)
             {
                 var array = ((Array?)dataItem.Value);
-                if (array != null)
+                if (array is not null)
                 {
                     dataItem.Count = array.Length;
                 }

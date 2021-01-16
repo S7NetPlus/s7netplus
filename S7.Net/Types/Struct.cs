@@ -77,7 +77,7 @@ namespace S7.Net.Types
         /// <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
         public static object? FromBytes(Type structType, byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
                 return null;
 
             if (bytes.Length != GetStructSize(structType))
@@ -255,7 +255,7 @@ namespace S7.Net.Types
                         bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
                         break;
                 }
-                if (bytes2 != null)
+                if (bytes2 is not null)
                 {
                     // add them
                     numBytes = Math.Ceiling(numBytes);

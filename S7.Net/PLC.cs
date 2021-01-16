@@ -60,7 +60,7 @@ namespace S7.Net
             set
             {
                 readTimeout = value;
-                if (tcpClient != null) tcpClient.ReceiveTimeout = readTimeout;
+                if (tcpClient is not null) tcpClient.ReceiveTimeout = readTimeout;
             }
         }
 
@@ -72,7 +72,7 @@ namespace S7.Net
             set
             {
                 writeTimeout = value;
-                if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
+                if (tcpClient is not null) tcpClient.SendTimeout = writeTimeout;
             }
         }
 
@@ -107,7 +107,7 @@ namespace S7.Net
             {
                 try
                 {
-                    if (tcpClient == null)
+                    if (tcpClient is null)
                         return false;
 
                     //TODO: Actually check communication by sending an empty TPDU
@@ -176,7 +176,7 @@ namespace S7.Net
         /// </summary>
         public void Close()
         {
-            if (tcpClient != null)
+            if (tcpClient is not null)
             {
                 if (tcpClient.Connected) tcpClient.Close();
             }
@@ -205,7 +205,7 @@ namespace S7.Net
 
         private void ConfigureConnection()
         {
-            if (tcpClient == null)
+            if (tcpClient is null)
             {
                 return;
             }
@@ -230,7 +230,7 @@ namespace S7.Net
                     $"Received {s7Data.Length} bytes: '{BitConverter.ToString(s7Data)}', expected {expectedLength} bytes.")
             ;
 
-            if (s7Data == null)
+            if (s7Data is null)
                 throw new PlcException(ErrorCode.WrongNumberReceivedBytes, "No s7Data received.");
 
             if (s7Data.Length < 15) throw NotEnoughBytes();
