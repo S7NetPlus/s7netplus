@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFrameworks>net452;netstandard2.0;netstandard1.3</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
@@ -15,6 +15,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>PLC Siemens Communication S7</PackageTags>
     <Copyright>Derek Heiser 2015</Copyright>
+    <LangVersion>8.0</LangVersion>
     <Nullable>Enable</Nullable>
     <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
