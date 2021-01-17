@@ -213,7 +213,7 @@ namespace S7.Net.Types
         /// <param name="bytes">The array of bytes</param>
         public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false)
         {
-            if (bytes is null)
+            if (bytes == null)
                 return numBytes;
 
             var properties = GetAccessableProperties(sourceClass.GetType());
@@ -290,7 +290,7 @@ namespace S7.Net.Types
                     break;
             }
 
-            if (bytes2 is not null)
+            if (bytes2 != null)
             {
                 IncrementToEven(ref numBytes);
 

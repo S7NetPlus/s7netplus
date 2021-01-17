@@ -80,7 +80,7 @@ namespace S7.Net
         /// <returns></returns>
         private object? ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
         {
-            if (bytes is null || bytes.Length == 0)
+            if (bytes == null || bytes.Length == 0)
                 return null;
 
             switch (varType)

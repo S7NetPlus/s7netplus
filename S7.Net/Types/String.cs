@@ -16,7 +16,7 @@
             if (length > reservedLength) length = reservedLength;
             var bytes = new byte[reservedLength];
 
-            if (length is null || length == 0) return bytes;
+            if (length == null || length == 0) return bytes;
 
             System.Text.Encoding.ASCII.GetBytes(value, 0, length.Value, bytes, 0);
 

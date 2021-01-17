@@ -70,10 +70,10 @@ namespace S7.Net.UnitTest.Helpers
             System.Reflection.MethodInfo _InitializeStdOutError = type.GetMethod("InitializeStdOutError",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
 
-            System.Diagnostics.Debug.Assert(_out is not null);
-            System.Diagnostics.Debug.Assert(_error is not null);
+            System.Diagnostics.Debug.Assert(_out != null);
+            System.Diagnostics.Debug.Assert(_error != null);
 
-            System.Diagnostics.Debug.Assert(_InitializeStdOutError is not null);
+            System.Diagnostics.Debug.Assert(_InitializeStdOutError != null);
 
             _out.SetValue(null, null);
             _error.SetValue(null, null);
