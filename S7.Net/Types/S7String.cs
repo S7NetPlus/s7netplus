@@ -45,7 +45,7 @@ namespace S7.Net.Types
         /// Converts a <see cref="T:string"/> to S7 string with 2-byte header.
         /// </summary>
         /// <param name="value">The string to convert to byte array.</param>
-        /// <param name="reservedLength">The length (in bytes) allocated in PLC for string excluding header.</param>
+        /// <param name="reservedLength">The length (in characters) allocated in PLC for the string.</param>
         /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="reservedLength"/> + 2.</returns>
         public static byte[] ToByteArray(string value, int reservedLength)
         {
@@ -54,7 +54,7 @@ namespace S7.Net.Types
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (reservedLength > byte.MaxValue) throw new ArgumentException($"The maximum string length supported is {byte.MaxValue}.");
+            if (reservedLength >= byte.MaxValue) throw new ArgumentException($"The maximum string length supported is {byte.MaxValue}.");
 
             var bytes = Encoding.ASCII.GetBytes(value);
             if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");

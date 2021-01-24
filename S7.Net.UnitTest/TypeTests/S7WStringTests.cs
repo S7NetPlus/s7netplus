@@ -1,134 +1,133 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.Types;
 using System;
-using System.Collections;
-using System.Linq;
 
 namespace S7.Net.UnitTest.TypeTests
 {
     [TestClass]
-    public class S7StringTests
+    public class S7WStringTests
     {
         [TestMethod]
-        public void ReadEmptyStringWithZeroByteLength()
+        public void ReadEmptyStringWithZeroLength()
         {
-            AssertFromByteArrayEquals("", 0, 0);
+            AssertFromByteArrayEquals("", 0, 0 , 0, 0);
         }
 
         [TestMethod]
-        public void ReadEmptyStringWithOneByteLength()
+        public void ReadEmptyStringWithOneCharLength()
         {
-            AssertFromByteArrayEquals("", 1, 0, 0);
+            AssertFromByteArrayEquals("", 0, 1, 0, 0, 0, 0);
         }
 
         [TestMethod]
-        public void ReadEmptyStringWithOneByteGarbage()
+        public void ReadEmptyStringWithOneCharGarbage()
         {
-            AssertFromByteArrayEquals("", 1, 0, (byte) 'a');
+
+            AssertFromByteArrayEquals("", 0, 1, 0, 0, 0x00, 0x41);
         }
 
         [TestMethod]
         public void ReadMalformedStringTooShort()
         {
-            Assert.ThrowsException<PlcException>(() => AssertFromByteArrayEquals("", 1));
+            Assert.ThrowsException<PlcException>(() => AssertFromByteArrayEquals("", 0, 1));
         }
 
         [TestMethod]
         public void ReadMalformedStringSizeLargerThanCapacity()
         {
-            Assert.ThrowsException<PlcException>(() => S7String.FromByteArray(new byte[] { 3, 5, 0, 1, 2 }));
+            Assert.ThrowsException<PlcException>(() => S7WString.FromByteArray(new byte[] { 0, 3, 0, 5, 0, 0x00, 0x41, 0x00, 0x41, 0x00, 0x41}));
         }
 
         [TestMethod]
         public void ReadMalformedStringCapacityTooLarge()
         {
-            Assert.ThrowsException<ArgumentException>(() => AssertToByteArrayAndBackEquals("", 300, 0));
+            Assert.ThrowsException<ArgumentException>(() => AssertToByteArrayAndBackEquals("", 20000, 0));
         }
 
         [TestMethod]
         public void ReadA()
         {
-            AssertFromByteArrayEquals("A", 1, 1, (byte) 'A');
+            AssertFromByteArrayEquals("A", 0, 1, 0, 1, 0x00, 0x41);
         }
 
         [TestMethod]
         public void ReadAbc()
         {
-            AssertFromByteArrayEquals("Abc", 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertFromByteArrayEquals("Abc", 0, 3, 0, 3, 0x00, 0x41, 0x00, 0x62, 0x00, 0x63);
         }
 
         [TestMethod]
         public void WriteNullWithReservedLengthZero()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 0, 0, 0));
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 0, 0, 0, 0, 0));
         }
 
         [TestMethod]
         public void WriteEmptyStringWithReservedLengthZero()
         {
-            AssertToByteArrayAndBackEquals("", 0, 0, 0);
+            AssertToByteArrayAndBackEquals("", 0, 0, 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthZero()
         {
-            AssertToByteArrayAndBackEquals("", 0, 0, 0);
+            AssertToByteArrayAndBackEquals("", 0, 0, 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteNullWithReservedLengthOne()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 1, 1, 0));
+            Assert.ThrowsException<ArgumentNullException>(() => AssertToByteArrayAndBackEquals(null, 1, 0, 1 , 0, 0));
         }
 
         [TestMethod]
         public void WriteEmptyStringWithReservedLengthOne()
         {
-            AssertToByteArrayAndBackEquals("", 1, 1, 0, 0);
+            AssertToByteArrayAndBackEquals("", 1, 0, 1, 0, 0, 0, 0);
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthOne()
         {
-            AssertToByteArrayAndBackEquals("A", 1, 1, 1, (byte) 'A');
+            AssertToByteArrayAndBackEquals("A", 1, 0, 1, 0, 1, 0x00, 0x41);
         }
 
         [TestMethod]
         public void WriteAWithReservedLengthTwo()
         {
-            AssertToByteArrayAndBackEquals("A", 2, 2, 1, (byte) 'A', 0);
+            AssertToByteArrayAndBackEquals("A", 2, 0, 2, 0, 1, 0x00, 0x41, 0, 0);
         }
 
         [TestMethod]
         public void WriteAbcWithStringLargerThanReservedLength()
         {
-            Assert.ThrowsException<ArgumentException>(() => S7String.ToByteArray("Abc", 2));
+            Assert.ThrowsException<ArgumentException>(() => S7WString.ToByteArray("Abc", 2));
         }
 
         [TestMethod]
         public void WriteAbcWithReservedLengthThree()
         {
-            AssertToByteArrayAndBackEquals("Abc", 3, 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
+            AssertToByteArrayAndBackEquals("Abc", 3, 0, 3, 0, 3, 0x00, 0x41, 0x00, 0x62, 0x00, 0x63);
         }
 
         [TestMethod]
         public void WriteAbcWithReservedLengthFour()
         {
-            AssertToByteArrayAndBackEquals("Abc", 4, 4, 3, (byte) 'A', (byte) 'b', (byte) 'c', 0);
+            AssertToByteArrayAndBackEquals("Abc", 4, 0, 4, 0, 3, 0x00, 0x41, 0x00, 0x62, 0x00, 0x63, 0 , 0);
         }
 
         private static void AssertFromByteArrayEquals(string expected, params byte[] bytes)
         {
-            var convertedString = S7String.FromByteArray(bytes);
+            var convertedString = S7WString.FromByteArray(bytes);
             Assert.AreEqual(expected, convertedString);
         }
 
 
         private static void AssertToByteArrayAndBackEquals(string value, int reservedLength, params byte[] expected)
         {
-            var convertedData = S7String.ToByteArray(value, reservedLength);
+            var convertedData = S7WString.ToByteArray(value, reservedLength);
             CollectionAssert.AreEqual(expected, convertedData);
-            var convertedBack = S7String.FromByteArray(convertedData);
+            var convertedBack = S7WString.FromByteArray(convertedData);
             Assert.AreEqual(value, convertedBack);
         }
     }
