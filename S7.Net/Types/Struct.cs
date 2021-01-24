@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 
 namespace S7.Net.Types
@@ -18,11 +19,11 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
             var infos = structType
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -61,6 +62,16 @@ namespace S7.Net.Types
                             numBytes++;
                         numBytes += 8;
                         break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += attribute.ReservedLengthInBytes;
+                        break;
                     default:
                         numBytes += GetStructSize(info.FieldType);
                         break;
@@ -91,11 +102,11 @@ namespace S7.Net.Types
 
 
             var infos = structValue.GetType()
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -178,6 +189,32 @@ namespace S7.Net.Types
                         info.SetValue(structValue, LReal.FromByteArray(data));
                         numBytes += 8;
                         break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+
+                        // hier auswerten
+                        var sData = new byte[attribute.ReservedLengthInBytes];
+                        Array.Copy(bytes, (int)numBytes, sData, 0, sData.Length);
+                        switch (attribute.Type)
+                        {
+                            case S7StringType.S7String:
+                                info.SetValue(structValue, S7String.FromByteArray(sData));
+                                break;
+                            case S7StringType.S7WString:
+                                info.SetValue(structValue, S7WString.FromByteArray(sData));
+                                break;
+                            default:
+                                throw new ArgumentException("Please use a valid string type for the S7StringAttribute");
+                        }
+
+                        numBytes += sData.Length;
+                        break;
                     default:
                         var buffer = new byte[GetStructSize(info.FieldType)];
                         if (buffer.Length == 0)
@@ -209,11 +246,11 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
             var infos = type
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -254,6 +291,18 @@ namespace S7.Net.Types
                     case "Double":
                         bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
                         break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+
+                        bytes2 = attribute.Type switch
+                        {
+                            S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                            S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                            _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                        };
+                        break;
                 }
                 if (bytes2 != null)
                 {
@@ -269,7 +318,5 @@ namespace S7.Net.Types
             }
             return bytes;
         }
-
-
     }
 }
