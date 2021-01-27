@@ -179,6 +179,11 @@
         S7String,
 
         /// <summary>
+        /// S7 WString variable type (variable)
+        /// </summary>
+        S7WString,
+
+        /// <summary>
         /// Timer variable type
         /// </summary>
         Timer,
