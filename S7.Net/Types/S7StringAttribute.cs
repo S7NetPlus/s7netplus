@@ -57,11 +57,11 @@ namespace S7.Net.Types
         /// <summary>
         /// ASCII string.
         /// </summary>
-        S7String,
+        S7String = VarType.S7String,
 
         /// <summary>
         /// Unicode string.
         /// </summary>
-        S7WString
+        S7WString = VarType.S7WString
     }
 }

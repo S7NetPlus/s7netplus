@@ -65,7 +65,7 @@ namespace S7.Net.Types
                     case "String":
                         S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
                         if (attribute == default(S7StringAttribute))
-                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
 
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -192,7 +192,7 @@ namespace S7.Net.Types
                     case "String":
                         S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
                         if (attribute == default(S7StringAttribute))
-                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
 
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
@@ -294,7 +294,7 @@ namespace S7.Net.Types
                     case "String":
                         S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
                         if (attribute == default(S7StringAttribute))
-                            throw new ArgumentException("Please add S7StringAttribute to the field you are trying to read or write");
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
 
                         bytes2 = attribute.Type switch
                         {
