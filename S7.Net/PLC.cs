@@ -14,7 +14,8 @@ namespace S7.Net
     public partial class Plc : IDisposable
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
+        private readonly AutoReconnector autoReconnector;
+
         //TCP connection to device
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
@@ -128,8 +129,9 @@ namespace S7.Net
         /// <param name="port">Port address of the PLC, default 102</param>
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        /// <param name="autoReconnect">option of the auto reconnect
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot, bool autoReconnect=false)
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
                 throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
@@ -143,6 +145,11 @@ namespace S7.Net
             Rack = rack;
             Slot = slot;
             MaxPDUSize = 240;
+
+            if (autoReconnect)
+            {
+                autoReconnector = new AutoReconnector(this);
+            }
         }
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
@@ -155,7 +162,7 @@ namespace S7.Net
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, bool autoReconnect = false)
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
                 throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
@@ -169,6 +176,11 @@ namespace S7.Net
             Rack = rack;
             Slot = slot;
             MaxPDUSize = 240;
+
+            if (autoReconnect)
+            {
+                autoReconnector = new AutoReconnector(this);
+            }
         }
 
         /// <summary>
@@ -178,7 +190,12 @@ namespace S7.Net
         {
             if (tcpClient != null)
             {
-                if (tcpClient.Connected) tcpClient.Close();
+                if (tcpClient.Connected)
+                {
+                    tcpClient.Close();
+                    autoReconnector.Stop();
+                }
+
             }
         }
 
