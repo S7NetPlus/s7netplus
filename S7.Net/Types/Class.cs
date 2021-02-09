@@ -32,6 +32,7 @@ namespace S7.Net.Types
                 case "Boolean":
                     numBytes += 0.125;
                     break;
+                case "Char":
                 case "Byte":
                     numBytes = Math.Ceiling(numBytes);
                     numBytes++;
@@ -130,6 +131,11 @@ namespace S7.Net.Types
                 case "Byte":
                     numBytes = Math.Ceiling(numBytes);
                     value = (byte)(bytes[(int)numBytes]);
+                    numBytes++;
+                    break;
+                case "Char":
+                    numBytes = Math.Ceiling(numBytes);
+                    value = (char)(bytes[(int)numBytes]);
                     numBytes++;
                     break;
                 case "Int16":
@@ -265,6 +271,12 @@ namespace S7.Net.Types
                     numBytes = (int)Math.Ceiling(numBytes);
                     bytePos = (int)numBytes;
                     bytes[bytePos] = (byte)propertyValue;
+                    numBytes++;
+                    break;
+                case "Char":
+                    numBytes = (int)Math.Ceiling(numBytes);
+                    bytePos = (int)numBytes;
+                    bytes[bytePos] = Convert.ToByte(propertyValue);
                     numBytes++;
                     break;
                 case "Int16":
