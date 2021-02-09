@@ -7,6 +7,7 @@ using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 #endregion
 
@@ -154,7 +155,8 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                CharArrayVariable = new char[] { 'h', 'e', 'l', 'l', 'o' },
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -168,6 +170,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.IsTrue(tc.CharArrayVariable.SequenceEqual(tc2.CharArrayVariable));
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         [TestMethod]
@@ -576,7 +580,8 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                CharArrayVariable = new char[] { 'h', 'e', 'l', 'l', 'o' },
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -592,6 +597,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable, 0.1);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.CharArrayVariable, tc2.CharArrayVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
 
             Assert.AreEqual(TestClassWithPrivateSetters.PRIVATE_SETTER_VALUE, tc2.PrivateSetterProperty);
             Assert.AreEqual(TestClassWithPrivateSetters.PROTECTED_SETTER_VALUE, tc2.ProtectedSetterProperty);
@@ -624,7 +631,8 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                CharArrayVariable = new char[] { 'h', 'e', 'l', 'l', 'o' },
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -642,6 +650,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2.LRealVariable, 3), Math.Round(tc2Generic.LRealVariable, 3));
             Assert.AreEqual(tc2.RealVariable, tc2Generic.RealVariable);
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
+            Assert.IsTrue(tc2.CharArrayVariable.SequenceEqual(tc2Generic.CharArrayVariable));
+            Assert.AreEqual(tc2.StringVariable, tc2Generic.StringVariable);
         }
 
         [TestMethod]
@@ -667,8 +677,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
-            };
+                DWordVariable = 850,
+                CharArrayVariable = new char[] { 'h', 'e', 'l', 'l', 'o' },
+        };
 
             await plc.WriteClassAsync(tc, DB2);
 
@@ -682,6 +693,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2Generic.LRealVariable, 3), Math.Round(tc2GenericWithClassFactory.LRealVariable, 3));
             Assert.AreEqual(tc2Generic.RealVariable, tc2GenericWithClassFactory.RealVariable);
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
+            Assert.IsTrue(tc2Generic.CharArrayVariable.SequenceEqual(tc2GenericWithClassFactory.CharArrayVariable));
+            Assert.AreEqual(tc2Generic.StringVariable, tc2GenericWithClassFactory.StringVariable);
         }
 
         [TestMethod]
@@ -784,8 +797,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
-            };
+                DWordVariable = 850,
+                CharArrayVariable = new char[] { 'h', 'e', 'l', 'l', 'o' },
+        };
             plc.WriteClass(tc, DB2);
 
             int expectedReadBytes = (int)Types.Class.GetClassSize(tc);

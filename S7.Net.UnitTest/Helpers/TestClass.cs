@@ -51,5 +51,12 @@ namespace S7.Net.UnitTest.Helpers
         /// DB1.DBD16
         /// </summary>
         public ushort DWordVariable { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public char[] CharArrayVariable { get; set; } = new char[5];
+
+        public string StringVariable => new string(CharArrayVariable);
     }
 }
