@@ -183,7 +183,7 @@
                         case "Z":
                         case "C":
                             // Counter
-                            dataType = DataType.Timer;
+                            dataType = DataType.Counter;
                             dbNumber = 0;
                             address = int.Parse(input.Substring(1));
                             varType = VarType.Counter;
