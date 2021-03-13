@@ -21,8 +21,8 @@ namespace S7.Net.Types
                 throw new PlcException(ErrorCode.ReadData, "Malformed S7 WString / too short");
             }
 
-            int size = ((bytes[0] << 8) & 0xFF) | (bytes[1] & 0xFF);
-            int length = ((bytes[2] << 8) & 0xFF) | (bytes[3] & 0xFF);
+            int size = (bytes[0] << 8) | bytes[1];
+            int length = (bytes[2] << 8) | bytes[3];
 
             if (length > size)
             {

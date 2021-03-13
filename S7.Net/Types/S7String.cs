@@ -54,7 +54,7 @@ namespace S7.Net.Types
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (reservedLength >= byte.MaxValue) throw new ArgumentException($"The maximum string length supported is {byte.MaxValue}.");
+            if (reservedLength > 254) throw new ArgumentException($"The maximum string length supported is 254.");
 
             var bytes = Encoding.ASCII.GetBytes(value);
             if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
