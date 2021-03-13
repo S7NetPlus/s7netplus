@@ -211,7 +211,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
             plc.WriteStruct(tc, DB2);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
@@ -223,6 +225,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.WStringVariable, tc2.WStringVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         /// <summary>
@@ -739,7 +743,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
 
             plc.WriteStruct(ts, DB2);
@@ -756,6 +762,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(ts2.LRealVariable, ts2Generic.LRealVariable);
             Assert.AreEqual(ts2.RealVariable, ts2Generic.RealVariable);
             Assert.AreEqual(ts2.DWordVariable, ts2Generic.DWordVariable);
+            Assert.AreEqual(ts2.WStringVariable, ts2Generic.WStringVariable);
+            Assert.AreEqual(ts2.StringVariable, ts2Generic.StringVariable);
         }
 
         [TestMethod]
