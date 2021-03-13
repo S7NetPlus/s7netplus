@@ -131,7 +131,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         ushort source = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
                         info.SetValue(structValue, source.ConvertToShort());
                         numBytes += 2;
@@ -140,7 +140,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         info.SetValue(structValue, Word.FromBytes(bytes[(int)numBytes + 1],
                                                                           bytes[(int)numBytes]));
                         numBytes += 2;
@@ -149,7 +149,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 1],
@@ -161,7 +161,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
@@ -172,7 +172,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         info.SetValue(structValue, Real.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
@@ -183,7 +183,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         var data = new byte[8];
                         Array.Copy(bytes, (int)numBytes, data, 0, 8);
                         info.SetValue(structValue, LReal.FromByteArray(data));
@@ -198,7 +198,7 @@ namespace S7.Net.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
 
-                        // hier auswerten
+                        // get the value
                         var sData = new byte[attribute.ReservedLengthInBytes];
                         Array.Copy(bytes, (int)numBytes, sData, 0, sData.Length);
                         switch (attribute.Type)

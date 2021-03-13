@@ -12,9 +12,9 @@ namespace S7.Net.Types
         /// Initializes a new instance of the <see cref="S7StringAttribute"/> class.
         /// </summary>
         /// <param name="type">The string type.</param>
-        /// <param name="reservedLength">Reserved length of the string in characters (default value is 254).</param>
+        /// <param name="reservedLength">Reserved length of the string in characters.</param>
         /// <exception cref="ArgumentException">Please use a valid value for the string type</exception>
-        public S7StringAttribute(S7StringType type, int reservedLength = 254)
+        public S7StringAttribute(S7StringType type, int reservedLength)
         {
             if (!Enum.IsDefined(typeof(S7StringType), type))
                 throw new ArgumentException("Please use a valid value for the string type");
