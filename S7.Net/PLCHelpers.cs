@@ -191,6 +191,8 @@ namespace S7.Net
                     return varCount;
                 case VarType.S7String:
                     return varCount + 2;
+                case VarType.S7WString:
+                    return (varCount * 2) + 4;
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:
