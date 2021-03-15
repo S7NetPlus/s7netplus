@@ -122,6 +122,17 @@ namespace S7.Net.UnitTest.TypeTests
             Assert.AreEqual(expected, convertedString);
         }
 
+        [TestMethod]
+        public void OddS7WStringByteLength()
+        {
+            AssertVarTypeToByteLength(VarType.S7WString, 1, 6);
+        }
+
+        [TestMethod]
+        public void EvenS7WStringByteLength()
+        {
+            AssertVarTypeToByteLength(VarType.S7WString, 2, 8);
+        }
 
         private static void AssertToByteArrayAndBackEquals(string value, int reservedLength, params byte[] expected)
         {
@@ -129,6 +140,12 @@ namespace S7.Net.UnitTest.TypeTests
             CollectionAssert.AreEqual(expected, convertedData);
             var convertedBack = S7WString.FromByteArray(convertedData);
             Assert.AreEqual(value, convertedBack);
+        }
+
+        private void AssertVarTypeToByteLength(VarType varType, int count, int expectedByteLength)
+        {
+            var byteLength = Plc.VarTypeToByteLength(varType, count);
+            Assert.AreEqual(expectedByteLength, byteLength);
         }
     }
 }
