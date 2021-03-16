@@ -125,6 +125,8 @@ namespace S7.Net
                     return Types.String.FromByteArray(bytes);
                 case VarType.S7String:
                     return S7String.FromByteArray(bytes);
+                case VarType.S7WString:
+                    return S7WString.FromByteArray(bytes);
 
                 case VarType.Timer:
                     if (varCount == 1)
