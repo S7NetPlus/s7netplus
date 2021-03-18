@@ -182,8 +182,15 @@ namespace S7.Net
             }
         }
 
-        private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
+        private void AssertReadRequestLimits(ICollection<DataItem> dataItems)
         {
+            // https://github.com/S7NetPlus/s7netplus/issues/380
+            var maximumNumberOfDataItems = 20;
+            if (dataItems.Count > maximumNumberOfDataItems)
+            {
+                throw new Exception($"Can not read more than {maximumNumberOfDataItems} at a time.");
+            }
+
             // send request limit: 19 bytes of header data, 12 bytes of parameter data for each dataItem
             var requiredRequestSize = 19 + dataItems.Count * 12;
             if (requiredRequestSize > MaxPDUSize) throw new Exception($"Too many vars requested for read. Request size ({requiredRequestSize}) is larger than protocol limit ({MaxPDUSize}).");

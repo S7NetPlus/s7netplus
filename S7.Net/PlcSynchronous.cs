@@ -451,7 +451,7 @@ namespace S7.Net
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
-            AssertPduSizeForRead(dataItems);
+            AssertReadRequestLimits(dataItems);
 
             var stream = GetStreamIfAvailable();
 

@@ -256,9 +256,7 @@ namespace S7.Net
         /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
         public async Task<List<DataItem>> ReadMultipleVarsAsync(List<DataItem> dataItems, CancellationToken cancellationToken = default)
         {
-            //Snap7 seems to choke on PDU sizes above 256 even if snap7 
-            //replies with bigger PDU size in connection setup.
-            AssertPduSizeForRead(dataItems);
+            AssertReadRequestLimits(dataItems);
 
             var stream = GetStreamIfAvailable();
 

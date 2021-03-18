@@ -1,6 +1,7 @@
 ﻿#region Using
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.Types;
@@ -949,6 +950,39 @@ namespace S7.Net.UnitTest
             // Depending on how tests run, this can also just succeed without getting cancelled at all. Do nothing in this case.
             Console.WriteLine("Task was not cancelled as expected.");
         }
+
+        /// <summary>
+        /// https://github.com/S7NetPlus/s7netplus/issues/380
+        /// </summary>
+        [TestMethod]
+        public async Task Test_ManyDataitems()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            async Task TestDataItems(int numberOfDataItems)
+            {
+                var dataItems = Enumerable.Range(0, numberOfDataItems)
+                    .Select(i => new DataItem
+                    {
+                        VarType = VarType.Bit,
+                        StartByteAdr = i,
+                        Count = 1,
+                        DB = 1,
+                        DataType = DataType.DataBlock
+                    })
+                    .ToList();
+                await plc.ReadMultipleVarsAsync(dataItems);
+            }
+
+            var maximumNumberOfDataItems = 20;
+
+            // First test that running with the maximum number is ok.
+            await TestDataItems(maximumNumberOfDataItems);
+
+            // Now test that with 1 item more, we get the expected exception.
+            await Assert.ThrowsExceptionAsync<Exception>(async () => await TestDataItems(maximumNumberOfDataItems + 1));
+        }
+
         #endregion
     }
 }
