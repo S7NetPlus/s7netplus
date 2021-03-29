@@ -104,7 +104,7 @@ namespace S7.Net
             {
                 //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
                 var maxToRead = Math.Min(count, MaxPDUSize - 18);
-                await ReadBytesWithSingleRequestAsync(dataType, db, startByteAdr + index, resultBytes, index, maxToRead, cancellationToken);
+                await ReadBytesWithSingleRequestAsync(dataType, db, startByteAdr + index, resultBytes, index, maxToRead, cancellationToken).ConfigureAwait(false);
                 count -= maxToRead;
                 index += maxToRead;
             }
@@ -127,7 +127,7 @@ namespace S7.Net
         public async Task<object?> ReadAsync(DataType dataType, int db, int startByteAdr, VarType varType, int varCount, byte bitAdr = 0, CancellationToken cancellationToken = default)
         {
             int cntBytes = VarTypeToByteLength(varType, varCount);
-            byte[] bytes = await ReadBytesAsync(dataType, db, startByteAdr, cntBytes, cancellationToken);
+            byte[] bytes = await ReadBytesAsync(dataType, db, startByteAdr, cntBytes, cancellationToken).ConfigureAwait(false);
             return ParseBytes(varType, bytes, varCount, bitAdr);
         }
 
@@ -142,7 +142,7 @@ namespace S7.Net
         public async Task<object?> ReadAsync(string variable, CancellationToken cancellationToken = default)
         {
             var adr = new PLCAddress(variable);
-            return await ReadAsync(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber, cancellationToken);
+            return await ReadAsync(adr.DataType, adr.DbNumber, adr.StartByte, adr.VarType, 1, (byte)adr.BitNumber, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace S7.Net
         {
             int numBytes = Types.Struct.GetStructSize(structType);
             // now read the package
-            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes, cancellationToken);
+            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes, cancellationToken).ConfigureAwait(false);
 
             // and decode it
             return Types.Struct.FromBytes(structType, resultBytes);
@@ -175,7 +175,7 @@ namespace S7.Net
         /// <returns>Returns a nulable struct. If nothing was read null will be returned.</returns>
         public async Task<T?> ReadStructAsync<T>(int db, int startByteAdr = 0, CancellationToken cancellationToken = default) where T : struct
         {
-            return await ReadStructAsync(typeof(T), db, startByteAdr, cancellationToken) as T?;
+            return await ReadStructAsync(typeof(T), db, startByteAdr, cancellationToken).ConfigureAwait(false) as T?;
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace S7.Net
             }
 
             // now read the package
-            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes, cancellationToken);
+            var resultBytes = await ReadBytesAsync(DataType.DataBlock, db, startByteAdr, numBytes, cancellationToken).ConfigureAwait(false);
             // and decode it
             Class.FromBytes(sourceClass, resultBytes);
 
@@ -217,7 +217,7 @@ namespace S7.Net
         /// <returns>An instance of the class with the values read from the PLC. If no data has been read, null will be returned</returns>
         public async Task<T?> ReadClassAsync<T>(int db, int startByteAdr = 0, CancellationToken cancellationToken = default) where T : class
         {
-            return await ReadClassAsync(() => Activator.CreateInstance<T>(), db, startByteAdr, cancellationToken);
+            return await ReadClassAsync(() => Activator.CreateInstance<T>(), db, startByteAdr, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace S7.Net
         public async Task<T?> ReadClassAsync<T>(Func<T> classFactory, int db, int startByteAdr = 0, CancellationToken cancellationToken = default) where T : class
         {
             var instance = classFactory();
-            var res = await ReadClassAsync(instance, db, startByteAdr, cancellationToken);
+            var res = await ReadClassAsync(instance, db, startByteAdr, cancellationToken).ConfigureAwait(false);
             int readBytes = res.Item1;
             if (readBytes <= 0)
             {
@@ -265,9 +265,9 @@ namespace S7.Net
             try
             {
                 var dataToSend = BuildReadRequestPackage(dataItems.Select(d => DataItem.GetDataItemAddress(d)).ToList());
-                await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+                await stream.WriteAsync(dataToSend, 0, dataToSend.Length).ConfigureAwait(false);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
+                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
                 ParseDataIntoDataItems(s7data, dataItems);
@@ -306,7 +306,7 @@ namespace S7.Net
             while (count > 0)
             {
                 var maxToWrite = (int)Math.Min(count, MaxPDUSize - 35);
-                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite, cancellationToken);
+                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite, cancellationToken).ConfigureAwait(false);
                 count -= maxToWrite;
                 localIndex += maxToWrite;
             }
@@ -328,7 +328,7 @@ namespace S7.Net
             if (bitAdr < 0 || bitAdr > 7)
                 throw new InvalidAddressException(string.Format("Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid", bitAdr));
 
-            await WriteBitWithASingleRequestAsync(dataType, db, startByteAdr, bitAdr, value, cancellationToken);
+            await WriteBitWithASingleRequestAsync(dataType, db, startByteAdr, bitAdr, value, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace S7.Net
             if (value < 0 || value > 1)
                 throw new ArgumentException("Value must be 0 or 1", nameof(value));
 
-            await WriteBitAsync(dataType, db, startByteAdr, bitAdr, value == 1, cancellationToken);
+            await WriteBitAsync(dataType, db, startByteAdr, bitAdr, value == 1, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -370,7 +370,7 @@ namespace S7.Net
                 //Must be writing a bit value as bitAdr is specified
                 if (value is bool boolean)
                 {
-                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, boolean, cancellationToken);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, boolean, cancellationToken).ConfigureAwait(false);
                 }
                 else if (value is int intValue)
                 {
@@ -380,11 +380,11 @@ namespace S7.Net
                                 "Addressing Error: You can only reference bitwise locations 0-7. Address {0} is invalid",
                                 bitAdr), nameof(bitAdr));
 
-                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, intValue == 1, cancellationToken);
+                    await WriteBitAsync(dataType, db, startByteAdr, bitAdr, intValue == 1, cancellationToken).ConfigureAwait(false);
                 }
                 else throw new ArgumentException("Value must be a bool or an int to write a bit", nameof(value));
             }
-            else await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value), cancellationToken);
+            else await WriteBytesAsync(dataType, db, startByteAdr, Serialization.SerializeValue(value), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -399,7 +399,7 @@ namespace S7.Net
         public async Task WriteAsync(string variable, object value, CancellationToken cancellationToken = default)
         {
             var adr = new PLCAddress(variable);
-            await WriteAsync(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber, cancellationToken);
+            await WriteAsync(adr.DataType, adr.DbNumber, adr.StartByte, value, adr.BitNumber, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace S7.Net
         public async Task WriteStructAsync(object structValue, int db, int startByteAdr = 0, CancellationToken cancellationToken = default)
         {
             var bytes = Struct.ToBytes(structValue).ToList();
-            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray(), cancellationToken);
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes.ToArray(), cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -430,7 +430,7 @@ namespace S7.Net
         {
             byte[] bytes = new byte[(int)Class.GetClassSize(classValue)];
             Types.Class.ToBytes(classValue, bytes);
-            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes, cancellationToken);
+            await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -440,7 +440,7 @@ namespace S7.Net
             var dataToSend = BuildReadRequestPackage(new [] { new DataItemAddress(dataType, db, startByteAdr, count)});
             await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
 
-            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
+            var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
             AssertReadResponse(s7data, count);
 
             Array.Copy(s7data, 18, buffer, offset, count);
@@ -482,9 +482,9 @@ namespace S7.Net
                 var stream = GetStreamIfAvailable();
                 var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
 
-                await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken);
+                await stream.WriteAsync(dataToSend, 0, dataToSend.Length, cancellationToken).ConfigureAwait(false);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
+                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (OperationCanceledException)
@@ -505,9 +505,9 @@ namespace S7.Net
             {
                 var dataToSend = BuildWriteBitPackage(dataType, db, startByteAdr, bitValue, bitAdr);
 
-                await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+                await stream.WriteAsync(dataToSend, 0, dataToSend.Length).ConfigureAwait(false);
 
-                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken);
+                var s7data = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (OperationCanceledException)
