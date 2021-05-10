@@ -184,7 +184,7 @@ namespace S7.Net
             switch (varType)
             {
                 case VarType.Bit:
-                    return varCount + 7 / 8;
+                    return (varCount + 7) / 8;
                 case VarType.Byte:
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
