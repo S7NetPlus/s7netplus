@@ -30,8 +30,8 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType), 
-        /// the address of the memory, the address of the byte and the bytes count. 
+        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
+        /// the address of the memory, the address of the byte and the bytes count.
         /// </summary>
         /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
         /// <param name="db">Address of the memory to be read</param>
