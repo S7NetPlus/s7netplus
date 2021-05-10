@@ -26,7 +26,7 @@
         /// </summary>
         public static byte ClearBit(byte value, int bit)
         {
-            return (byte)((value | (~(1 << bit))) & 0xFF);
+            return (byte)((value & (~(1 << bit))) & 0xFF);
         }
 
     }
