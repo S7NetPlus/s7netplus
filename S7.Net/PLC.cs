@@ -14,7 +14,7 @@ namespace S7.Net
     public partial class Plc : IDisposable
     {
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
+
         //TCP connection to device
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
