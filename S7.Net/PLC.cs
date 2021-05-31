@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Internal;
 using S7.Net.Protocol;
 using S7.Net.Types;
 
@@ -14,6 +15,8 @@ namespace S7.Net
     /// </summary>
     public partial class Plc : IDisposable
     {
+        private readonly TaskQueue queue = new TaskQueue();
+
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
 
         //TCP connection to device

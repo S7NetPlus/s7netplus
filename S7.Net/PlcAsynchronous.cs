@@ -501,27 +501,33 @@ namespace S7.Net
             }
         }
 
-        private async Task<COTP.TPDU> RequestTpduAsync(byte[] requestData, CancellationToken cancellationToken = default)
+        private Task<COTP.TPDU> RequestTpduAsync(byte[] requestData, CancellationToken cancellationToken = default)
         {
             var stream = GetStreamIfAvailable();
 
-            await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
-            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            return queue.Enqueue(async () =>
+            {
+                await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
+                var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
 
-            return response;
+                return response;
+            });
         }
 
         private Task<byte[]> RequestTsduAsync(byte[] requestData, CancellationToken cancellationToken = default) =>
             RequestTsduAsync(requestData, 0, requestData.Length, cancellationToken);
 
-        private async Task<byte[]> RequestTsduAsync(byte[] requestData, int offset, int length, CancellationToken cancellationToken = default)
+        private Task<byte[]> RequestTsduAsync(byte[] requestData, int offset, int length, CancellationToken cancellationToken = default)
         {
             var stream = GetStreamIfAvailable();
 
-            await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
-            var response = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            return queue.Enqueue(async () =>
+            {
+                await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
+                var response = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
 
-            return response;
+                return response;
+            });
         }
     }
 }

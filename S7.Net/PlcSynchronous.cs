@@ -469,12 +469,7 @@ namespace S7.Net
 
         private byte[] RequestTsdu(byte[] requestData, int offset, int length)
         {
-            var stream = GetStreamIfAvailable();
-
-            stream.Write(requestData, offset, length);
-            var response = COTP.TSDU.Read(stream);
-
-            return response;
+            return RequestTsduAsync(requestData, offset, length).GetAwaiter().GetResult();
         }
     }
 }
