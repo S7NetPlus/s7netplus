@@ -298,7 +298,6 @@ namespace S7.Net
 
         private void ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count)
         {
-            var stream = GetStreamIfAvailable();
             try
             {
                 // first create the header
@@ -309,9 +308,7 @@ namespace S7.Net
                 BuildReadDataRequestPackage(package, dataType, db, startByteAdr, count);
 
                 var dataToSend = package.ToArray();
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = RequestTsdu(dataToSend);
                 AssertReadResponse(s7data, count);
 
                 Array.Copy(s7data, 18, buffer, offset, count);
@@ -331,13 +328,11 @@ namespace S7.Net
         {
             AssertPduSizeForWrite(dataItems);
 
-            var stream = GetStreamIfAvailable();
 
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
-            stream.Write(message.Array, 0, length);
+            var response = RequestTsdu(message.Array, 0, length);
 
-            var response = COTP.TSDU.Read(stream);
             S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
@@ -345,12 +340,9 @@ namespace S7.Net
         {
             try
             {
-                var stream = GetStreamIfAvailable();
                 var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
+                var s7data = RequestTsdu(dataToSend);
 
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
@@ -425,14 +417,11 @@ namespace S7.Net
 
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
-            var stream = GetStreamIfAvailable();
             try
             {
                 var dataToSend = BuildWriteBitPackage(dataType, db, startByteAdr, bitValue, bitAdr);
+                var s7data = RequestTsdu(dataToSend);
 
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
@@ -453,8 +442,6 @@ namespace S7.Net
         {
             AssertPduSizeForRead(dataItems);
 
-            var stream = GetStreamIfAvailable();
-
             try
             {
                 // first create the header
@@ -468,9 +455,7 @@ namespace S7.Net
                 }
 
                 var dataToSend = package.ToArray();
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream); //TODO use Async
+                var s7data = RequestTsdu(dataToSend);
 
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
@@ -480,6 +465,18 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
+        }
+
+        private byte[] RequestTsdu(byte[] requestData) => RequestTsdu(requestData, 0, requestData.Length);
+
+        private byte[] RequestTsdu(byte[] requestData, int offset, int length)
+        {
+            var stream = GetStreamIfAvailable();
+
+            stream.Write(requestData, offset, length);
+            var response = COTP.TSDU.Read(stream);
+
+            return response;
         }
     }
 }
