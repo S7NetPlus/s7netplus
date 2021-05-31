@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using S7.Net.Protocol;
-using System.IO;
 using System.Threading;
 using S7.Net.Protocol.S7;
 
@@ -500,15 +499,6 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.WriteData, exc);
             }
-        }
-
-        private Stream GetStreamIfAvailable()
-        {
-            if (_stream == null)
-            {
-                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
-            }
-            return _stream;
         }
 
         private async Task<COTP.TPDU> RequestTpduAsync(byte[] requestData, CancellationToken cancellationToken = default)

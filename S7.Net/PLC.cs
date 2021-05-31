@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using S7.Net.Protocol;
@@ -240,6 +241,16 @@ namespace S7.Net
                 default:
                     throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
             }
+        }
+
+        private Stream GetStreamIfAvailable()
+        {
+            if (_stream == null)
+            {
+                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
+            }
+
+            return _stream;
         }
 
         #region IDisposable Support
