@@ -2,8 +2,6 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
 using S7.Net.Protocol;
 using S7.Net.Helper;
 
