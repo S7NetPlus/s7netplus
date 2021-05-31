@@ -54,7 +54,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Read and decode a certain number of bytes of the "VarType" provided. 
+        /// Read and decode a certain number of bytes of the "VarType" provided.
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
@@ -115,10 +115,10 @@ namespace S7.Net
 
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
-        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="sourceClass">Instance of the class that will store the values</param>
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>The number of read bytes</returns>
@@ -138,7 +138,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified. To instantiate the class defined by the generic
         /// type, the class needs a default constructor.
         /// </summary>
@@ -152,7 +152,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <typeparam name="T">The class that will be instantiated</typeparam>
@@ -186,7 +186,7 @@ namespace S7.Net
             while (count > 0)
             {
                 //TODO: Figure out how to use MaxPDUSize here
-                //Snap7 seems to choke on PDU sizes above 256 even if snap7 
+                //Snap7 seems to choke on PDU sizes above 256 even if snap7
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
                 WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
@@ -431,10 +431,10 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads multiple vars in a single request. 
+        /// Reads multiple vars in a single request.
         /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
         /// Values are stored in the property "Value" of the dataItem and are already converted.
-        /// If you don't want the conversion, just create a dataItem of bytes. 
+        /// If you don't want the conversion, just create a dataItem of bytes.
         /// The number of DataItems as well as the total size of the requested data can not exceed a certain limit (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read.</param>
