@@ -1,6 +1,7 @@
 using S7.Net.Types;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -24,15 +25,21 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous open operation.</returns>
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
-            _stream = await ConnectAsync().ConfigureAwait(false);
+            var stream = await ConnectAsync().ConfigureAwait(false);
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                await EstablishConnection(cancellationToken).ConfigureAwait(false);
+                await queue.Enqueue(async () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await EstablishConnection(stream, cancellationToken).ConfigureAwait(false);
+                    _stream = stream;
+
+                    return default(object);
+                });
             }
             catch(Exception)
             {
-                _stream.Dispose();
+                stream.Dispose();
                 throw;
             }
         }
@@ -45,16 +52,16 @@ namespace S7.Net
             return tcpClient.GetStream();
         }
 
-        private async Task EstablishConnection(CancellationToken cancellationToken)
+        private async Task EstablishConnection(Stream stream, CancellationToken cancellationToken)
         {
-            await RequestConnection(cancellationToken).ConfigureAwait(false);
-            await SetupConnection(cancellationToken).ConfigureAwait(false);
+            await RequestConnection(stream, cancellationToken).ConfigureAwait(false);
+            await SetupConnection(stream, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task RequestConnection(CancellationToken cancellationToken)
+        private async Task RequestConnection(Stream stream, CancellationToken cancellationToken)
         {
             var requestData = ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot);
-            var response = await RequestTpduAsync(requestData, cancellationToken).ConfigureAwait(false);
+            var response = await NoLockRequestTpduAsync(stream, requestData, cancellationToken).ConfigureAwait(false);
 
             if (response.PDUType != COTP.PduType.ConnectionConfirmed)
             {
@@ -62,11 +69,13 @@ namespace S7.Net
             }
         }
 
-        private async Task SetupConnection(CancellationToken cancellationToken)
+        private async Task SetupConnection(Stream stream, CancellationToken cancellationToken)
         {
             var setupData = GetS7ConnectionSetup();
 
-            var s7data = await RequestTsduAsync(setupData, cancellationToken).ConfigureAwait(false);
+            var s7data = await NoLockRequestTsduAsync(stream, setupData, 0, setupData.Length, cancellationToken)
+                .ConfigureAwait(false);
+
             if (s7data.Length < 2)
                 throw new WrongNumberOfBytesException("Not enough data received in response to Communication Setup");
 
@@ -501,19 +510,6 @@ namespace S7.Net
             }
         }
 
-        private Task<COTP.TPDU> RequestTpduAsync(byte[] requestData, CancellationToken cancellationToken = default)
-        {
-            var stream = GetStreamIfAvailable();
-
-            return queue.Enqueue(async () =>
-            {
-                await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
-                var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
-
-                return response;
-            });
-        }
-
         private Task<byte[]> RequestTsduAsync(byte[] requestData, CancellationToken cancellationToken = default) =>
             RequestTsduAsync(requestData, 0, requestData.Length, cancellationToken);
 
@@ -521,13 +517,26 @@ namespace S7.Net
         {
             var stream = GetStreamIfAvailable();
 
-            return queue.Enqueue(async () =>
-            {
-                await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
-                var response = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            return queue.Enqueue(() =>
+                NoLockRequestTsduAsync(stream, requestData, offset, length, cancellationToken));
+        }
 
-                return response;
-            });
+        private static async Task<COTP.TPDU> NoLockRequestTpduAsync(Stream stream, byte[] requestData,
+            CancellationToken cancellationToken = default)
+        {
+            await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
+            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+
+            return response;
+        }
+
+        private static async Task<byte[]> NoLockRequestTsduAsync(Stream stream, byte[] requestData, int offset, int length,
+            CancellationToken cancellationToken = default)
+        {
+            await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
+            var response = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+
+            return response;
         }
     }
 }
