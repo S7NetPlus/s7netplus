@@ -35,7 +35,7 @@ namespace S7.Net
                     _stream = stream;
 
                     return default(object);
-                });
+                }).ConfigureAwait(false);
             }
             catch(Exception)
             {
