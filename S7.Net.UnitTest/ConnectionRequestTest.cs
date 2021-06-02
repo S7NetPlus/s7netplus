@@ -63,7 +63,7 @@ namespace S7.Net.UnitTest
             {
                 3, 0, 0, 22, //TPKT
                 17, //COTP Header Length
-                224, //Connect Request 
+                224, //Connect Request
                 0, 0, //Destination Reference
                 0, 46, //Source Reference
                 0, //Flags
