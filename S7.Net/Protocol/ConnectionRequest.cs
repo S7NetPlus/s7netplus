@@ -9,7 +9,7 @@ namespace S7.Net.Protocol
             byte[] bSend1 = {
                     3, 0, 0, 22, //TPKT
                     17,     //COTP Header Length
-                    224,    //Connect Request 
+                    224,    //Connect Request
                     0, 0,   //Destination Reference
                     0, 46,  //Source Reference
                     0,      //Flags
@@ -27,12 +27,12 @@ namespace S7.Net.Protocol
             switch (cpu)
             {
                 case CpuType.S7200:
-                    //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
+                    // local
                     bSend1[13] = 0x10;
                     bSend1[14] = 0x00;
-                    //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
+                    // remote
                     bSend1[17] = 0x10;
-                    bSend1[18] = 0x00;
+                    bSend1[18] = 0x01;
                     break;
                 case CpuType.Logo0BA8:
                     // These values are taken from NodeS7, it's not verified if these are
