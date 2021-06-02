@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Internal;
 using S7.Net.Protocol;
 using S7.Net.Types;
 
@@ -13,6 +15,8 @@ namespace S7.Net
     /// </summary>
     public partial class Plc : IDisposable
     {
+        private readonly TaskQueue queue = new TaskQueue();
+
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
 
         //TCP connection to device
@@ -240,6 +244,16 @@ namespace S7.Net
                 default:
                     throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
             }
+        }
+
+        private Stream GetStreamIfAvailable()
+        {
+            if (_stream == null)
+            {
+                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
+            }
+
+            return _stream;
         }
 
         #region IDisposable Support
