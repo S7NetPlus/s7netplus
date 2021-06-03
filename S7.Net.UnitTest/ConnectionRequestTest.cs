@@ -49,11 +49,11 @@ namespace S7.Net.UnitTest
         [TestMethod]
         public void Test_ConnectionRequest_S7_1500()
         {
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 0),
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 0),
                 ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 0, 0));
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 1),
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 1),
                 ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 0, 1));
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 33),
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 33),
                 ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 1, 1));
         }
 
@@ -63,7 +63,7 @@ namespace S7.Net.UnitTest
             {
                 3, 0, 0, 22, //TPKT
                 17, //COTP Header Length
-                224, //Connect Request 
+                224, //Connect Request
                 0, 0, //Destination Reference
                 0, 46, //Source Reference
                 0, //Flags

@@ -6,64 +6,77 @@ namespace S7.Net.Protocol
     {
         public static byte[] GetCOTPConnectionRequest(CpuType cpu, Int16 rack, Int16 slot)
         {
+            var tsapPair = GetDefaultTsapPair(cpu, rack, slot);
+
             byte[] bSend1 = {
                     3, 0, 0, 22, //TPKT
                     17,     //COTP Header Length
-                    224,    //Connect Request 
+                    224,    //Connect Request
                     0, 0,   //Destination Reference
                     0, 46,  //Source Reference
                     0,      //Flags
                     193,    //Parameter Code (src-tasp)
                     2,      //Parameter Length
-                    1, 0,   //Source TASP
+                    tsapPair.Local.FirstByte, tsapPair.Local.SecondByte,   //Source TASP
                     194,    //Parameter Code (dst-tasp)
                     2,      //Parameter Length
-                    3, 0,   //Destination TASP
+                    tsapPair.Remote.FirstByte, tsapPair.Remote.SecondByte,   //Destination TASP
                     192,    //Parameter Code (tpdu-size)
                     1,      //Parameter Length
                     10      //TPDU Size (2^10 = 1024)
                 };
 
-            switch (cpu)
+            return bSend1;
+        }
+
+        /// <summary>
+        /// Builds a <see cref="TsapPair" /> that can be used to connect to a PLC using the default connection
+        /// addresses.
+        /// </summary>
+        /// <remarks>
+        /// The remote TSAP is constructed using <code>new Tsap(0x03, (byte) ((rack &lt;&lt; 5) | slot))</code>.
+        /// </remarks>
+        /// <param name="cpuType">The CPU type of the PLC.</param>
+        /// <param name="rack">The rack of the PLC's network card.</param>
+        /// <param name="slot">The slot of the PLC's network card.</param>
+        /// <returns>A TSAP pair that matches the given parameters.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="cpuType"/> is invalid.
+        ///
+        /// -or-
+        ///
+        /// The <paramref name="rack"/> parameter is greater than 15.
+        ///
+        /// -or-
+        ///
+        /// The <paramref name="slot"/> parameter is greater than 15.</exception>
+        public static TsapPair GetDefaultTsapPair(CpuType cpuType, int rack, int slot)
+        {
+            if (rack > 0x0F) throw InvalidRackOrSlot(rack, nameof(rack));
+            if (slot > 0x0F) throw InvalidRackOrSlot(slot, nameof(slot));
+
+            switch (cpuType)
             {
                 case CpuType.S7200:
-                    //S7200: Chr(193) & Chr(2) & Chr(16) & Chr(0) 'Eigener Tsap
-                    bSend1[13] = 0x10;
-                    bSend1[14] = 0x00;
-                    //S7200: Chr(194) & Chr(2) & Chr(16) & Chr(0) 'Fremder Tsap
-                    bSend1[17] = 0x10;
-                    bSend1[18] = 0x00;
-                    break;
+                    return new TsapPair(new Tsap(0x10, 0x00), new Tsap(0x10, 0x00));
                 case CpuType.Logo0BA8:
-                    // These values are taken from NodeS7, it's not verified if these are
-                    // exact requirements to connect to the Logo0BA8.
-                    bSend1[13] = 0x01;
-                    bSend1[14] = 0x00;
-                    bSend1[17] = 0x01;
-                    bSend1[18] = 0x02;
-                    break;
+                    // The actual values are probably on a per-project basis
+                    return new TsapPair(new Tsap(0x01, 0x00), new Tsap(0x01, 0x02));
                 case CpuType.S71200:
+                case CpuType.S71500:
                 case CpuType.S7300:
                 case CpuType.S7400:
-                    //S7300: Chr(193) & Chr(2) & Chr(1) & Chr(0)  'Eigener Tsap
-                    bSend1[13] = 0x01;
-                    bSend1[14] = 0x00;
-                    //S7300: Chr(194) & Chr(2) & Chr(3) & Chr(2)  'Fremder Tsap
-                    bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
-                    break;
-                case CpuType.S71500:
-                    // Eigener Tsap
-                    bSend1[13] = 0x10;
-                    bSend1[14] = 0x02;
-                    // Fredmer Tsap
-                    bSend1[17] = 0x03;
-                    bSend1[18] = (byte) ((rack << 5) | (int) slot);
-                    break;
+                    // Testing with S7 1500 shows only the remote TSAP needs to match. This might differ for other
+                    // PLC types.
+                    return new TsapPair(new Tsap(0x01, 0x00), new Tsap(0x03, (byte) ((rack << 5) | slot)));
                 default:
-                    throw new Exception("Wrong CPU Type Secified");
+                    throw new ArgumentOutOfRangeException(nameof(cpuType), "Invalid CPU Type specified");
             }
-            return bSend1;
+        }
+
+        private static ArgumentOutOfRangeException InvalidRackOrSlot(int value, string name)
+        {
+            return new ArgumentOutOfRangeException(name,
+                $"Invalid {name} value specified (decimal: {value}, hexadecimal: {value:X}), maximum value is 15 (decimal) or 0x0F (hexadecimal).");
         }
     }
 }
