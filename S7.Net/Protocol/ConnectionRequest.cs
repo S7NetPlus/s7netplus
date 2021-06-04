@@ -1,13 +1,9 @@
-﻿using System;
-
-namespace S7.Net.Protocol
+﻿namespace S7.Net.Protocol
 {
     internal static class ConnectionRequest
     {
-        public static byte[] GetCOTPConnectionRequest(CpuType cpu, Int16 rack, Int16 slot)
+        public static byte[] GetCOTPConnectionRequest(TsapPair tsapPair)
         {
-            var tsapPair = TsapPair.GetDefaultTsapPair(cpu, rack, slot);
-
             byte[] bSend1 = {
                     3, 0, 0, 22, //TPKT
                     17,     //COTP Header Length
