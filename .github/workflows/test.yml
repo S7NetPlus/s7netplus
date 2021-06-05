@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        test-framework: [netcoreapp3.1]
+        test-framework: [netcoreapp3.1, net5.0]
         include:
           - os: ubuntu-latest
             installSnap7: true
