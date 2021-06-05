@@ -18,11 +18,30 @@ jobs:
         test-framework: [netcoreapp3.1, net5.0]
         include:
           - os: ubuntu-latest
+            test-framework: netcoreapp3.1
             installSnap7: true
+            dotnet-sdk: '3.1.x'
+          - os: ubuntu-latest
+            test-framework: net5.0
+            installSnap7: true
+            dotnet-sdk: '5.0.x'
           - os: macos-latest
+            test-framework: netcoreapp3.1
             installSnap7: true
+            dotnet-sdk: '3.1.x'
+          - os: macos-latest
+            test-framework: net5.0
+            installSnap7: true
+            dotnet-sdk: '5.0.x'
+          - os: windows-latest
+            test-framework: netcoreapp3.1
+            dotnet-sdk: '3.1.x'
+          - os: windows-latest
+            test-framework: net5.0
+            dotnet-sdk: '5.0.x'
           - os: windows-latest
             test-framework: net452
+            dotnet-sdk: '5.0.x'
       fail-fast: false
 
     steps:
@@ -43,7 +62,7 @@ jobs:
       - name: Setup Dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '5.0.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+          dotnet-version: ${{ matrix.dotnet-sdk }}
 
       - name: Restore
         run: dotnet restore S7.Net.UnitTest
