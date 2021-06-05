@@ -23,6 +23,7 @@ jobs:
             installSnap7: true
           - os: windows-latest
             test-framework: net452
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v2
@@ -42,7 +43,7 @@ jobs:
       - name: Setup Dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
+          dotnet-version: '5.0.x' # SDK Version to use; x will use the latest version of the 3.1 channel
 
       - name: Restore
         run: dotnet restore S7.Net.UnitTest
