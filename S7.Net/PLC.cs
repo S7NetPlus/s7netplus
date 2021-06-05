@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Internal;
 using S7.Net.Protocol;
 using S7.Net.Types;
 
@@ -13,8 +15,10 @@ namespace S7.Net
     /// </summary>
     public partial class Plc : IDisposable
     {
+        private readonly TaskQueue queue = new TaskQueue();
+
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
+
         //TCP connection to device
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
@@ -75,47 +79,26 @@ namespace S7.Net
                 if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
             }
         }
-        
-        /// <summary>
-        /// Returns true if a connection to the PLC can be established
-        /// </summary>
-        public bool IsAvailable
-        {
-            //TODO: Fix This
-            get
-            {
-                try
-                {
-                    OpenAsync().GetAwaiter().GetResult();
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
 
         /// <summary>
-        /// Checks if the socket is connected and polls the other peer (the PLC) to see if it's connected.
-        /// This is the variable that you should continously check to see if the communication is working
-        /// See also: http://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+        /// Gets a value indicating whether a connection to the PLC has been established.
         /// </summary>
-        public bool IsConnected
-        {
-            get
-            {
-                try
-                {
-                    if (tcpClient == null)
-                        return false;
-
-                    //TODO: Actually check communication by sending an empty TPDU
-                    return tcpClient.Connected;
-                }
-                catch { return false; }
-            }
-        }
+        /// <remarks>
+        /// The <see cref="IsConnected"/> property gets the connection state of the Client socket as
+        /// of the last I/O operation. When it returns <c>false</c>, the Client socket was either
+        /// never  connected, or is no longer connected.
+        ///
+        /// <para>
+        /// Because the <see cref="IsConnected"/> property only reflects the state of the connection
+        /// as of the most recent operation, you should attempt to send or receive a message to
+        /// determine the current state. After the message send fails, this property no longer
+        /// returns <c>true</c>. Note that this behavior is by design. You cannot reliably test the
+        /// state of the connection because, in the time between the test and a send/receive, the
+        /// connection could have been lost. Your code should assume the socket is connected, and
+        /// gracefully handle failed transmissions.
+        /// </para>
+        /// </remarks>
+        public bool IsConnected => tcpClient?.Connected ?? false;
 
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
@@ -261,6 +244,16 @@ namespace S7.Net
                 default:
                     throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
             }
+        }
+
+        private Stream GetStreamIfAvailable()
+        {
+            if (_stream == null)
+            {
+                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
+            }
+
+            return _stream;
         }
 
         #region IDisposable Support

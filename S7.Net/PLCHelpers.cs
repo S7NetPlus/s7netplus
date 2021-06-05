@@ -30,8 +30,8 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType), 
-        /// the address of the memory, the address of the byte and the bytes count. 
+        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
+        /// the address of the memory, the address of the byte and the bytes count.
         /// </summary>
         /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
         /// <param name="db">Address of the memory to be read</param>
@@ -184,13 +184,15 @@ namespace S7.Net
             switch (varType)
             {
                 case VarType.Bit:
-                    return varCount + 7 / 8;
+                    return (varCount + 7) / 8;
                 case VarType.Byte:
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
                     return varCount;
                 case VarType.S7String:
-                    return varCount + 2;
+                    return ((varCount + 2) & 1) == 1 ? (varCount + 3) : (varCount + 2);
+                case VarType.S7WString:
+                    return (varCount * 2) + 4;
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:

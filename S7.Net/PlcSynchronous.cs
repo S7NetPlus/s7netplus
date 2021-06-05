@@ -2,8 +2,6 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
 using S7.Net.Protocol;
 using S7.Net.Helper;
 
@@ -54,7 +52,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Read and decode a certain number of bytes of the "VarType" provided. 
+        /// Read and decode a certain number of bytes of the "VarType" provided.
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
         /// If the read was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
@@ -115,10 +113,10 @@ namespace S7.Net
 
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
-        /// <param name="sourceClass">Instance of the class that will store the values</param>       
+        /// <param name="sourceClass">Instance of the class that will store the values</param>
         /// <param name="db">Index of the DB; es.: 1 is for DB1</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <returns>The number of read bytes</returns>
@@ -138,7 +136,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified. To instantiate the class defined by the generic
         /// type, the class needs a default constructor.
         /// </summary>
@@ -152,7 +150,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC. 
+        /// Reads all the bytes needed to fill a class in C#, starting from a certain address, and set all the properties values to the value that are read from the PLC.
         /// This reads only properties, it doesn't read private variable or public variable without {get;set;} specified.
         /// </summary>
         /// <typeparam name="T">The class that will be instantiated</typeparam>
@@ -186,7 +184,7 @@ namespace S7.Net
             while (count > 0)
             {
                 //TODO: Figure out how to use MaxPDUSize here
-                //Snap7 seems to choke on PDU sizes above 256 even if snap7 
+                //Snap7 seems to choke on PDU sizes above 256 even if snap7
                 //replies with bigger PDU size in connection setup.
                 var maxToWrite = Math.Min(count, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
                 WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite);
@@ -298,7 +296,6 @@ namespace S7.Net
 
         private void ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count)
         {
-            var stream = GetStreamIfAvailable();
             try
             {
                 // first create the header
@@ -309,9 +306,7 @@ namespace S7.Net
                 BuildReadDataRequestPackage(package, dataType, db, startByteAdr, count);
 
                 var dataToSend = package.ToArray();
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
+                var s7data = RequestTsdu(dataToSend);
                 AssertReadResponse(s7data, count);
 
                 Array.Copy(s7data, 18, buffer, offset, count);
@@ -331,13 +326,11 @@ namespace S7.Net
         {
             AssertPduSizeForWrite(dataItems);
 
-            var stream = GetStreamIfAvailable();
 
             var message = new ByteArray();
             var length = S7WriteMultiple.CreateRequest(message, dataItems);
-            stream.Write(message.Array, 0, length);
+            var response = RequestTsdu(message.Array, 0, length);
 
-            var response = COTP.TSDU.Read(stream);
             S7WriteMultiple.ParseResponse(response, response.Length, dataItems);
         }
 
@@ -345,12 +338,9 @@ namespace S7.Net
         {
             try
             {
-                var stream = GetStreamIfAvailable();
                 var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
+                var s7data = RequestTsdu(dataToSend);
 
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
@@ -425,14 +415,11 @@ namespace S7.Net
 
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
-            var stream = GetStreamIfAvailable();
             try
             {
                 var dataToSend = BuildWriteBitPackage(dataType, db, startByteAdr, bitValue, bitAdr);
+                var s7data = RequestTsdu(dataToSend);
 
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream);
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (Exception exc)
@@ -442,18 +429,16 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Reads multiple vars in a single request. 
+        /// Reads multiple vars in a single request.
         /// You have to create and pass a list of DataItems and you obtain in response the same list with the values.
         /// Values are stored in the property "Value" of the dataItem and are already converted.
-        /// If you don't want the conversion, just create a dataItem of bytes. 
+        /// If you don't want the conversion, just create a dataItem of bytes.
         /// The number of DataItems as well as the total size of the requested data can not exceed a certain limit (protocol restriction).
         /// </summary>
         /// <param name="dataItems">List of dataitems that contains the list of variables that must be read.</param>
         public void ReadMultipleVars(List<DataItem> dataItems)
         {
             AssertPduSizeForRead(dataItems);
-
-            var stream = GetStreamIfAvailable();
 
             try
             {
@@ -468,9 +453,7 @@ namespace S7.Net
                 }
 
                 var dataToSend = package.ToArray();
-                stream.Write(dataToSend, 0, dataToSend.Length);
-
-                var s7data = COTP.TSDU.Read(stream); //TODO use Async
+                var s7data = RequestTsdu(dataToSend);
 
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
 
@@ -480,6 +463,13 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
+        }
+
+        private byte[] RequestTsdu(byte[] requestData) => RequestTsdu(requestData, 0, requestData.Length);
+
+        private byte[] RequestTsdu(byte[] requestData, int offset, int length)
+        {
+            return RequestTsduAsync(requestData, offset, length).GetAwaiter().GetResult();
         }
     }
 }

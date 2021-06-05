@@ -933,7 +933,14 @@ namespace S7.Net.UnitTest
             S7TestServer.Stop();
 
             var unreachablePlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 2);
-            Assert.IsFalse(unreachablePlc.IsAvailable);
+            try
+            {
+                unreachablePlc.Open();
+            }
+            catch
+            {
+            }
+            Assert.IsFalse(unreachablePlc.IsConnected);
         }
 
         [TestMethod]
@@ -944,7 +951,8 @@ namespace S7.Net.UnitTest
             S7TestServer.Start(TestServerPort);
 
             var reachablePlc = CreatePlc();
-            Assert.IsTrue(reachablePlc.IsAvailable);
+            reachablePlc.Open();
+            Assert.IsTrue(reachablePlc.IsConnected);
         }
 
         [TestMethod]
