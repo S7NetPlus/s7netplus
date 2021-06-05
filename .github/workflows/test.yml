@@ -63,6 +63,15 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ matrix.dotnet-sdk }}
+          
+      - name: Nuget Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.test-framework }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.test-framework }}-nuget
 
       - name: Restore
         run: dotnet restore S7.Net.UnitTest
