@@ -242,8 +242,8 @@ namespace S7.Net
                 // next Item
                 offset += byteCnt;
 
-                // Fill byte in response when bytecount is odd
-                if (dataItem.Count % 2 != 0 && (dataItem.VarType == VarType.Byte || dataItem.VarType == VarType.Bit))
+                // Always align to even offset
+                if (offset % 2 != 0)
                     offset++;
             }
         }
