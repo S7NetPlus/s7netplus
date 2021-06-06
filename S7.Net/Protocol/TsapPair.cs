@@ -68,7 +68,7 @@ namespace S7.Net.Protocol
             switch (cpuType)
             {
                 case CpuType.S7200:
-                    return new TsapPair(new Tsap(0x10, 0x00), new Tsap(0x10, 0x00));
+                    return new TsapPair(new Tsap(0x10, 0x00), new Tsap(0x10, 0x01));
                 case CpuType.Logo0BA8:
                     // The actual values are probably on a per-project basis
                     return new TsapPair(new Tsap(0x01, 0x00), new Tsap(0x01, 0x02));
