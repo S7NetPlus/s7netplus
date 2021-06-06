@@ -10,51 +10,51 @@ namespace S7.Net.UnitTest
         public void Test_ConnectionRequest_S7_200()
         {
             CollectionAssert.AreEqual(MakeConnectionRequest(16, 0, 16, 1),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7200, 0, 0));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7200, 0, 0)));
         }
 
         [TestMethod]
         public void Test_ConnectionRequest_S7_300()
         {
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 0),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7300, 0, 0));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7300, 0, 0)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 1),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7300, 0, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7300, 0, 1)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 33),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7300, 1, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7300, 1, 1)));
         }
 
         [TestMethod]
         public void Test_ConnectionRequest_S7_400()
         {
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 0),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7400, 0, 0));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7400, 0, 0)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 1),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7400, 0, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7400, 0, 1)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 33),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S7400, 1, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7400, 1, 1)));
         }
 
         [TestMethod]
         public void Test_ConnectionRequest_S7_1200()
         {
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 0),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71200, 0, 0));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71200, 0, 0)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 1),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71200, 0, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71200, 0, 1)));
             CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 33),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71200, 1, 1));
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71200, 1, 1)));
         }
 
         [TestMethod]
         public void Test_ConnectionRequest_S7_1500()
         {
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 0),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 0, 0));
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 1),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 0, 1));
-            CollectionAssert.AreEqual(MakeConnectionRequest(0x10, 0x2, 3, 33),
-                ConnectionRequest.GetCOTPConnectionRequest(CpuType.S71500, 1, 1));
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 0),
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71500, 0, 0)));
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 1),
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71500, 0, 1)));
+            CollectionAssert.AreEqual(MakeConnectionRequest(1, 0, 3, 33),
+                ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S71500, 1, 1)));
         }
 
         private static byte[] MakeConnectionRequest(byte sourceTsap1, byte sourceTsap2, byte destTsap1, byte destTsap2)

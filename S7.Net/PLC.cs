@@ -15,6 +15,11 @@ namespace S7.Net
     /// </summary>
     public partial class Plc : IDisposable
     {
+        /// <summary>
+        /// The default port for the S7 protocol.
+        /// </summary>
+        public const int DefaultPort = 102;
+
         private readonly TaskQueue queue = new TaskQueue();
 
         private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
@@ -35,6 +40,11 @@ namespace S7.Net
         /// PORT Number of the PLC, default is 102
         /// </summary>
         public int Port { get; }
+
+        /// <summary>
+        /// The TSAP addresses used during the connection request.
+        /// </summary>
+        public TsapPair TsapPair { get; set; }
 
         /// <summary>
         /// CPU type of the PLC
@@ -108,25 +118,14 @@ namespace S7.Net
         /// </summary>
         /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
         /// <param name="ip">Ip address of the PLC</param>
-        /// <param name="port">Port address of the PLC, default 102</param>
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
+            : this(cpu, ip, DefaultPort, rack, slot)
         {
-            if (!Enum.IsDefined(typeof(CpuType), cpu))
-                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
-
-            if (string.IsNullOrEmpty(ip))
-                throw new ArgumentException("IP address must valid.", nameof(ip));
-
-            CPU = cpu;
-            IP = ip;
-            Port = port;
-            Rack = rack;
-            Slot = slot;
-            MaxPDUSize = 240;
         }
+
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
         /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
@@ -135,23 +134,51 @@ namespace S7.Net
         /// </summary>
         /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
         /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="port">Port number used for the connection, default 102.</param>
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
+            : this(ip, port, TsapPair.GetDefaultTsapPair(cpu, rack, slot))
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
-                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
+                throw new ArgumentException(
+                    $"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.",
+                    nameof(cpu));
 
+            CPU = cpu;
+            Rack = rack;
+            Slot = slot;
+        }
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
+        public Plc(string ip, TsapPair tsapPair) : this(ip, DefaultPort, tsapPair)
+        {
+        }
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections. Use this constructor
+        /// if you want to manually override the TSAP addresses used during the connection request.
+        /// </summary>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="port">Port number used for the connection, default 102.</param>
+        /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
+        public Plc(string ip, int port, TsapPair tsapPair)
+        {
             if (string.IsNullOrEmpty(ip))
                 throw new ArgumentException("IP address must valid.", nameof(ip));
 
-            CPU = cpu;
             IP = ip;
-            Port = 102;
-            Rack = rack;
-            Slot = slot;
+            Port = port;
             MaxPDUSize = 240;
+            TsapPair = tsapPair;
         }
 
         /// <summary>
