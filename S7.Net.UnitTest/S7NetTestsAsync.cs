@@ -958,19 +958,25 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
+            var db = 2;
+            // First write a sensible S7 string capacity
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, new byte[] {5, 0});
+
+            // Read two data items, with the first having odd number of bytes (7),
+            // and the second has to be aligned on a even address
             var dataItems = new List<DataItem>
             {
                 new DataItem
                 {
                     DataType = DataType.DataBlock,
-                    DB = 2,
+                    DB = db,
                     VarType = VarType.S7String,
                     Count = 5
                 },
                 new DataItem
                 {
                     DataType = DataType.DataBlock,
-                    DB = 2,
+                    DB = db,
                     VarType = VarType.Word,
                 }
             };
