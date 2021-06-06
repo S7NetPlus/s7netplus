@@ -60,7 +60,7 @@ namespace S7.Net
 
         private async Task RequestConnection(Stream stream, CancellationToken cancellationToken)
         {
-            var requestData = ConnectionRequest.GetCOTPConnectionRequest(CPU, Rack, Slot);
+            var requestData = ConnectionRequest.GetCOTPConnectionRequest(TsapPair);
             var response = await NoLockRequestTpduAsync(stream, requestData, cancellationToken).ConfigureAwait(false);
 
             if (response.PDUType != COTP.PduType.ConnectionConfirmed)
