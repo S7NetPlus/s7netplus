@@ -21,21 +21,17 @@ namespace S7.Net.UnitTest
         public async Task TPKT_Read()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd"));
-            var t = TPKT.Read(m);
-            Assert.AreEqual(0x03, t.Version);
-            Assert.AreEqual(0x29, t.Length);
-            m.Position = 0;
-            t = await TPKT.ReadAsync(m, TestContext.CancellationTokenSource.Token);
+            var t = await TPKT.ReadAsync(m, TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(0x03, t.Version);
             Assert.AreEqual(0x29, t.Length);
         }
 
         [TestMethod]
         [ExpectedException(typeof(TPKTInvalidException))]
-        public void TPKT_ReadShort()
+        public async Task TPKT_ReadShort()
         {
             var m = new MemoryStream(StringToByteArray("0300002902f0803203000000010002001400000401ff040080"));
-            var t = TPKT.Read(m);
+            var t = await TPKT.ReadAsync(m, CancellationToken.None);
         }
 
 
@@ -48,14 +44,11 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        public void COTP_ReadTSDU()
+        public async Task COTP_ReadTSDU()
         {
             var expected = StringToByteArray("320700000400000800080001120411440100ff09000400000000");
             var m = new MemoryStream(StringToByteArray("0300000702f0000300000702f0000300002102f080320700000400000800080001120411440100ff09000400000000"));
-            var t = COTP.TSDU.Read(m);
-            Assert.IsTrue(expected.SequenceEqual(t));
-            m.Position = 0;
-            t = COTP.TSDU.ReadAsync(m, TestContext.CancellationTokenSource.Token).Result;
+            var t = await COTP.TSDU.ReadAsync(m, TestContext.CancellationTokenSource.Token);
             Assert.IsTrue(expected.SequenceEqual(t));
         }
 
@@ -69,11 +62,11 @@ namespace S7.Net.UnitTest
 
 
         [TestMethod]
-        public void TestResponseCode()
+        public async Task TestResponseCode()
         {
             var expected = StringToByteArray("320700000400000800080001120411440100ff09000400000000");
             var m = new MemoryStream(StringToByteArray("0300000702f0000300000702f0000300002102f080320700000400000800080001120411440100ff09000400000000"));
-            var t = COTP.TSDU.Read(m);
+            var t = await COTP.TSDU.ReadAsync(m, CancellationToken.None);
             Assert.IsTrue(expected.SequenceEqual(t));
 
 
