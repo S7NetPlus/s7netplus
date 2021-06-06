@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using S7.Net;
-
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.Protocol;
-using System.Collections;
 
 namespace S7.Net.UnitTest
 {
@@ -68,7 +64,6 @@ namespace S7.Net.UnitTest
             var m = new MemoryStream(StringToByteArray("0300000702f0000300000702f0000300002102f080320700000400000800080001120411440100ff09000400000000"));
             var t = await COTP.TSDU.ReadAsync(m, CancellationToken.None);
             Assert.IsTrue(expected.SequenceEqual(t));
-
 
             // Test all possible byte values. Everything except 0xff should throw an exception.
             var testData = Enumerable.Range(0, 256).Select(i => new { StatusCode = (ReadWriteErrorCode)i, ThrowsException = i != (byte)ReadWriteErrorCode.Success });
