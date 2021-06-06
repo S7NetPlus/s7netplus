@@ -37,7 +37,7 @@ namespace S7.Net
                     return default(object);
                 }).ConfigureAwait(false);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 stream.Dispose();
                 throw;
@@ -438,7 +438,7 @@ namespace S7.Net
 
         private async Task ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            var dataToSend = BuildReadRequestPackage(new [] { new DataItemAddress(dataType, db, startByteAdr, count)});
+            var dataToSend = BuildReadRequestPackage(new[] { new DataItemAddress(dataType, db, startByteAdr, count) });
 
             var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
             AssertReadResponse(s7data, count);
@@ -521,22 +521,46 @@ namespace S7.Net
                 NoLockRequestTsduAsync(stream, requestData, offset, length, cancellationToken));
         }
 
-        private static async Task<COTP.TPDU> NoLockRequestTpduAsync(Stream stream, byte[] requestData,
+        private async Task<COTP.TPDU> NoLockRequestTpduAsync(Stream stream, byte[] requestData,
             CancellationToken cancellationToken = default)
         {
-            await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
-            var response = await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                using var closeOnCancellation = cancellationToken.Register(Close);
+                await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
+                return await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exc)
+            {
+                if (exc is TPDUInvalidException || exc is TPKTInvalidException)
+                {
+                    Close();
+                }
 
-            return response;
+                throw;
+            }
         }
 
-        private static async Task<byte[]> NoLockRequestTsduAsync(Stream stream, byte[] requestData, int offset, int length,
+        private async Task<byte[]> NoLockRequestTsduAsync(Stream stream, byte[] requestData, int offset, int length,
             CancellationToken cancellationToken = default)
         {
-            await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
-            var response = await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                using var closeOnCancellation = cancellationToken.Register(Close);
+                await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
+                return await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exc)
+            {
+                if (exc is TPDUInvalidException || exc is TPKTInvalidException)
+                {
+                    Close();
+                }
 
-            return response;
+                throw;
+            }
         }
     }
 }
