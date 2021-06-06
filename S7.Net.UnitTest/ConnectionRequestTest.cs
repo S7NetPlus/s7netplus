@@ -9,7 +9,7 @@ namespace S7.Net.UnitTest
         [TestMethod]
         public void Test_ConnectionRequest_S7_200()
         {
-            CollectionAssert.AreEqual(MakeConnectionRequest(16, 0, 16, 0),
+            CollectionAssert.AreEqual(MakeConnectionRequest(16, 0, 16, 1),
                 ConnectionRequest.GetCOTPConnectionRequest(TsapPair.GetDefaultTsapPair(CpuType.S7200, 0, 0)));
         }
 
