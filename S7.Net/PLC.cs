@@ -20,16 +20,19 @@ namespace S7.Net
         /// </summary>
         public const int DefaultPort = 102;
 
-        private readonly TaskQueue queue = new TaskQueue();
+        /// <summary>
+        /// The default timeout (in milliseconds) used for <see cref="P:ReadTimeout"/> and <see cref="P:WriteTimeout"/>.
+        /// </summary>
+        public const int DefaultTimeout = 10_000;
 
-        private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
+        private readonly TaskQueue queue = new TaskQueue();
 
         //TCP connection to device
         private TcpClient? tcpClient;
         private NetworkStream? _stream;
 
-        private int readTimeout = 0; // default no timeout
-        private int writeTimeout = 0; // default no timeout
+        private int readTimeout = DefaultTimeout; // default no timeout
+        private int writeTimeout = DefaultTimeout; // default no timeout
 
         /// <summary>
         /// IP address of the PLC
