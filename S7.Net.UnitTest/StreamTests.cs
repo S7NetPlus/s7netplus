@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace S7.Net.UnitTest
@@ -15,6 +16,7 @@ namespace S7.Net.UnitTest
         {
             Data = data;
         }
+
         public override bool CanRead => _position < Data.Length;
 
         public override bool CanSeek => throw new NotImplementedException();
@@ -26,21 +28,31 @@ namespace S7.Net.UnitTest
         public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public byte[] Data { get; }
 
+        int _position = 0;
+
         public override void Flush()
         {
             throw new NotImplementedException();
         }
 
-        int _position = 0;
         public override int Read(byte[] buffer, int offset, int count)
         {
+            throw new NotImplementedException();
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_position >= Data.Length)
             {
-                return 0;
+                return Task.FromResult(0);
             }
+
             buffer[offset] = Data[_position];
             ++_position;
-            return 1;
+
+            return Task.FromResult(1);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -78,21 +90,21 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        public void TPKT_ReadRestrictedStream()
+        public async Task TPKT_ReadRestrictedStream()
         {
             var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400000401ff0400807710000100000103000000033f8ccccd");
             var m = new TestStream1BytePerRead(fullMessage);
-            var t = TPKT.Read(m);
+            var t = await TPKT.ReadAsync(m, CancellationToken.None);
             Assert.AreEqual(fullMessage.Length, t.Length);
             Assert.AreEqual(fullMessage.Last(), t.Data.Last());
         }
 
         [TestMethod]
-        public void TPKT_ReadStreamTooShort()
+        public async Task TPKT_ReadStreamTooShort()
         {
             var fullMessage = ProtocolUnitTest.StringToByteArray("0300002902f0803203000000010002001400");
             var m = new TestStream1BytePerRead(fullMessage);
-            Assert.ThrowsException<TPKTInvalidException>(() => TPKT.Read(m));
+            await Assert.ThrowsExceptionAsync<TPKTInvalidException>(() => TPKT.ReadAsync(m, CancellationToken.None));
         }
     }
 }
