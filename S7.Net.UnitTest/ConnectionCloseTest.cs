@@ -79,7 +79,6 @@ namespace S7.Net.UnitTest
             var requestData = new byte[100]; // empty data, it does not matter what is in there
 
             // Set up access to private method and field
-            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
             var dynMethod = plc.GetType().GetMethod("NoLockRequestTpduAsync",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             if (dynMethod == null)
@@ -135,7 +134,6 @@ namespace S7.Net.UnitTest
             var requestData = new byte[100]; // empty data, it does not matter what is in there
 
             // Set up access to private method and field
-            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
             var dynMethod = plc.GetType().GetMethod("NoLockRequestTpduAsync",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             if (dynMethod == null)
