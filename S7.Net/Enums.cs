@@ -16,6 +16,11 @@
         Logo0BA8 = 1,
 
         /// <summary>
+        /// S7 200 Smart
+        /// </summary>
+        S7200Smart = 2,
+
+        /// <summary>
         /// S7 300 cpu type
         /// </summary>
         S7300 = 10,
