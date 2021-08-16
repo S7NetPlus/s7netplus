@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace S7.Net
 {
@@ -11,6 +11,11 @@ namespace S7.Net
     /// </summary>
     internal class COTP
     {
+        public enum PduType : byte
+        {
+            Data = 0xf0,
+            ConnectionConfirmed = 0xd0
+        }
         /// <summary>
         /// Describes a COTP TPDU (Transport protocol data unit)
         /// </summary>
@@ -18,7 +23,7 @@ namespace S7.Net
         {
             public TPKT TPkt { get; }
             public byte HeaderLength;
-            public byte PDUType;
+            public PduType PDUType;
             public int TPDUNumber;
             public byte[] Data;
             public bool LastDataUnit;
@@ -27,17 +32,17 @@ namespace S7.Net
             {
                 TPkt = tPKT;
 
-                var br = new BinaryReader(new MemoryStream(tPKT.Data));
-                HeaderLength = br.ReadByte();
+                HeaderLength = tPKT.Data[0]; // Header length excluding this length byte
                 if (HeaderLength >= 2)
                 {
-                    PDUType = br.ReadByte();
-                    if (PDUType == 0xf0) //DT Data
+                    PDUType = (PduType)tPKT.Data[1];
+                    if (PDUType == PduType.Data) //DT Data
                     {
-                        var flags = br.ReadByte();
+                        var flags = tPKT.Data[2];
                         TPDUNumber = flags & 0x7F;
                         LastDataUnit = (flags & 0x80) > 0;
-                        Data = br.ReadBytes(tPKT.Length - HeaderLength - 4); //4 = TPKT Size
+                        Data = new byte[tPKT.Data.Length - HeaderLength - 1]; // substract header length byte + header length.
+                        Array.Copy(tPKT.Data, HeaderLength + 1, Data, 0, Data.Length);
                         return;
                     }
                     //TODO: Handle other PDUTypes
@@ -51,24 +56,14 @@ namespace S7.Net
             /// </summary>
             /// <param name="stream">The socket to read from</param>
             /// <returns>COTP DPDU instance</returns>
-            public static TPDU Read(Stream stream)
+            public static async Task<TPDU> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
-                var tpkt = TPKT.Read(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
-            }
-
-            /// <summary>
-            /// Reads COTP TPDU (Transport protocol data unit) from the network stream
-            /// See: https://tools.ietf.org/html/rfc905
-            /// </summary>
-            /// <param name="stream">The socket to read from</param>
-            /// <returns>COTP DPDU instance</returns>
-            public static async Task<TPDU> ReadAsync(Stream stream)
-            {
-                var tpkt = await TPKT.ReadAsync(stream);
-                if (tpkt.Length > 0) return new TPDU(tpkt);
-                return null;
+                var tpkt = await TPKT.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+                if (tpkt.Length == 0)
+                {
+                    throw new TPDUInvalidException("No protocol data received");
+                }
+                return new TPDU(tpkt);
             }
 
             public override string ToString()
@@ -95,51 +90,28 @@ namespace S7.Net
             /// </summary>
             /// <param name="stream">The stream to read from</param>
             /// <returns>Data in TSDU</returns>
-            public static byte[] Read(Stream stream)
+            public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
-                var segment = TPDU.Read(stream);
-                if (segment == null) return null;
+                var segment = await TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
 
+                if (segment.LastDataUnit)
+                {
+                    return segment.Data;
+                }
+
+                // More segments are expected, prepare a buffer to store all data
                 var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
+                Array.Copy(segment.Data, buffer, segment.Data.Length);
 
                 while (!segment.LastDataUnit)
                 {
-                    segment = TPDU.Read(stream);
+                    segment = await TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+                    var previousLength = buffer.Length;
                     Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
+                    Array.Copy(segment.Data, 0, buffer, previousLength, segment.Data.Length);
                 }
 
-                return buffer.Take((int)output.Position).ToArray();
-            }
-
-            /// <summary>
-            /// Reads the full COTP TSDU (Transport service data unit)
-            /// See: https://tools.ietf.org/html/rfc905
-            /// </summary>
-            /// <param name="stream">The stream to read from</param>
-            /// <returns>Data in TSDU</returns>
-            public static async Task<byte[]> ReadAsync(Stream stream)
-            {                
-                var segment = await TPDU.ReadAsync(stream);
-                if (segment == null) return null;
-
-                var buffer = new byte[segment.Data.Length];
-                var output = new MemoryStream(buffer);
-                output.Write(segment.Data, 0, segment.Data.Length);
-
-                while (!segment.LastDataUnit)
-                {
-                    segment = await TPDU.ReadAsync(stream);
-                    Array.Resize(ref buffer, buffer.Length + segment.Data.Length);
-                    var lastPosition = output.Position;
-                    output = new MemoryStream(buffer);
-                    output.Write(segment.Data, (int) lastPosition, segment.Data.Length);
-                }
-                return buffer.Take((int)output.Position).ToArray();
+                return buffer;
             }
         }
     }

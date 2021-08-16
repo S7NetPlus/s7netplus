@@ -15,6 +15,12 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>PLC Siemens Communication S7</PackageTags>
     <Copyright>Derek Heiser 2015</Copyright>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>Enable</Nullable>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'netstandard2.0' ">
@@ -23,6 +29,5 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="SourceLink.Copy.PdbFiles" Version="2.8.3" PrivateAssets="All" />
   </ItemGroup>
 </Project>

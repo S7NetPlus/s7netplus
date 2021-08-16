@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using S7.Net.Internal;
+using S7.Net.Protocol;
 using S7.Net.Types;
 
 
@@ -12,44 +15,59 @@ namespace S7.Net
     /// </summary>
     public partial class Plc : IDisposable
     {
-        private const int CONNECTION_TIMED_OUT_ERROR_CODE = 10060;
-        
-        //TCP connection to device
-        private TcpClient tcpClient;
-        private NetworkStream stream;
+        /// <summary>
+        /// The default port for the S7 protocol.
+        /// </summary>
+        public const int DefaultPort = 102;
 
-        private int readTimeout = System.Threading.Timeout.Infinite;
-        private int writeTimeout = System.Threading.Timeout.Infinite;
+        /// <summary>
+        /// The default timeout (in milliseconds) used for <see cref="P:ReadTimeout"/> and <see cref="P:WriteTimeout"/>.
+        /// </summary>
+        public const int DefaultTimeout = 10_000;
+
+        private readonly TaskQueue queue = new TaskQueue();
+
+        //TCP connection to device
+        private TcpClient? tcpClient;
+        private NetworkStream? _stream;
+
+        private int readTimeout = DefaultTimeout; // default no timeout
+        private int writeTimeout = DefaultTimeout; // default no timeout
 
         /// <summary>
         /// IP address of the PLC
         /// </summary>
-        public string IP { get; private set; }
+        public string IP { get; }
 
         /// <summary>
         /// PORT Number of the PLC, default is 102
         /// </summary>
-        public int Port { get; private set; }
+        public int Port { get; }
+
+        /// <summary>
+        /// The TSAP addresses used during the connection request.
+        /// </summary>
+        public TsapPair TsapPair { get; set; }
 
         /// <summary>
         /// CPU type of the PLC
         /// </summary>
-        public CpuType CPU { get; private set; }
+        public CpuType CPU { get; }
 
         /// <summary>
         /// Rack of the PLC
         /// </summary>
-        public Int16 Rack { get; private set; }
+        public short Rack { get; }
 
         /// <summary>
         /// Slot of the CPU of the PLC
         /// </summary>
-        public Int16 Slot { get; private set; }
+        public short Slot { get; }
 
         /// <summary>
         /// Max PDU size this cpu supports
         /// </summary>
-        public Int16 MaxPDUSize { get; set; }
+        public int MaxPDUSize { get; private set; }
 
         /// <summary>Gets or sets the amount of time that a read operation blocks waiting for data from PLC.</summary>
         /// <returns>A <see cref="T:System.Int32" /> that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see cref="F:System.Threading.Timeout.Infinite" />, specifies that the read operation does not time out.</returns>
@@ -74,46 +92,41 @@ namespace S7.Net
                 if (tcpClient != null) tcpClient.SendTimeout = writeTimeout;
             }
         }
-        
-        /// <summary>
-        /// Returns true if a connection to the PLC can be established
-        /// </summary>
-        public bool IsAvailable
-        {
-            //TODO: Fix This
-            get
-            {
-                try
-                {
-                    Connect();
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
 
         /// <summary>
-        /// Checks if the socket is connected and polls the other peer (the PLC) to see if it's connected.
-        /// This is the variable that you should continously check to see if the communication is working
-        /// See also: http://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+        /// Gets a value indicating whether a connection to the PLC has been established.
         /// </summary>
-        public bool IsConnected
-        {
-            get
-            {
-                try
-                {
-                    if (tcpClient == null)
-                        return false;
+        /// <remarks>
+        /// The <see cref="IsConnected"/> property gets the connection state of the Client socket as
+        /// of the last I/O operation. When it returns <c>false</c>, the Client socket was either
+        /// never  connected, or is no longer connected.
+        ///
+        /// <para>
+        /// Because the <see cref="IsConnected"/> property only reflects the state of the connection
+        /// as of the most recent operation, you should attempt to send or receive a message to
+        /// determine the current state. After the message send fails, this property no longer
+        /// returns <c>true</c>. Note that this behavior is by design. You cannot reliably test the
+        /// state of the connection because, in the time between the test and a send/receive, the
+        /// connection could have been lost. Your code should assume the socket is connected, and
+        /// gracefully handle failed transmissions.
+        /// </para>
+        /// </remarks>
+        public bool IsConnected => tcpClient?.Connected ?? false;
 
-                    //TODO: Actually check communication by sending an empty TPDU
-                    return tcpClient.Connected;
-                }
-                catch { return false; }
-            }
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
+        /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
+        ///  If you use an external ethernet card, this must be set accordingly.</param>
+        public Plc(CpuType cpu, string ip, short rack, short slot)
+            : this(cpu, ip, DefaultPort, rack, slot)
+        {
         }
 
         /// <summary>
@@ -124,50 +137,51 @@ namespace S7.Net
         /// </summary>
         /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
         /// <param name="ip">Ip address of the PLC</param>
-        /// <param name="port">Port address of the PLC, default 102</param>
+        /// <param name="port">Port number used for the connection, default 102.</param>
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
+        public Plc(CpuType cpu, string ip, int port, short rack, short slot)
+            : this(ip, port, TsapPair.GetDefaultTsapPair(cpu, rack, slot))
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
-                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
+                throw new ArgumentException(
+                    $"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.",
+                    nameof(cpu));
 
+            CPU = cpu;
+            Rack = rack;
+            Slot = slot;
+        }
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections.
+        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
+        /// You need slot > 0 if you are connecting to external ethernet card (CP).
+        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
+        /// </summary>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
+        public Plc(string ip, TsapPair tsapPair) : this(ip, DefaultPort, tsapPair)
+        {
+        }
+
+        /// <summary>
+        /// Creates a PLC object with all the parameters needed for connections. Use this constructor
+        /// if you want to manually override the TSAP addresses used during the connection request.
+        /// </summary>
+        /// <param name="ip">Ip address of the PLC</param>
+        /// <param name="port">Port number used for the connection, default 102.</param>
+        /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
+        public Plc(string ip, int port, TsapPair tsapPair)
+        {
             if (string.IsNullOrEmpty(ip))
                 throw new ArgumentException("IP address must valid.", nameof(ip));
 
-            CPU = cpu;
             IP = ip;
             Port = port;
-            Rack = rack;
-            Slot = slot;
             MaxPDUSize = 240;
-        }
-        /// <summary>
-        /// Creates a PLC object with all the parameters needed for connections.
-        /// For S7-1200 and S7-1500, the default is rack = 0 and slot = 0.
-        /// You need slot > 0 if you are connecting to external ethernet card (CP).
-        /// For S7-300 and S7-400 the default is rack = 0 and slot = 2.
-        /// </summary>
-        /// <param name="cpu">CpuType of the PLC (select from the enum)</param>
-        /// <param name="ip">Ip address of the PLC</param>
-        /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
-        /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
-        ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
-        {
-            if (!Enum.IsDefined(typeof(CpuType), cpu))
-                throw new ArgumentException($"The value of argument '{nameof(cpu)}' ({cpu}) is invalid for Enum type '{typeof(CpuType).Name}'.", nameof(cpu));
-
-            if (string.IsNullOrEmpty(ip))
-                throw new ArgumentException("IP address must valid.", nameof(ip));
-
-            CPU = cpu;
-            IP = ip;
-            Port = 102;
-            Rack = rack;
-            Slot = slot;
-            MaxPDUSize = 240;
+            TsapPair = tsapPair;
         }
 
         /// <summary>
@@ -178,16 +192,19 @@ namespace S7.Net
             if (tcpClient != null)
             {
                 if (tcpClient.Connected) tcpClient.Close();
+                tcpClient = null; // Can not reuse TcpClient once connection gets closed.
             }
         }
 
         private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
         {
-            // 12 bytes of header data, 12 bytes of parameter data for each dataItem
-            if ((dataItems.Count + 1) * 12 > MaxPDUSize) throw new Exception("Too many vars requested for read");
-            
-            // 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
-            if (GetDataLength(dataItems) + dataItems.Count * 4 + 14 > MaxPDUSize) throw new Exception("Too much data requested for read");
+            // send request limit: 19 bytes of header data, 12 bytes of parameter data for each dataItem
+            var requiredRequestSize = 19 + dataItems.Count * 12;
+            if (requiredRequestSize > MaxPDUSize) throw new Exception($"Too many vars requested for read. Request size ({requiredRequestSize}) is larger than protocol limit ({MaxPDUSize}).");
+
+            // response limit: 14 bytes of header data, 4 bytes of result data for each dataItem and the actual data
+            var requiredResponseSize = GetDataLength(dataItems) + dataItems.Count * 4 + 14;
+            if (requiredResponseSize > MaxPDUSize) throw new Exception($"Too much data requested for read. Response size ({requiredResponseSize}) is larger than protocol limit ({MaxPDUSize}).");
         }
 
         private void AssertPduSizeForWrite(ICollection<DataItem> dataItems)
@@ -216,6 +233,58 @@ namespace S7.Net
             // Odd length variables are 0-padded
             return dataItems.Select(di => VarTypeToByteLength(di.VarType, di.Count))
                 .Sum(len => (len & 1) == 1 ? len + 1 : len);
+        }
+
+        private static void AssertReadResponse(byte[] s7Data, int dataLength)
+        {
+            var expectedLength = dataLength + 18;
+
+            PlcException NotEnoughBytes() =>
+                new PlcException(ErrorCode.WrongNumberReceivedBytes,
+                    $"Received {s7Data.Length} bytes: '{BitConverter.ToString(s7Data)}', expected {expectedLength} bytes.")
+            ;
+
+            if (s7Data == null)
+                throw new PlcException(ErrorCode.WrongNumberReceivedBytes, "No s7Data received.");
+
+            if (s7Data.Length < 15) throw NotEnoughBytes();
+
+            ValidateResponseCode((ReadWriteErrorCode)s7Data[14]);
+
+            if (s7Data.Length < expectedLength) throw NotEnoughBytes();
+        }
+
+        internal static void ValidateResponseCode(ReadWriteErrorCode statusCode)
+        {
+            switch (statusCode)
+            {
+                case ReadWriteErrorCode.ObjectDoesNotExist:
+                    throw new Exception("Received error from PLC: Object does not exist.");
+                case ReadWriteErrorCode.DataTypeInconsistent:
+                    throw new Exception("Received error from PLC: Data type inconsistent.");
+                case ReadWriteErrorCode.DataTypeNotSupported:
+                    throw new Exception("Received error from PLC: Data type not supported.");
+                case ReadWriteErrorCode.AccessingObjectNotAllowed:
+                    throw new Exception("Received error from PLC: Accessing object not allowed.");
+                case ReadWriteErrorCode.AddressOutOfRange:
+                    throw new Exception("Received error from PLC: Address out of range.");
+                case ReadWriteErrorCode.HardwareFault:
+                    throw new Exception("Received error from PLC: Hardware fault.");
+                case ReadWriteErrorCode.Success:
+                    break;
+                default:
+                    throw new Exception( $"Invalid response from PLC: statusCode={(byte)statusCode}.");
+            }
+        }
+
+        private Stream GetStreamIfAvailable()
+        {
+            if (_stream == null)
+            {
+                throw new PlcException(ErrorCode.ConnectionError, "Plc is not connected");
+            }
+
+            return _stream;
         }
 
         #region IDisposable Support

@@ -51,31 +51,50 @@ namespace S7.Net.Types
                     numBytes += 4;
                     break;
                 case "Single":
-                case "Double":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
                     numBytes += 4;
                     break;
-                case "DateTime":
-                    // S7-1200 & S7-1500 DTL Type
+                case "Double":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
+                    numBytes += 8;
+                    break;
+
+                case "DateTime":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+                    // https://support.industry.siemens.com/cs/document/43566349/in-step-7-(tia-portal)-how-can-you-input-read-out-and-edit-the-date-and-time-for-the-cpu-modules-?dti=0&lc=en-WW
+                    // Per Siemens documentation, DateTime structures are model specific, and compatibility to exchange types
+                    // is not supported by Siemens.
                     switch (cpu)
                     {
                         case CpuType.S71200:
                         case CpuType.S71500:
                             numBytes += 12;
                             break;
-                        case CpuType.S7200:
-                        case CpuType.Logo0BA8:
-                        case CpuType.S7300:
-                        case CpuType.S7400:
                         default:
                             numBytes += 8;
                             break;
                     }
+                    break;
+                case "String":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+                    
+#if NETSTANDARD1_3
+                    S7StringAttribute? attribute = type.GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#else
+                    S7StringAttribute? attribute = type.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#endif
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string property");
+                    
+                    numBytes += attribute.ReservedLengthInBytes;
                     break;
                 default:
                     var propertyClass = Activator.CreateInstance(type);
@@ -91,7 +110,7 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="instance">An instance of the class</param>
         /// <returns>the number of bytes</returns>
-        public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false, CpuType cpu = CpuType.S71200)
+        public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false, CpuType cpu = CpuType.S7300)
         {
             var properties = GetAccessableProperties(instance.GetType());
             foreach (var property in properties)
@@ -105,6 +124,7 @@ namespace S7.Net.Types
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
                     }
 
+                    IncrementToEven(ref numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType, cpu);
@@ -125,9 +145,9 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes, CpuType cpu)
+        private static object? GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes, CpuType cpu)
         {
-            object value = null;
+            object? value = null;
 
             switch (propertyType.Name)
             {
@@ -187,25 +207,12 @@ namespace S7.Net.Types
                         bytes[(int)numBytes + 3]);
                     numBytes += 4;
                     break;
-                case "Double":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    // hier auswerten
-                    value = Double.FromByteArray(
-                        new byte[] {
-                            bytes[(int)numBytes],
-                            bytes[(int)numBytes + 1],
-                            bytes[(int)numBytes + 2],
-                            bytes[(int)numBytes + 3] });
-                    numBytes += 4;
-                    break;
                 case "Single":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
                     // hier auswerten
-                    value = Single.FromByteArray(
+                    value = Real.FromByteArray(
                         new byte[] {
                             bytes[(int)numBytes],
                             bytes[(int)numBytes + 1],
@@ -213,13 +220,23 @@ namespace S7.Net.Types
                             bytes[(int)numBytes + 3] });
                     numBytes += 4;
                     break;
+                case "Double":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+                    var buffer = new byte[8];
+                    Array.Copy(bytes, (int)numBytes, buffer, 0, 8);
+                    // hier auswerten
+                    value = LReal.FromByteArray(buffer);
+                    numBytes += 8;
+                    break;
                 case "DateTime":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
-                    // hier auswerten
-                    // TODO: If S71200/1500 then use DateTimeLong
-
+                    // https://support.industry.siemens.com/cs/document/43566349/in-step-7-(tia-portal)-how-can-you-input-read-out-and-edit-the-date-and-time-for-the-cpu-modules-?dti=0&lc=en-WW
+                    // Per Siemens documentation, DateTime structures are model specific, and compatibility to exchange types
+                    // is not supported by Siemens.
                     switch (cpu)
                     {
                         case CpuType.S71200:
@@ -240,10 +257,6 @@ namespace S7.Net.Types
                                     bytes[(int)numBytes + 11], });
                             numBytes += 12;
                             break;
-                        case CpuType.S7200:
-                        case CpuType.Logo0BA8:
-                        case CpuType.S7300:
-                        case CpuType.S7400:
                         default:
                             value = DateTime.FromByteArray(
                                 new byte[] {
@@ -259,9 +272,30 @@ namespace S7.Net.Types
                             break;
                     }
                     break;
+                case "String":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+#if NETSTANDARD1_3
+    S7StringAttribute? attribute = propertyType.GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#else
+                    S7StringAttribute? attribute = propertyType.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#endif
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string property");
+
+                    var parsebytes = new byte[attribute.ReservedLength];
+                    Array.Copy(bytes, (int)numBytes, parsebytes, 0, attribute.ReservedLength);
+                    value = attribute.Type switch
+                    {
+                        S7StringType.S7String => S7String.FromByteArray(parsebytes),
+                        S7StringType.S7WString => S7WString.FromByteArray(parsebytes),
+                        _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                    };
+                    break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
-                    numBytes = FromBytes(propClass, bytes, numBytes);
+                    numBytes = FromBytes(propClass, bytes, numBytes, cpu: cpu);
                     value = propClass;
                     break;
             }
@@ -274,7 +308,10 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The object to fill in the given array of bytes</param>
         /// <param name="bytes">The array of bytes</param>
-        public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false, CpuType cpu = CpuType.S71200)
+        /// <param name="numBytes"></param>
+        /// <param name="isInnerClass"></param>
+        /// <param name="cpu"></param>
+        public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false, CpuType cpu = CpuType.S7300)
         {
             if (bytes == null)
                 return numBytes;
@@ -285,6 +322,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -309,7 +347,7 @@ namespace S7.Net.Types
         {
             int bytePos = 0;
             int bitPos = 0;
-            byte[] bytes2 = null;
+            byte[]? bytes2 = null;
 
             switch (propertyValue.GetType().Name)
             {
@@ -341,11 +379,11 @@ namespace S7.Net.Types
                 case "UInt32":
                     bytes2 = DWord.ToByteArray((UInt32)propertyValue);
                     break;
-                case "Double":
-                    bytes2 = Double.ToByteArray((double)propertyValue);
-                    break;
                 case "Single":
-                    bytes2 = Single.ToByteArray((float)propertyValue);
+                    bytes2 = Real.ToByteArray((float)propertyValue);
+                    break;
+                case "Double":
+                    bytes2 = LReal.ToByteArray((double)propertyValue);
                     break;
                 case "DateTime":
                     switch (cpu)
@@ -354,27 +392,36 @@ namespace S7.Net.Types
                         case CpuType.S71500:
                             bytes2 = DateTimeLong.ToByteArray((System.DateTime)propertyValue);
                             break;
-                        case CpuType.S7200:
-                        case CpuType.Logo0BA8:
-                        case CpuType.S7300:
-                        case CpuType.S7400:
                         default:
                             bytes2 = DateTime.ToByteArray((System.DateTime)propertyValue);
                             break;
                     }
-                    
+                    break;
+                case "String":
+#if NETSTANDARD1_3
+    S7StringAttribute? attribute = propertyValue.GetType().GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#else
+                    S7StringAttribute? attribute = propertyValue.GetType().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+#endif
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string property");
+
+                    bytes2 = attribute.Type switch
+                    {
+                        S7StringType.S7String => S7String.ToByteArray((string)propertyValue, attribute.ReservedLength),
+                        S7StringType.S7WString => S7WString.ToByteArray((string)propertyValue, attribute.ReservedLength),
+                        _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                    };
                     break;
                 default:
-                    numBytes = ToBytes(propertyValue, bytes, numBytes);
+                    numBytes = ToBytes(propertyValue, bytes, numBytes, cpu: cpu);
                     break;
             }
 
             if (bytes2 != null)
             {
-                // add them
-                numBytes = Math.Ceiling(numBytes);
-                if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                    numBytes++;
+                IncrementToEven(ref numBytes);
+
                 bytePos = (int)numBytes;
                 for (int bCnt = 0; bCnt < bytes2.Length; bCnt++)
                     bytes[bytePos + bCnt] = bytes2[bCnt];
@@ -389,7 +436,7 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The struct object</param>
         /// <returns>A byte array or null if fails.</returns>
-        public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0, CpuType cpu = CpuType.S71200)
+        public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0, CpuType cpu = CpuType.S7300)
         {
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
@@ -397,6 +444,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -409,6 +457,12 @@ namespace S7.Net.Types
                 }
             }
             return numBytes;
+        }
+
+        private static void IncrementToEven(ref double numBytes)
+        {
+            numBytes = Math.Ceiling(numBytes);
+            if (numBytes % 2 > 0) numBytes++;
         }
     }
 }

@@ -1,20 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.30104.148
+VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S7.Net", "S7.Net\S7.Net.csproj", "{BFD484F9-3F04-42A2-BF2A-60A189A25DCF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7A8252C3-E6AE-435A-809D-4413C06E0711}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		README.md = README.md
+		.github\workflows\test.yml = .github\workflows\test.yml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S7.Net.UnitTest", "S7.Net.UnitTest\S7.Net.UnitTest.csproj", "{303CCED6-9ABC-4899-A509-743341AAA804}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiemensTest", "SiemensTest\SiemensTest.csproj", "{B10B2B16-D0AF-4F92-81CD-E31EA62AE863}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S71200QuickTest", "S71200QuickTest\S71200QuickTest.csproj", "{3B3955ED-2C53-4911-98E9-E7EBCE6807F3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S7.Net.UnitTest", "S7.Net.UnitTest\S7.Net.UnitTest.csproj", "{303CCED6-9ABC-4899-A509-743341AAA804}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,14 +28,6 @@ Global
 		{303CCED6-9ABC-4899-A509-743341AAA804}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{303CCED6-9ABC-4899-A509-743341AAA804}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{303CCED6-9ABC-4899-A509-743341AAA804}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B10B2B16-D0AF-4F92-81CD-E31EA62AE863}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B10B2B16-D0AF-4F92-81CD-E31EA62AE863}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B10B2B16-D0AF-4F92-81CD-E31EA62AE863}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B10B2B16-D0AF-4F92-81CD-E31EA62AE863}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3B3955ED-2C53-4911-98E9-E7EBCE6807F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3B3955ED-2C53-4911-98E9-E7EBCE6807F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3B3955ED-2C53-4911-98E9-E7EBCE6807F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3B3955ED-2C53-4911-98E9-E7EBCE6807F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

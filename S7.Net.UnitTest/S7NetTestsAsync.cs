@@ -1,15 +1,12 @@
 ﻿#region Using
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using S7.Net;
 using S7.Net.UnitTest.Helpers;
-using S7.Net.UnitTest;
-using System.ServiceProcess;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Threading.Tasks;
+using System.Threading;
 
 #endregion
 
@@ -101,19 +98,12 @@ namespace S7.Net.UnitTest
 
         /// <summary>
         /// Read/Write a single REAL with a single request.
-        /// Test that writing a double and reading it gives the correct value.
+        /// Test that writing a float and reading it gives the correct value.
         /// </summary>
         [TestMethod]
         public async Task Test_Async_WriteAndReadRealVariables()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-
-            // Reading and writing a double is quite complicated, because it needs to be converted to DWord before the write,
-            // then reconvert to double after the read.
-            double val = 35.68729;
-            await plc.WriteAsync("DB1.DBD40", val.ConvertToUInt());
-            double result = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToDouble();
-            Assert.AreEqual(val, Math.Round(result, 5)); // float lose precision, so i need to round it
 
             // Reading and writing a float is quite complicated, because it needs to be converted to DWord before the write,
             // then reconvert to float after the read. Float values can contain only 7 digits, so no precision is lost.
@@ -126,6 +116,26 @@ namespace S7.Net.UnitTest
             await plc.WriteAsync("DB1.DBD40", val3.ConvertToUInt());
             float result3 = ((uint)await plc.ReadAsync("DB1.DBD40")).ConvertToFloat();
             Assert.AreEqual(val3, result3);
+        }
+
+        /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data);
+
+            var readData = await plc.ReadBytesAsync(DataType.DataBlock, db, 0, data.Length);
+
+            CollectionAssert.AreEqual(data, readData);
         }
 
         /// <summary>
@@ -142,8 +152,8 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
                 DWordVariable = 850
             };
 
@@ -155,8 +165,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(tc.RealVariableDouble, Math.Round(tc2.RealVariableDouble, 3));
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
         }
 
@@ -199,9 +209,11 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
-                DWordVariable = 850
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
             plc.WriteStruct(tc, DB2);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
@@ -210,9 +222,11 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(tc.RealVariableDouble, Math.Round(tc2.RealVariableDouble, 3));
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.WStringVariable, tc2.WStringVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         /// <summary>
@@ -564,8 +578,8 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
                 DWordVariable = 850
             };
 
@@ -579,8 +593,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(tc.RealVariableDouble, tc2.RealVariableDouble, 0.1);
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable, 0.1);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
 
             Assert.AreEqual(TestClassWithPrivateSetters.PRIVATE_SETTER_VALUE, tc2.PrivateSetterProperty);
@@ -591,15 +605,13 @@ namespace S7.Net.UnitTest
 
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadBytesReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
                 TestClass tc = new TestClass();
-                var res = await notConnectedPlc.ReadClassAsync(tc, DB2);
-                Assert.Fail();
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync(tc, DB2));
             }
         }
 
@@ -614,8 +626,8 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
                 DWordVariable = 850
             };
 
@@ -631,19 +643,18 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2.BitVariable10, tc2Generic.BitVariable10);
             Assert.AreEqual(tc2.DIntVariable, tc2Generic.DIntVariable);
             Assert.AreEqual(tc2.IntVariable, tc2Generic.IntVariable);
-            Assert.AreEqual(Math.Round(tc2.RealVariableDouble, 3), Math.Round(tc2Generic.RealVariableDouble, 3));
-            Assert.AreEqual(tc2.RealVariableFloat, tc2Generic.RealVariableFloat);
+            Assert.AreEqual(Math.Round(tc2.LRealVariable, 3), Math.Round(tc2Generic.LRealVariable, 3));
+            Assert.AreEqual(tc2.RealVariable, tc2Generic.RealVariable);
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericReturnsNullIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-                TestClass tc = await notConnectedPlc.ReadClassAsync<TestClass>(DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync<TestClass>(DB2));
             }
         }
 
@@ -658,8 +669,8 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
                 DWordVariable = 850
             };
 
@@ -672,19 +683,18 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2Generic.BitVariable00, tc2GenericWithClassFactory.BitVariable00);
             Assert.AreEqual(tc2Generic.BitVariable10, tc2GenericWithClassFactory.BitVariable10);
             Assert.AreEqual(tc2Generic.DIntVariable, tc2GenericWithClassFactory.DIntVariable);
-            Assert.AreEqual(Math.Round(tc2Generic.RealVariableDouble, 3), Math.Round(tc2GenericWithClassFactory.RealVariableDouble, 3));
-            Assert.AreEqual(tc2Generic.RealVariableFloat, tc2GenericWithClassFactory.RealVariableFloat);
+            Assert.AreEqual(Math.Round(tc2Generic.LRealVariable, 3), Math.Round(tc2GenericWithClassFactory.LRealVariable, 3));
+            Assert.AreEqual(tc2Generic.RealVariable, tc2GenericWithClassFactory.RealVariable);
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadClassWithGenericAndClassFactoryThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                TestClass tc = await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadClassAsync(() => new TestClass(), DB2));
             }
         }
 
@@ -711,13 +721,34 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
+        public async Task Test_Async_ReadClassWithNestedClassAfterBitWithCPUInjected()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass(), cpu: plc.CPU));
+
+            TestClassWithNestedClass tc = new TestClassWithNestedClass();
+            tc.BitVariable00 = true;
+            tc.BitVariable01.BitVariable00 = true;
+            tc.ByteVariable02.ByteVariable00 = 128;
+            tc.BitVariable03 = true;
+            tc.ShortVariable04.ShortVarialbe00 = -15000;
+
+            TestClassWithNestedClass tc2 = await plc.ReadClassAsync<TestClassWithNestedClass>(DB4);
+            Assert.AreEqual(tc.BitVariable00, tc2.BitVariable00);
+            Assert.AreEqual(tc.BitVariable01.BitVariable00, tc2.BitVariable01.BitVariable00);
+            Assert.AreEqual(tc.ByteVariable02.ByteVariable00, tc2.ByteVariable02.ByteVariable00);
+            Assert.AreEqual(tc.BitVariable03, tc2.BitVariable03);
+            Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
+        }
+
+        [TestMethod]
         public async Task Test_Async_ReadStructThrowsExceptionPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadStructAsync(typeof(TestStruct), DB2));
             }
         }
 
@@ -732,9 +763,11 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
-                DWordVariable = 850
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
 
             plc.WriteStruct(ts, DB2);
@@ -748,19 +781,20 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(ts2.BitVariable10, ts2Generic.BitVariable10);
             Assert.AreEqual(ts2.DIntVariable, ts2Generic.DIntVariable);
             Assert.AreEqual(ts2.IntVariable, ts2Generic.IntVariable);
-            Assert.AreEqual(Math.Round(ts2.RealVariableDouble, 3), Math.Round(ts2Generic.RealVariableDouble, 3));
-            Assert.AreEqual(ts2.RealVariableFloat, ts2Generic.RealVariableFloat);
+            Assert.AreEqual(ts2.LRealVariable, ts2Generic.LRealVariable);
+            Assert.AreEqual(ts2.RealVariable, ts2Generic.RealVariable);
             Assert.AreEqual(ts2.DWordVariable, ts2Generic.DWordVariable);
+            Assert.AreEqual(ts2.WStringVariable, ts2Generic.WStringVariable);
+            Assert.AreEqual(ts2.StringVariable, ts2Generic.StringVariable);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
         public async Task Test_Async_ReadStructWithGenericThrowsExceptionIfPlcIsNotConnected()
         {
             using (var notConnectedPlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 0))
             {
                 Assert.IsFalse(notConnectedPlc.IsConnected);
-                object tsObj = await notConnectedPlc.ReadStructAsync<TestStruct>(DB2);
+                await Assert.ThrowsExceptionAsync<PlcException>(async () => await notConnectedPlc.ReadStructAsync<TestStruct>(DB2));
             }
         }
 
@@ -778,8 +812,8 @@ namespace S7.Net.UnitTest
                 BitVariable10 = true,
                 DIntVariable = -100000,
                 IntVariable = -15000,
-                RealVariableDouble = -154.789,
-                RealVariableFloat = -154.789f,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
                 DWordVariable = 850
             };
             plc.WriteClass(tc, DB2);
@@ -793,6 +827,37 @@ namespace S7.Net.UnitTest
 
             Assert.AreEqual(expectedReadBytes, actualReadBytes);
         }
+
+        /// <summary>
+        /// Tests that the method ReadClass returns the number of bytes read from the plc
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_ReadClassReturnsNumberOfReadBytesFromThePlcWithCPUInjected()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            TestClass tc = new TestClass
+            {
+                BitVariable00 = true,
+                BitVariable10 = true,
+                DIntVariable = -100000,
+                IntVariable = -15000,
+                LRealVariable = -154.789,
+                RealVariable = -154.789f,
+                DWordVariable = 850
+            };
+            plc.WriteClass(tc, DB2);
+
+            int expectedReadBytes = (int)Types.Class.GetClassSize(tc, cpu: plc.CPU);
+
+            TestClass tc2 = new TestClass();
+            // Values that are read from a class are stored inside the class itself, that is passed by reference
+            var res = await plc.ReadClassAsync(tc2, DB2);
+            int actualReadBytes = res.Item1;
+
+            Assert.AreEqual(expectedReadBytes, actualReadBytes);
+        }
+
 
         [TestMethod]
         public async Task Test_Async_ReadClassWithArray()
@@ -870,17 +935,6 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
-        public async Task Test_Async_ReadWriteDouble()
-        {
-            double test_value = 55.66;
-            await plc.WriteAsync("DB1.DBD0", test_value);
-            var helper = await plc.ReadAsync("DB1.DBD0");
-            double test_value2 = Conversion.ConvertToDouble((uint)helper);
-
-            Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
-        }
-
-        [TestMethod]
         public async Task Test_Async_ReadWriteSingle()
         {
             float test_value = 55.6632f;
@@ -911,6 +965,75 @@ namespace S7.Net.UnitTest
             {
                 Assert.AreEqual(x % 256, res[x], string.Format("Bit {0} failed", x));
             }
+        }
+
+        /// <summary>
+        /// Write a large amount of data and test cancellation
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArrayWithCancellation()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var cancellationSource = new CancellationTokenSource();
+            var cancellationToken = cancellationSource.Token;
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
+            try
+            {
+                await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
+            }
+            catch(OperationCanceledException)
+            {
+                // everything is good, that is the exception we expect
+                Console.WriteLine("Operation was cancelled as expected.");
+                return;
+            }
+            catch(Exception e)
+            {
+                Assert.Fail($"Wrong exception type received. Expected {typeof(OperationCanceledException)}, received {e.GetType()}.");
+            }
+
+            // Depending on how tests run, this can also just succeed without getting cancelled at all. Do nothing in this case.
+            Console.WriteLine("Task was not cancelled as expected.");
+        }
+
+        /// <summary>
+        /// Write a large amount of data and test cancellation
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_ParseDataIntoDataItemsAlignment()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var db = 2;
+            // First write a sensible S7 string capacity
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, new byte[] {5, 0});
+
+            // Read two data items, with the first having odd number of bytes (7),
+            // and the second has to be aligned on a even address
+            var dataItems = new List<DataItem>
+            {
+                new DataItem
+                {
+                    DataType = DataType.DataBlock,
+                    DB = db,
+                    VarType = VarType.S7String,
+                    Count = 5
+                },
+                new DataItem
+                {
+                    DataType = DataType.DataBlock,
+                    DB = db,
+                    VarType = VarType.Word,
+                }
+            };
+            await plc.ReadMultipleVarsAsync(dataItems, CancellationToken.None);
         }
         #endregion
     }

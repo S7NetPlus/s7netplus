@@ -200,19 +200,6 @@ namespace S7.Net
         }
 
         /// <summary>
-        /// Converts from double to DWord (DBD)
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        [Obsolete("Double support is obsolete. Use ConvertToUInt(float) instead.")]
-        public static UInt32 ConvertToUInt(this double input)
-        {
-            uint output;
-            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Double.ToByteArray(input));
-            return output;
-        }
-
-        /// <summary>
         /// Converts from float to DWord (DBD)
         /// </summary>
         /// <param name="input"></param>
@@ -220,20 +207,7 @@ namespace S7.Net
         public static UInt32 ConvertToUInt(this float input)
         {
             uint output;
-            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Single.ToByteArray(input));
-            return output;
-        }
-
-        /// <summary>
-        /// Converts from DWord (DBD) to double
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        [Obsolete("Double support is obsolete. Use ConvertToFloat(uint) instead.")]
-        public static double ConvertToDouble(this uint input)
-        {
-            double output;
-            output = S7.Net.Types.Double.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
+            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Real.ToByteArray(input));
             return output;
         }
 
@@ -245,7 +219,7 @@ namespace S7.Net
         public static float ConvertToFloat(this uint input)
         {
             float output;
-            output = S7.Net.Types.Single.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
+            output = S7.Net.Types.Real.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
             return output;
         }
     }

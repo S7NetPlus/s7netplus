@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 
 namespace S7.Net.Types
@@ -18,11 +19,11 @@ namespace S7.Net.Types
             double numBytes = 0.0;
 
             var infos = structType
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -50,11 +51,26 @@ namespace S7.Net.Types
                         numBytes += 4;
                         break;
                     case "Single":
-                    case "Double":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         numBytes += 4;
+                        break;
+                    case "Double":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += 8;
+                        break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        numBytes += attribute.ReservedLengthInBytes;
                         break;
                     default:
                         numBytes += GetStructSize(info.FieldType);
@@ -70,7 +86,7 @@ namespace S7.Net.Types
         /// <param name="structType">The struct type</param>
         /// <param name="bytes">The array of bytes</param>
         /// <returns>The object depending on the struct type or null if fails(array-length != struct-length</returns>
-        public static object FromBytes(Type structType, byte[] bytes)
+        public static object? FromBytes(Type structType, byte[] bytes)
         {
             if (bytes == null)
                 return null;
@@ -86,11 +102,11 @@ namespace S7.Net.Types
 
 
             var infos = structValue.GetType()
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -115,7 +131,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         ushort source = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
                         info.SetValue(structValue, source.ConvertToShort());
                         numBytes += 2;
@@ -124,7 +140,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         info.SetValue(structValue, Word.FromBytes(bytes[(int)numBytes + 1],
                                                                           bytes[(int)numBytes]));
                         numBytes += 2;
@@ -133,7 +149,7 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 1],
@@ -145,34 +161,59 @@ namespace S7.Net.Types
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
+                        // get the value
                         info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3]));
                         numBytes += 4;
                         break;
-                    case "Double":
+                    case "Single":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
-                        info.SetValue(structValue, Double.FromByteArray(new byte[] { bytes[(int)numBytes],
+                        // get the value
+                        info.SetValue(structValue, Real.FromByteArray(new byte[] { bytes[(int)numBytes],
                                                                            bytes[(int)numBytes + 1],
                                                                            bytes[(int)numBytes + 2],
                                                                            bytes[(int)numBytes + 3] }));
                         numBytes += 4;
                         break;
-                    case "Single":
+                    case "Double":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
-                        // hier auswerten
-                        info.SetValue(structValue, Single.FromByteArray(new byte[] { bytes[(int)numBytes],
-                                                                           bytes[(int)numBytes + 1],
-                                                                           bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3] }));
-                        numBytes += 4;
+                        // get the value
+                        var data = new byte[8];
+                        Array.Copy(bytes, (int)numBytes, data, 0, 8);
+                        info.SetValue(structValue, LReal.FromByteArray(data));
+                        numBytes += 8;
+                        break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+
+                        // get the value
+                        var sData = new byte[attribute.ReservedLengthInBytes];
+                        Array.Copy(bytes, (int)numBytes, sData, 0, sData.Length);
+                        switch (attribute.Type)
+                        {
+                            case S7StringType.S7String:
+                                info.SetValue(structValue, S7String.FromByteArray(sData));
+                                break;
+                            case S7StringType.S7WString:
+                                info.SetValue(structValue, S7WString.FromByteArray(sData));
+                                break;
+                            default:
+                                throw new ArgumentException("Please use a valid string type for the S7StringAttribute");
+                        }
+
+                        numBytes += sData.Length;
                         break;
                     default:
                         var buffer = new byte[GetStructSize(info.FieldType)];
@@ -198,18 +239,18 @@ namespace S7.Net.Types
 
             int size = Struct.GetStructSize(type);
             byte[] bytes = new byte[size];
-            byte[] bytes2 = null;
+            byte[]? bytes2 = null;
 
             int bytePos = 0;
             int bitPos = 0;
             double numBytes = 0.0;
 
             var infos = type
-            #if NETSTANDARD1_3
+#if NETSTANDARD1_3
                 .GetTypeInfo().DeclaredFields;
-            #else
+#else
                 .GetFields();
-            #endif
+#endif
 
             foreach (var info in infos)
             {
@@ -244,11 +285,23 @@ namespace S7.Net.Types
                     case "UInt32":
                         bytes2 = DWord.ToByteArray((UInt32)info.GetValue(structValue));
                         break;
-                    case "Double":
-                        bytes2 = Double.ToByteArray((double)info.GetValue(structValue));
-                        break;
                     case "Single":
-                        bytes2 = Single.ToByteArray((float)info.GetValue(structValue));
+                        bytes2 = Real.ToByteArray((float)info.GetValue(structValue));
+                        break;
+                    case "Double":
+                        bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
+                        break;
+                    case "String":
+                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                        if (attribute == default(S7StringAttribute))
+                            throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                        bytes2 = attribute.Type switch
+                        {
+                            S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                            S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                            _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                        };
                         break;
                 }
                 if (bytes2 != null)
@@ -265,7 +318,5 @@ namespace S7.Net.Types
             }
             return bytes;
         }
-
-
     }
 }

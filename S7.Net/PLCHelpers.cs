@@ -1,7 +1,10 @@
-﻿using S7.Net.Types;
+﻿using S7.Net.Helper;
+using S7.Net.Protocol.S7;
+using S7.Net.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DateTime = S7.Net.Types.DateTime;
 
 namespace S7.Net
 {
@@ -12,65 +15,59 @@ namespace S7.Net
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        private ByteArray ReadHeaderPackage(int amount = 1)
+        private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
             //header size = 19 bytes
-            var package = new Types.ByteArray(19);
-            package.Add(new byte[] { 0x03, 0x00 });
+            stream.WriteByteArray(new byte[] { 0x03, 0x00 });
             //complete package size
-            package.Add(Types.Int.ToByteArray((short)(19 + (12 * amount))));
-            package.Add(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            stream.WriteByteArray(Types.Int.ToByteArray((short)(19 + (12 * amount))));
+            stream.WriteByteArray(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
-            package.Add(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
-            package.Add(new byte[] { 0x00, 0x00, 0x04 });
+            stream.WriteByteArray(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
+            stream.WriteByteArray(new byte[] { 0x00, 0x00, 0x04 });
             //amount of requests
-            package.Add((byte)amount);
-
-            return package;
+            stream.WriteByte((byte)amount);
         }
 
         /// <summary>
-        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType), 
-        /// the address of the memory, the address of the byte and the bytes count. 
+        /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
+        /// the address of the memory, the address of the byte and the bytes count.
         /// </summary>
         /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
         /// <param name="db">Address of the memory to be read</param>
         /// <param name="startByteAdr">Start address of the byte</param>
         /// <param name="count">Number of bytes to be read</param>
         /// <returns></returns>
-        private ByteArray CreateReadDataRequestPackage(DataType dataType, int db, int startByteAdr, int count = 1)
+        private static void BuildReadDataRequestPackage(System.IO.MemoryStream stream, DataType dataType, int db, int startByteAdr, int count = 1)
         {
             //single data req = 12
-            var package = new Types.ByteArray(12);
-            package.Add(new byte[] { 0x12, 0x0a, 0x10 });
+            stream.WriteByteArray(new byte[] { 0x12, 0x0a, 0x10 });
             switch (dataType)
             {
                 case DataType.Timer:
                 case DataType.Counter:
-                    package.Add((byte)dataType);
+                    stream.WriteByte((byte)dataType);
                     break;
                 default:
-                    package.Add(0x02);
+                    stream.WriteByte(0x02);
                     break;
             }
 
-            package.Add(Word.ToByteArray((ushort)(count)));
-            package.Add(Word.ToByteArray((ushort)(db)));
-            package.Add((byte)dataType);
+            stream.WriteByteArray(Word.ToByteArray((ushort)(count)));
+            stream.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            stream.WriteByte((byte)dataType);
             var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
-            package.Add((byte)overflow);
+            stream.WriteByte((byte)overflow);
             switch (dataType)
             {
                 case DataType.Timer:
                 case DataType.Counter:
-                    package.Add(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)(startByteAdr)));
                     break;
                 default:
-                    package.Add(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
                     break;
             }
-
-            return package;
         }
 
         /// <summary>
@@ -81,7 +78,7 @@ namespace S7.Net
         /// <param name="varCount"></param>
         /// <param name="bitAdr"></param>
         /// <returns></returns>
-        private object ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0, CpuType cpu = CpuType.S71200)
+        private object? ParseBytes(VarType varType, byte[] bytes, int varCount, byte bitAdr = 0)
         {
             if (bytes == null || bytes.Length == 0)
                 return null;
@@ -115,14 +112,21 @@ namespace S7.Net
                         return DInt.ToArray(bytes);
                 case VarType.Real:
                     if (varCount == 1)
-                        return Types.Single.FromByteArray(bytes);
+                        return Types.Real.FromByteArray(bytes);
                     else
-                        return Types.Single.ToArray(bytes);
+                        return Types.Real.ToArray(bytes);
+                case VarType.LReal:
+                    if (varCount == 1)
+                        return Types.LReal.FromByteArray(bytes);
+                    else
+                        return Types.LReal.ToArray(bytes);
 
                 case VarType.String:
                     return Types.String.FromByteArray(bytes);
-                case VarType.StringEx:
-                    return StringEx.FromByteArray(bytes);
+                case VarType.S7String:
+                    return S7String.FromByteArray(bytes);
+                case VarType.S7WString:
+                    return S7WString.FromByteArray(bytes);
 
                 case VarType.Timer:
                     if (varCount == 1)
@@ -147,37 +151,23 @@ namespace S7.Net
                         return Bit.ToBitArray(bytes, varCount);
                     }
                 case VarType.DateTime:
-                    
-                    switch (cpu)
+                    if (varCount == 1)
                     {
-                        // S71200/1500 use DTL format
-                        case CpuType.S71200:
-                        case CpuType.S71500:
-                            if (varCount == 1)
-                            {
-                                return DateTimeLong.FromByteArray(bytes);
-                            }
-                            else
-                            {
-                                return DateTimeLong.ToArray(bytes);
-                            }
-
-                        // S7200/300/400 use DT format
-                        case CpuType.S7200:
-                        case CpuType.Logo0BA8:
-                        case CpuType.S7300:
-                        case CpuType.S7400:
-                        default:
-                            if (varCount == 1)
-                            {
-                                return S7.Net.Types.DateTime.FromByteArray(bytes);
-                            }
-                            else
-                            {
-                                return S7.Net.Types.DateTime.ToArray(bytes);
-                            }
+                        return DateTime.FromByteArray(bytes);
                     }
-
+                    else
+                    {
+                        return DateTime.ToArray(bytes);
+                    }
+                case VarType.DateTimeLong:
+                    if (varCount == 1)
+                    {
+                        return DateTimeLong.FromByteArray(bytes);
+                    }
+                    else
+                    {
+                        return DateTimeLong.ToArray(bytes);
+                    }
                 default:
                     return null;
             }
@@ -189,18 +179,20 @@ namespace S7.Net
         /// <param name="varType"></param>
         /// <param name="varCount"></param>
         /// <returns>Byte lenght of variable</returns>
-        private int VarTypeToByteLength(VarType varType, int varCount = 1, CpuType cpu = CpuType.S71200)
+        internal static int VarTypeToByteLength(VarType varType, int varCount = 1)
         {
             switch (varType)
             {
                 case VarType.Bit:
-                    return varCount + 7 / 8;
+                    return (varCount + 7) / 8;
                 case VarType.Byte:
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
                     return varCount;
-                case VarType.StringEx:
-                    return varCount + 2;
+                case VarType.S7String:
+                    return ((varCount + 2) & 1) == 1 ? (varCount + 3) : (varCount + 2);
+                case VarType.S7WString:
+                    return (varCount * 2) + 4;
                 case VarType.Word:
                 case VarType.Timer:
                 case VarType.Int:
@@ -210,20 +202,11 @@ namespace S7.Net
                 case VarType.DInt:
                 case VarType.Real:
                     return varCount * 4;
+                case VarType.LReal:
                 case VarType.DateTime:
-                    switch (cpu)
-                    {
-                        case CpuType.S71200:
-                        case CpuType.S71500:
-                            return varCount * 12;
-                        case CpuType.S7200:
-                        case CpuType.Logo0BA8:
-                        case CpuType.S7300:
-                        case CpuType.S7400:
-                        default:
-                            return varCount * 8;
-                    }
-                    
+                    return varCount * 8;
+                case VarType.DateTimeLong:
+                    return varCount * 12;
                 default:
                     return 0;
             }
@@ -236,7 +219,7 @@ namespace S7.Net
             };
         }
 
-        private void ParseDataIntoDataItems(byte[] s7data, List<DataItem> dataItems, CpuType cpu = CpuType.S71200)
+        private void ParseDataIntoDataItems(byte[] s7data, List<DataItem> dataItems)
         {
             int offset = 14;
             foreach (var dataItem in dataItems)
@@ -253,17 +236,31 @@ namespace S7.Net
                     dataItem.VarType,
                     s7data.Skip(offset).Take(byteCnt).ToArray(),
                     dataItem.Count,
-                    dataItem.BitAdr,
-                    cpu
+                    dataItem.BitAdr
                 );
 
                 // next Item
                 offset += byteCnt;
 
-                // Fill byte in response when bytecount is odd
-                if (dataItem.Count % 2 != 0 && (dataItem.VarType == VarType.Byte || dataItem.VarType == VarType.Bit))
+                // Always align to even offset
+                if (offset % 2 != 0)
                     offset++;
             }
+        }
+
+        private static byte[] BuildReadRequestPackage(IList<DataItemAddress> dataItems)
+        {
+            int packageSize = 19 + (dataItems.Count * 12);
+            var package = new System.IO.MemoryStream(packageSize);
+
+            BuildHeaderPackage(package, dataItems.Count);
+
+            foreach (var dataItem in dataItems)
+            {
+                BuildReadDataRequestPackage(package, dataItem.DataType, dataItem.DB, dataItem.StartByteAddress, dataItem.ByteLength);
+            }
+
+            return package.ToArray();
         }
     }
 }

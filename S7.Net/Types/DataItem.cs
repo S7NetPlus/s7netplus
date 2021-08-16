@@ -1,4 +1,5 @@
-﻿using System;
+﻿using S7.Net.Protocol.S7;
+using System;
 
 namespace S7.Net.Types
 {
@@ -40,7 +41,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Contains the value of the memory area after the read has been executed
         /// </summary>
-        public object Value { get; set; }
+        public object? Value { get; set; }
 
         /// <summary>
         /// Create an instance of DataItem
@@ -83,9 +84,21 @@ namespace S7.Net.Types
             var dataItem = FromAddress(address);
             dataItem.Value = value;
 
-            if (typeof(T).IsArray) dataItem.Count = ((Array) dataItem.Value).Length;
+            if (typeof(T).IsArray)
+            {
+                var array = ((Array?)dataItem.Value);
+                if ( array != null)
+                {
+                    dataItem.Count = array.Length;
+                }
+            }
 
             return dataItem;
+        }
+
+        internal static DataItemAddress GetDataItemAddress(DataItem dataItem)
+        {
+            return new DataItemAddress(dataItem.DataType, dataItem.DB, dataItem.StartByteAdr, Plc.VarTypeToByteLength(dataItem.VarType, dataItem.Count));
         }
     }
 }

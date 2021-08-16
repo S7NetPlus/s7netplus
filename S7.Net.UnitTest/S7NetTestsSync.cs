@@ -1,12 +1,8 @@
 ﻿#region Using
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using S7.Net;
 using S7.Net.UnitTest.Helpers;
-using S7.Net.UnitTest;
-using System.ServiceProcess;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
 
@@ -41,6 +37,8 @@ namespace S7.Net.UnitTest
         #region Constants
         const int DB2 = 2;
         const int DB4 = 4;
+        const short TestServerPort = 31122;
+        const string TestServerIp = "127.0.0.1";
         #endregion
 
         #region Private fields
@@ -53,16 +51,19 @@ namespace S7.Net.UnitTest
         /// </summary>
         public S7NetTests()
         {
-            plc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
-            //ConsoleManager.Show();
-            ShutDownServiceS7oiehsx64();
+            plc = CreatePlc();
 
+        }
+
+        private static Plc CreatePlc()
+        {
+            return new Plc(CpuType.S7300, TestServerIp, TestServerPort, 0, 2);
         }
 
         [TestInitialize]
         public void Setup()
         {
-            S7TestServer.Start();
+            S7TestServer.Start(TestServerPort);
             plc.Open();
         }
 
@@ -146,19 +147,12 @@ namespace S7.Net.UnitTest
 
         /// <summary>
         /// Read/Write a single REAL with a single request.
-        /// Test that writing a double and reading it gives the correct value.
+        /// Test that writing a float and reading it gives the correct value.
         /// </summary>
         [TestMethod]
         public void T03_WriteAndReadRealVariables()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
-
-            // Reading and writing a double is quite complicated, because it needs to be converted to DWord before the write,
-            // then reconvert to double after the read.
-            double val = 35.68729;
-            plc.Write("DB1.DBD40", val.ConvertToUInt());
-            double result = ((uint)plc.Read("DB1.DBD40")).ConvertToDouble();
-            Assert.AreEqual(val, Math.Round(result, 5)); // float lose precision, so i need to round it
 
             // Reading and writing a float is quite complicated, because it needs to be converted to DWord before the write,
             // then reconvert to float after the read. Float values can contain only 7 digits, so no precision is lost.
@@ -186,8 +180,8 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
             plc.WriteClass(tc, DB2);
             TestClass tc2 = new TestClass();
@@ -197,8 +191,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(Math.Round(tc.RealVariableDouble, 3), Math.Round(tc2.RealVariableDouble, 3));
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
         }
 
@@ -215,9 +209,12 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
+
             plc.WriteStruct(tc, DB2);
             // Values that are read from a struct are stored in a new struct, returned by the funcion ReadStruct
             TestStruct tc2 = (TestStruct)plc.ReadStruct(typeof(TestStruct), DB2);
@@ -225,9 +222,11 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(tc.RealVariableDouble, Math.Round(tc2.RealVariableDouble, 3));
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.WStringVariable, tc2.WStringVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         /// <summary>
@@ -575,8 +574,8 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
 
             plc.WriteClass(tc, DB2);
@@ -588,8 +587,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.BitVariable10, tc2.BitVariable10);
             Assert.AreEqual(tc.DIntVariable, tc2.DIntVariable);
             Assert.AreEqual(tc.IntVariable, tc2.IntVariable);
-            Assert.AreEqual(Math.Round(tc.RealVariableDouble, 3), Math.Round(tc2.RealVariableDouble, 3));
-            Assert.AreEqual(tc.RealVariableFloat, tc2.RealVariableFloat);
+            Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
+            Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
 
             Assert.AreEqual(TestClassWithPrivateSetters.PRIVATE_SETTER_VALUE, tc2.PrivateSetterProperty);
@@ -620,8 +619,8 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
 
             plc.WriteClass(tc, DB2);
@@ -635,8 +634,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2.BitVariable10, tc2Generic.BitVariable10);
             Assert.AreEqual(tc2.DIntVariable, tc2Generic.DIntVariable);
             Assert.AreEqual(tc2.IntVariable, tc2Generic.IntVariable);
-            Assert.AreEqual(Math.Round(tc2.RealVariableDouble, 3), Math.Round(tc2Generic.RealVariableDouble, 3));
-            Assert.AreEqual(tc2.RealVariableFloat, tc2Generic.RealVariableFloat);
+            Assert.AreEqual(Math.Round(tc2.LRealVariable, 3), Math.Round(tc2Generic.LRealVariable, 3));
+            Assert.AreEqual(tc2.RealVariable, tc2Generic.RealVariable);
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
         }
 
@@ -663,8 +662,8 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
 
             plc.WriteClass(tc, DB2);
@@ -677,8 +676,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc2Generic.BitVariable10, tc2GenericWithClassFactory.BitVariable10);
             Assert.AreEqual(tc2Generic.DIntVariable, tc2GenericWithClassFactory.DIntVariable);
             Assert.AreEqual(tc2Generic.IntVariable, tc2GenericWithClassFactory.IntVariable);
-            Assert.AreEqual(Math.Round(tc2Generic.RealVariableDouble, 3), Math.Round(tc2GenericWithClassFactory.RealVariableDouble, 3));
-            Assert.AreEqual(tc2Generic.RealVariableFloat, tc2GenericWithClassFactory.RealVariableFloat);
+            Assert.AreEqual(Math.Round(tc2Generic.LRealVariable, 3), Math.Round(tc2GenericWithClassFactory.LRealVariable, 3));
+            Assert.AreEqual(tc2Generic.RealVariable, tc2GenericWithClassFactory.RealVariable);
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
         }
 
@@ -700,7 +699,7 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
-            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass()));
+            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass(), cpu: plc.CPU));
 
             TestClassWithNestedClass tc = new TestClassWithNestedClass();
             tc.BitVariable00 = true;
@@ -743,6 +742,26 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.ShortVariable04.ShortVarialbe00, tc2.ShortVariable04.ShortVarialbe00);
         }
 
+        /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public void T33_WriteLargeByteArray()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            var data = new byte[8192];
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            plc.WriteBytes(DataType.DataBlock, db, 0, data);
+
+            var readData = plc.ReadBytes(DataType.DataBlock, db, 0, data.Length);
+
+            CollectionAssert.AreEqual(data, readData);
+        }
+
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
@@ -766,9 +785,11 @@ namespace S7.Net.UnitTest
             ts.BitVariable10 = true;
             ts.DIntVariable = -100000;
             ts.IntVariable = -15000;
-            ts.RealVariableDouble = -154.789;
-            ts.RealVariableFloat = -154.789f;
+            ts.LRealVariable = -154.789;
+            ts.RealVariable = -154.789f;
             ts.DWordVariable = 850;
+            ts.WStringVariable = "ÄÜÉÊéà";
+            ts.StringVariable = "Hallo";
 
             plc.WriteStruct(ts, DB2);
 
@@ -780,9 +801,11 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(ts2.BitVariable10, ts2Generic.BitVariable10);
             Assert.AreEqual(ts2.DIntVariable, ts2Generic.DIntVariable);
             Assert.AreEqual(ts2.IntVariable, ts2Generic.IntVariable);
-            Assert.AreEqual(Math.Round(ts2.RealVariableDouble, 3), Math.Round(ts2Generic.RealVariableDouble, 3));
-            Assert.AreEqual(ts2.RealVariableFloat, ts2Generic.RealVariableFloat);
+            Assert.AreEqual(ts2.LRealVariable, ts2Generic.LRealVariable);
+            Assert.AreEqual(ts2.RealVariable, ts2Generic.RealVariable);
             Assert.AreEqual(ts2.DWordVariable, ts2Generic.DWordVariable);
+            Assert.AreEqual(ts2.WStringVariable, ts2Generic.WStringVariable);
+            Assert.AreEqual(ts2.StringVariable, ts2Generic.StringVariable);
         }
 
         [TestMethod, ExpectedException(typeof(PlcException))]
@@ -811,12 +834,12 @@ namespace S7.Net.UnitTest
             tc.BitVariable10 = true;
             tc.DIntVariable = -100000;
             tc.IntVariable = -15000;
-            tc.RealVariableDouble = -154.789;
-            tc.RealVariableFloat = -154.789f;
+            tc.LRealVariable = -154.789;
+            tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
             plc.WriteClass(tc, DB2);
 
-            int expectedReadBytes = (int)Types.Class.GetClassSize(tc);
+            int expectedReadBytes = (int)Types.Class.GetClassSize(tc, cpu: plc.CPU);
 
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
@@ -910,7 +933,14 @@ namespace S7.Net.UnitTest
             S7TestServer.Stop();
 
             var unreachablePlc = new Plc(CpuType.S7300, "255.255.255.255", 0, 2);
-            Assert.IsFalse(unreachablePlc.IsAvailable);
+            try
+            {
+                unreachablePlc.Open();
+            }
+            catch
+            {
+            }
+            Assert.IsFalse(unreachablePlc.IsConnected);
         }
 
         [TestMethod]
@@ -918,21 +948,21 @@ namespace S7.Net.UnitTest
         {
             plc.Close();
             S7TestServer.Stop();
-            S7TestServer.Start();
+            S7TestServer.Start(TestServerPort);
 
-            var reachablePlc = new Plc(CpuType.S7300, "127.0.0.1", 0, 2);
-            Assert.IsTrue(reachablePlc.IsAvailable);
+            var reachablePlc = CreatePlc();
+            reachablePlc.Open();
+            Assert.IsTrue(reachablePlc.IsConnected);
         }
 
         [TestMethod]
         public void T26_ReadWriteDouble()
         {
             double test_value = 55.66;
-            plc.Write("DB1.DBD0", test_value);
-            var helper = plc.Read("DB1.DBD0");
-            double test_value2 = Conversion.ConvertToDouble((uint)helper);
+            plc.Write(DataType.DataBlock, 1, 0, test_value);
+            var result = (double)plc.Read(DataType.DataBlock, 1, 0, VarType.LReal, 1);
 
-            Assert.AreEqual(test_value, test_value2, 0.01, "Compare Write/Read"); //Need delta here because S7 only has 32 bit reals
+            Assert.AreEqual(test_value, result, "Compare Write/Read");
         }
 
         [TestMethod]
@@ -997,21 +1027,23 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(test_value, test_value2, "Compare Write/Read"); //No delta, datatype matches
         }
 
+        [TestMethod]
+        public void T33_ReadWriteDateTimeLong()
+        {
+            var test_value = System.DateTime.Now;
+            var db = 1;
+            var offset = 0;
+
+            plc.WriteBytes(DataType.DataBlock, db, offset, Types.DateTimeLong.ToByteArray(test_value));
+            var test_value2 = plc.Read(DataType.DataBlock, db, offset, VarType.DateTimeLong, 1);
+            Assert.IsInstanceOfType(test_value2, typeof(System.DateTime));
+
+            Assert.AreEqual(test_value, test_value2, "Compare DateTimeLong Write/Read");
+        }
+
         #endregion
 
         #region Private methods
-        private static void ShutDownServiceS7oiehsx64()
-        {
-            ServiceController[] services = ServiceController.GetServices();
-            var service = services.FirstOrDefault(s => s.ServiceName == "s7oiehsx64");
-            if (service != null)
-            {
-                if (service.Status == ServiceControllerStatus.Running)
-                {
-                    service.Stop();
-                }
-            }
-        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
