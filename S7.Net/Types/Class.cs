@@ -399,7 +399,7 @@ namespace S7.Net.Types
                     break;
                 case "String":
 #if NETSTANDARD1_3
-    S7StringAttribute? attribute = propertyValue.GetType().GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                    S7StringAttribute? attribute = propertyValue.GetType().GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
 #else
                     S7StringAttribute? attribute = propertyValue.GetType().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
 #endif
