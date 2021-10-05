@@ -30,7 +30,7 @@ namespace S7.Net.Types
         /// <paramref name="bytes" /> is not 12 or any value in <paramref name="bytes" />
         /// is outside the valid range of values.
         /// </exception>
-        public static System.DateTime FromByteArray(byte[] bytes)
+        public static System.DateTime FromByteArray(ReadOnlySpan<byte> bytes)
         {
             return FromByteArrayImpl(bytes);
         }
@@ -45,7 +45,7 @@ namespace S7.Net.Types
         /// <paramref name="bytes" /> is not a multiple of 12 or any value in
         /// <paramref name="bytes" /> is outside the valid range of values.
         /// </exception>
-        public static System.DateTime[] ToArray(byte[] bytes)
+        public static System.DateTime[] ToArray(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length % TypeLengthInBytes != 0)
             {
@@ -58,15 +58,13 @@ namespace S7.Net.Types
 
             for (var i = 0; i < cnt; i++)
             {
-                var slice = new byte[TypeLengthInBytes];
-                Array.Copy(bytes, i * TypeLengthInBytes, slice, 0, TypeLengthInBytes);
-                result[i] = FromByteArrayImpl(slice);
+                result[i] = FromByteArrayImpl(bytes.Slice(i*TypeLengthInBytes, TypeLengthInBytes));
             }
 
             return result;
         }
 
-        private static System.DateTime FromByteArrayImpl(byte[] bytes)
+        private static System.DateTime FromByteArrayImpl(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length != TypeLengthInBytes)
             {
@@ -83,7 +81,7 @@ namespace S7.Net.Types
             var minute = AssertRangeInclusive(bytes[6], 0, 59, "minute");
             var second = AssertRangeInclusive(bytes[7], 0, 59, "second");
             ;
-
+            
             var nanoseconds = AssertRangeInclusive<uint>(DWord.FromBytes(bytes[11], bytes[10], bytes[9], bytes[8]), 0,
                 999999999, "nanoseconds");
 

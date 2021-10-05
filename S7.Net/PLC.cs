@@ -57,12 +57,12 @@ namespace S7.Net
         /// <summary>
         /// Rack of the PLC
         /// </summary>
-        public short Rack { get; }
+        public Int16 Rack { get; }
 
         /// <summary>
         /// Slot of the CPU of the PLC
         /// </summary>
-        public short Slot { get; }
+        public Int16 Slot { get; }
 
         /// <summary>
         /// Max PDU size this cpu supports
@@ -124,7 +124,7 @@ namespace S7.Net
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, short rack, short slot)
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
             : this(cpu, ip, DefaultPort, rack, slot)
         {
         }
@@ -141,7 +141,7 @@ namespace S7.Net
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, int port, short rack, short slot)
+        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
             : this(ip, port, TsapPair.GetDefaultTsapPair(cpu, rack, slot))
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
@@ -189,11 +189,10 @@ namespace S7.Net
         /// </summary>
         public void Close()
         {
-            if (tcpClient != null)
-            {
-                if (tcpClient.Connected) tcpClient.Close();
-                tcpClient = null; // Can not reuse TcpClient once connection gets closed.
-            }
+            if (tcpClient?.Connected == true)
+                tcpClient?.Close();
+
+            tcpClient = null; // Can not reuse TcpClient once connection gets closed.
         }
 
         private void AssertPduSizeForRead(ICollection<DataItem> dataItems)

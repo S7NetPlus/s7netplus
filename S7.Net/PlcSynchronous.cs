@@ -25,8 +25,7 @@ namespace S7.Net
                     $"Couldn't establish the connection to {IP}.\nMessage: {exc.Message}", exc);
             }
         }
-
-
+        
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -411,8 +410,7 @@ namespace S7.Net
 
             return package.ToArray();
         }
-
-
+        
         private void WriteBitWithASingleRequest(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue)
         {
             try

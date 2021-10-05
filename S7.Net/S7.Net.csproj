@@ -29,5 +29,6 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 </Project>
