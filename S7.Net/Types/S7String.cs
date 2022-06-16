@@ -10,6 +10,11 @@ namespace S7.Net.Types
     public static class S7String
     {
         /// <summary>
+        /// The Encoding used when serializing and deserializing S7String (Encoding.ASCII by default)
+        /// </summary>
+        public static Encoding StringEncoding { get; set; }
+
+        /// <summary>
         /// Converts S7 bytes to a string
         /// </summary>
         /// <param name="bytes"></param>
@@ -30,7 +35,8 @@ namespace S7.Net.Types
 
             try
             {
-                return Encoding.ASCII.GetString(bytes, 2, length);
+                if (StringEncoding == null) StringEncoding = Encoding.ASCII;
+                return StringEncoding.GetString(bytes, 2, length);
             }
             catch (Exception e)
             {
@@ -38,7 +44,6 @@ namespace S7.Net.Types
                     $"Failed to parse {VarType.S7String} from data. Following fields were read: size: '{size}', actual length: '{length}', total number of bytes (including header): '{bytes.Length}'.",
                     e);
             }
-            
         }
 
         /// <summary>
@@ -56,7 +61,8 @@ namespace S7.Net.Types
 
             if (reservedLength > 254) throw new ArgumentException($"The maximum string length supported is 254.");
 
-            var bytes = Encoding.ASCII.GetBytes(value);
+            if (StringEncoding == null) StringEncoding = Encoding.ASCII;
+            var bytes = StringEncoding.GetBytes(value);
             if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
 
             var buffer = new byte[2 + reservedLength];
@@ -64,6 +70,14 @@ namespace S7.Net.Types
             buffer[0] = (byte)reservedLength;
             buffer[1] = (byte)bytes.Length;
             return buffer;
+        }
+
+        /// <summary>
+        /// Initializes default static properties
+        /// </summary>
+        static S7String()
+        {
+            StringEncoding = Encoding.ASCII;
         }
     }
 }
