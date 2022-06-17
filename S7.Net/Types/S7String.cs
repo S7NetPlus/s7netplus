@@ -9,7 +9,7 @@ namespace S7.Net.Types
     /// </summary>
     public static class S7String
     {
-        private static Encoding stringEncoding;
+        private static Encoding stringEncoding = Encoding.ASCII;
 
         /// <summary>
         /// The Encoding used when serializing and deserializing S7String (Encoding.ASCII by default)
@@ -17,7 +17,7 @@ namespace S7.Net.Types
         /// <exception cref="ArgumentNullException">StringEncoding must not be null</exception>
         public static Encoding StringEncoding
         {
-            get => stringEncoding ??= Encoding.ASCII;
+            get => stringEncoding;
             set => stringEncoding = value ?? throw new ArgumentNullException(nameof(StringEncoding));
         }
 
