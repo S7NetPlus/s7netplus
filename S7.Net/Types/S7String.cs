@@ -9,10 +9,17 @@ namespace S7.Net.Types
     /// </summary>
     public static class S7String
     {
+        private static Encoding stringEncoding;
+
         /// <summary>
         /// The Encoding used when serializing and deserializing S7String (Encoding.ASCII by default)
         /// </summary>
-        public static Encoding StringEncoding { get; set; }
+        /// <exception cref="ArgumentNullException">StringEncoding must not be null</exception>
+        public static Encoding StringEncoding
+        {
+            get => stringEncoding ??= Encoding.ASCII;
+            set => stringEncoding = value ?? throw new ArgumentNullException(nameof(StringEncoding));
+        }
 
         /// <summary>
         /// Converts S7 bytes to a string
@@ -35,7 +42,6 @@ namespace S7.Net.Types
 
             try
             {
-                if (StringEncoding == null) StringEncoding = Encoding.ASCII;
                 return StringEncoding.GetString(bytes, 2, length);
             }
             catch (Exception e)
@@ -61,7 +67,6 @@ namespace S7.Net.Types
 
             if (reservedLength > 254) throw new ArgumentException($"The maximum string length supported is 254.");
 
-            if (StringEncoding == null) StringEncoding = Encoding.ASCII;
             var bytes = StringEncoding.GetBytes(value);
             if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
 
@@ -70,14 +75,6 @@ namespace S7.Net.Types
             buffer[0] = (byte)reservedLength;
             buffer[1] = (byte)bytes.Length;
             return buffer;
-        }
-
-        /// <summary>
-        /// Initializes default static properties
-        /// </summary>
-        static S7String()
-        {
-            StringEncoding = Encoding.ASCII;
         }
     }
 }
