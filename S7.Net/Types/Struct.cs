@@ -255,54 +255,61 @@ namespace S7.Net.Types
             foreach (var info in infos)
             {
                 bytes2 = null;
-                switch (info.FieldType.Name)
-                {
-                    case "Boolean":
-                        // get the value
-                        bytePos = (int)Math.Floor(numBytes);
-                        bitPos = (int)((numBytes - (double)bytePos) / 0.125);
-                        if ((bool)info.GetValue(structValue))
-                            bytes[bytePos] |= (byte)Math.Pow(2, bitPos);            // is true
-                        else
-                            bytes[bytePos] &= (byte)(~(byte)Math.Pow(2, bitPos));   // is false
-                        numBytes += 0.125;
-                        break;
-                    case "Byte":
-                        numBytes = (int)Math.Ceiling(numBytes);
-                        bytePos = (int)numBytes;
-                        bytes[bytePos] = (byte)info.GetValue(structValue);
-                        numBytes++;
-                        break;
-                    case "Int16":
-                        bytes2 = Int.ToByteArray((Int16)info.GetValue(structValue));
-                        break;
-                    case "UInt16":
-                        bytes2 = Word.ToByteArray((UInt16)info.GetValue(structValue));
-                        break;
-                    case "Int32":
-                        bytes2 = DInt.ToByteArray((Int32)info.GetValue(structValue));
-                        break;
-                    case "UInt32":
-                        bytes2 = DWord.ToByteArray((UInt32)info.GetValue(structValue));
-                        break;
-                    case "Single":
-                        bytes2 = Real.ToByteArray((float)info.GetValue(structValue));
-                        break;
-                    case "Double":
-                        bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
-                        break;
-                    case "String":
-                        S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-                        if (attribute == default(S7StringAttribute))
-                            throw new ArgumentException("Please add S7StringAttribute to the string field");
 
-                        bytes2 = attribute.Type switch
-                        {
-                            S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
-                            S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
-                            _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
-                        };
-                        break;
+                bool isCustomStruct = info.FieldType.IsValueType && !info.FieldType.IsPrimitive;
+                if (isCustomStruct) {
+                    bytes2 = ToBytes(info.GetValue(structValue));
+                } else {
+
+                    switch (info.FieldType.Name) 
+                    {
+                        case "Boolean":
+                            // get the value
+                            bytePos = (int)Math.Floor(numBytes);
+                            bitPos = (int)((numBytes - (double)bytePos) / 0.125);
+                            if ((bool)info.GetValue(structValue))
+                                bytes[bytePos] |= (byte)Math.Pow(2, bitPos);            // is true
+                            else
+                                bytes[bytePos] &= (byte)(~(byte)Math.Pow(2, bitPos));   // is false
+                            numBytes += 0.125;
+                            break;
+                        case "Byte":
+                            numBytes = (int)Math.Ceiling(numBytes);
+                            bytePos = (int)numBytes;
+                            bytes[bytePos] = (byte)info.GetValue(structValue);
+                            numBytes++;
+                            break;
+                        case "Int16":
+                            bytes2 = Int.ToByteArray((Int16)info.GetValue(structValue));
+                            break;
+                        case "UInt16":
+                            bytes2 = Word.ToByteArray((UInt16)info.GetValue(structValue));
+                            break;
+                        case "Int32":
+                            bytes2 = DInt.ToByteArray((Int32)info.GetValue(structValue));
+                            break;
+                        case "UInt32":
+                            bytes2 = DWord.ToByteArray((UInt32)info.GetValue(structValue));
+                            break;
+                        case "Single":
+                            bytes2 = Real.ToByteArray((float)info.GetValue(structValue));
+                            break;
+                        case "Double":
+                            bytes2 = LReal.ToByteArray((double)info.GetValue(structValue));
+                            break;
+                        case "String":
+                            S7StringAttribute? attribute = info.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                            if (attribute == default(S7StringAttribute))
+                                throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                            bytes2 = attribute.Type switch 
+                            {
+                                S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                                S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                                _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                            };
+                            break;
+                    }
                 }
                 if (bytes2 != null)
                 {
