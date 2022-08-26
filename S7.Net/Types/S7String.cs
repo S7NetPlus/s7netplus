@@ -16,6 +16,7 @@ namespace S7.Net.Types
         /// <returns></returns>
         public static string FromByteArray(byte[] bytes)
         {
+            // until performance increases for Encoding (Span<byte>) GetString, not altering string encoding
             if (bytes.Length < 2)
             {
                 throw new PlcException(ErrorCode.ReadData, "Malformed S7 String / too short");

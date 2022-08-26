@@ -18,7 +18,7 @@ namespace S7.Net.Types
                 throw new ArgumentException("Wrong number of bytes. Bytes array must contain 4 bytes.");
             }
 
-            // sps uses bigending so we have to reverse if platform needs
+            // sps uses BigEndian so we have to reverse if platform needs
             if (BitConverter.IsLittleEndian)
             {
                 // create deep copy of the array and reverse
@@ -35,7 +35,7 @@ namespace S7.Net.Types
         {
             byte[] bytes = BitConverter.GetBytes(value);
 
-            // sps uses bigending so we have to check if platform is same
+            // sps uses BigEndian so we have to check if platform is same
             if (!BitConverter.IsLittleEndian) return bytes;
             
             // create deep copy of the array and reverse

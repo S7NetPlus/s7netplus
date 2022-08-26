@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers.Binary;
+using System.Linq;
 
 namespace S7.Net.Types
 {
@@ -19,7 +21,19 @@ namespace S7.Net.Types
 
             return (UInt16)((bytes[0] << 8) | bytes[1]);
         }
+        
+        /// <summary>
+        /// Converts a word (2 bytes) to ushort (UInt16)
+        /// </summary>
+        public static UInt16 FromReverseByteArray(byte[] bytes)
+        {
+            if (bytes.Length != 2)
+            {
+                throw new ArgumentException("Wrong number of bytes. Bytes array must contain 2 bytes.");
+            }
 
+            return (UInt16)((bytes[1] << 8) | bytes[0]);
+        }
 
         /// <summary>
         /// Converts 2 bytes to ushort (UInt16)
@@ -37,12 +51,12 @@ namespace S7.Net.Types
         {
             byte[] bytes = new byte[2];
 
+            bytes[0] = (byte)((value >> 8) & 0xFF);
             bytes[1] = (byte)(value & 0xFF);
-            bytes[0] = (byte)((value>>8) & 0xFF);
 
             return bytes;
         }
-
+        
         /// <summary>
         /// Converts an array of ushort (UInt16) to an array of bytes
         /// </summary>
@@ -57,13 +71,13 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts an array of bytes to an array of ushort
         /// </summary>
-        public static UInt16[] ToArray(byte[] bytes)
+        public static UInt16[] ToArray(ReadOnlySpan<byte> bytes)
         {
-            UInt16[] values = new UInt16[bytes.Length/2];
+            UInt16[] values = new UInt16[bytes.Length / 2];
 
             int counter = 0;
-            for (int cnt = 0; cnt < bytes.Length/2; cnt++)
-                values[cnt] = FromByteArray(new byte[] {bytes[counter++], bytes[counter++]});
+            for (int cnt = 0; cnt < bytes.Length / 2; cnt++)
+                values[cnt] = FromByteArray(new byte[] { bytes[counter++], bytes[counter++] });
 
             return values;
         }

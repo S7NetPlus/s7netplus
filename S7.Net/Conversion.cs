@@ -31,8 +31,7 @@ namespace S7.Net
         /// <returns></returns>
         public static byte? BinStringToByte(this string txt)
         {
-            if (txt.Length == 8) return (byte)BinStringToInt32(txt);
-            return null;
+            return txt.Length == 8 ? (byte?)(byte)BinStringToInt32(txt) : null;
         }
 
         /// <summary>
@@ -145,10 +144,7 @@ namespace S7.Net
         /// <returns></returns>
         public static bool SelectBit(this byte data, int bitPosition)
         {
-            int mask = 1 << bitPosition;
-            int result = data & mask;
-
-            return (result != 0);
+            return ((data & (1 << bitPosition)) != 0);
         }
 
         /// <summary>
@@ -158,9 +154,7 @@ namespace S7.Net
         /// <returns></returns>
         public static short ConvertToShort(this ushort input)
         {
-            short output;
-            output = short.Parse(input.ToString("X"), NumberStyles.HexNumber);
-            return output;
+            return short.Parse(input.ToString("X"), NumberStyles.HexNumber);
         }
 
         /// <summary>
@@ -170,9 +164,7 @@ namespace S7.Net
         /// <returns></returns>
         public static ushort ConvertToUshort(this short input)
         {
-            ushort output;
-            output = ushort.Parse(input.ToString("X"), NumberStyles.HexNumber);
-            return output;
+            return ushort.Parse(input.ToString("X"), NumberStyles.HexNumber);
         }
 
         /// <summary>
@@ -182,9 +174,7 @@ namespace S7.Net
         /// <returns></returns>
         public static Int32 ConvertToInt(this uint input)
         {
-            int output;
-            output = int.Parse(input.ToString("X"), NumberStyles.HexNumber);
-            return output;
+            return int.Parse(input.ToString("X"), NumberStyles.HexNumber);
         }
 
         /// <summary>
@@ -194,9 +184,7 @@ namespace S7.Net
         /// <returns></returns>
         public static UInt32 ConvertToUInt(this int input)
         {
-            uint output;
-            output = uint.Parse(input.ToString("X"), NumberStyles.HexNumber);
-            return output;
+            return uint.Parse(input.ToString("X"), NumberStyles.HexNumber);
         }
 
         /// <summary>
@@ -206,9 +194,7 @@ namespace S7.Net
         /// <returns></returns>
         public static UInt32 ConvertToUInt(this float input)
         {
-            uint output;
-            output = S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Real.ToByteArray(input));
-            return output;
+            return S7.Net.Types.DWord.FromByteArray(S7.Net.Types.Real.ToByteArray(input));
         }
 
         /// <summary>
@@ -218,9 +204,59 @@ namespace S7.Net
         /// <returns></returns>
         public static float ConvertToFloat(this uint input)
         {
-            float output;
-            output = S7.Net.Types.Real.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
-            return output;
+            return S7.Net.Types.Real.FromByteArray(S7.Net.Types.DWord.ToByteArray(input));
         }
+
+        
+        /// <summary>
+        /// Converts from UInt32 value to Int32 value; it's used to retrieve negative values from DBDs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static Int64 ConvertToLong(this uint input)
+        {
+            return long.Parse(input.ToString("X"), NumberStyles.HexNumber);
+        }
+
+        /// <summary>
+        /// Converts from Int32 value to UInt32 value; it's used to pass negative values to DBDs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static UInt64 ConvertToULong(this int input)
+        {
+            return ulong.Parse(input.ToString("X"), NumberStyles.HexNumber);
+        }
+
+        /// <summary>
+        /// Converts from float to DWord (DBD)
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static UInt64 ConvertToULong(this float input)
+        {
+            return S7.Net.Types.LWord.FromByteArray(S7.Net.Types.LReal.ToByteArray(input));
+        }
+        
+        /// <summary>
+        /// Converts from ulong value to long value; it's used to retrieve negative values from words
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static long ConvertToLong(this ulong input)
+        {
+            return long.Parse(input.ToString("X"), NumberStyles.HexNumber);
+        }
+
+        /// <summary>
+        /// Converts from long value to ulong value; it's used to pass negative values to DWs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static ulong ConvertToUlong(this long input)
+        {
+            return ulong.Parse(input.ToString("X"), NumberStyles.HexNumber);
+        }
+
     }
 }

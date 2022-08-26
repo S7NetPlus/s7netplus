@@ -10,7 +10,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts a S7 DWord (4 bytes) to uint (UInt32)
         /// </summary>
-        public static UInt32 FromByteArray(byte[] bytes)
+        public static UInt32 FromByteArray(Span<byte> bytes)
         {
             return (UInt32)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
         }
@@ -40,11 +40,6 @@ namespace S7.Net.Types
             return bytes;
         }
 
-
-
-
-
-
         /// <summary>
         /// Converts an array of uint (UInt32) to an array of S7 DWord (4 bytes) 
         /// </summary>
@@ -59,7 +54,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts an array of S7 DWord to an array of uint (UInt32)
         /// </summary>
-        public static UInt32[] ToArray(byte[] bytes)
+        public static UInt32[] ToArray(ReadOnlySpan<byte> bytes)
         {
             UInt32[] values = new UInt32[bytes.Length / 4];
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
-    <TargetFrameworks>net452;netstandard2.0;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>net452;netstandard2.0;netstandard1.3;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
@@ -29,5 +29,6 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 </Project>

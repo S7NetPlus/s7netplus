@@ -49,8 +49,17 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts an array of S7 DInt to an array of int (Int32)
         /// </summary>
-        public static Int32[] ToArray(byte[] bytes)
+        public static Int32[] ToArray(ReadOnlySpan<byte> bytes)
         {
+            var valCnt = bytes.Length / 4;
+            //var values = new Int32[valCnt];
+
+            //for (int cnt = 0; cnt < valCnt; cnt++)
+            //{
+            //    values[cnt] = BitConverter.ToInt32(bytes.Slice(cnt * 4, 4).ToArray(), 0);
+            //}
+
+            //return values;
             Int32[] values = new Int32[bytes.Length / 4];
 
             int counter = 0;
@@ -59,7 +68,6 @@ namespace S7.Net.Types
 
             return values;
         }
-        
 
     }
 }

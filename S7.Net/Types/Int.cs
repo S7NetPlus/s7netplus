@@ -16,8 +16,6 @@ namespace S7.Net.Types
             {
                 throw new ArgumentException("Wrong number of bytes. Bytes array must contain 2 bytes.");
             }
-            // bytes[0] -> HighByte
-            // bytes[1] -> LowByte
             return (short)((int)(bytes[1]) | ((int)(bytes[0]) << 8));
         }
 
@@ -54,7 +52,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts an array of S7 Int to an array of short (Int16)
         /// </summary>
-        public static Int16[] ToArray(byte[] bytes)
+        public static Int16[] ToArray(Span<byte> bytes)
         {
             int shortsCount = bytes.Length / 2;
 
