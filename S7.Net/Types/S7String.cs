@@ -48,17 +48,25 @@ namespace S7.Net.Types
         /// <param name="value">The string to convert to byte array.</param>
         /// <param name="reservedLength">The length (in characters) allocated in PLC for the string.</param>
         /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="reservedLength"/> + 2.</returns>
-        public static byte[] ToByteArray(string value, int reservedLength)
+        public static byte[] ToByteArray(string value, int reservedLength, bool truncateOverflow = false)
         {
             if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (reservedLength > 254) throw new ArgumentException($"The maximum string length supported is 254.");
+            if (reservedLength > 254) 
+                throw new ArgumentException($"The maximum string length supported is 254.");
 
             var bytes = Encoding.ASCII.GetBytes(value);
-            if (bytes.Length > reservedLength) throw new ArgumentException($"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
+            if (bytes.Length > reservedLength)
+            {
+                if (truncateOverflow)
+                    Array.Resize(ref bytes, reservedLength);
+                else
+                    throw new ArgumentException(
+                        $"The provided string length ({bytes.Length} is larger than the specified reserved length ({reservedLength}).");
+            }
 
             var buffer = new byte[2 + reservedLength];
             Array.Copy(bytes, 0, buffer, 2, bytes.Length);

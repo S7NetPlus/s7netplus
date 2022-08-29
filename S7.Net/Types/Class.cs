@@ -25,7 +25,7 @@ namespace S7.Net.Types
 
         }
 
-        private static double GetIncreasedNumberOfBytes(double numBytes, Type type, CpuType cpu)
+        private static double GetIncreasedNumberOfBytes(double numBytes, Type type, IEnumerable<Attribute> propertyAttributes, CpuType cpu)
         {
             switch (type.Name)
             {
@@ -66,39 +66,55 @@ namespace S7.Net.Types
                     // Per Siemens documentation, DateTime structures are model specific, and compatibility to exchange types
                     // is not supported by Siemens.
                     
-#if NETSTANDARD1_3
-                    S7DateTimeAttribute dateAttribute = type.GetTypeInfo().GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                                                     (cpu switch
-                    {
-                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
-                    });
-#else
-                    S7DateTimeAttribute dateAttribute = type.GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                                                     (cpu switch
-                    {
-                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
-                    });
+//#if NETSTANDARD1_3
+//                    S7DateTimeAttribute dateAttribute = type.GetTypeInfo().GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
+//                                                     (cpu switch
+//                    {
+//                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+//                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+//                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
+//                    });
+//#else
+//                    S7DateTimeAttribute dateAttribute = type.GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
+//                                                     (cpu switch
+//                    {
+//                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+//                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+//                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
+//                    });
 
-#endif
-                    numBytes = dateAttribute.ByteLength;
+//#endif
+                    // initialize a default
+                    S7DateTimeAttribute dateAttr = (cpu switch
+                    {
+                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
+                    });
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7DateTimeAttribute dateAttribute)
+                        {
+                            dateAttr = dateAttribute;
+                        }
+                    }
+
+                    numBytes += dateAttr.ByteLength;
                     break;
 
                 case "String":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
-                    
-#if NETSTANDARD1_3
-                    S7StringAttribute? attribute = type.GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#else
-                    S7StringAttribute? attribute = type.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#endif
-                    if (attribute == default(S7StringAttribute))
-                        throw new ArgumentException("Please add S7StringAttribute to the string property");
+
+                    S7StringAttribute attribute = new S7StringAttribute(S7StringType.S7String, 254);
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7StringAttribute sizeAttribute)
+                        {
+                            attribute = sizeAttribute;
+                        }
+                    }
                     
                     numBytes += attribute.ReservedLengthInBytes;
                     break;
@@ -128,6 +144,7 @@ namespace S7.Net.Types
             var properties = GetAccessableProperties(instance.GetType());
             foreach (var property in properties)
             {
+                var propertyAttributes = property.GetCustomAttributes();
                 if (property.PropertyType.IsArray)
                 {
                     Type elementType = property.PropertyType.GetElementType();
@@ -140,12 +157,12 @@ namespace S7.Net.Types
                     IncrementToEven(ref numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
-                        numBytes = GetIncreasedNumberOfBytes(numBytes, elementType, cpu);
+                        numBytes = GetIncreasedNumberOfBytes(numBytes, elementType, propertyAttributes, cpu);
                     }
                 }
                 else
                 {
-                    numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType, cpu);
+                    numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType, propertyAttributes, cpu);
                 }
             }
             if (false == isInnerProperty)
@@ -158,7 +175,7 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static object? GetPropertyValue(Type propertyType, ReadOnlySpan<byte> bytes, ref double numBytes, CpuType cpu)
+        private static object? GetPropertyValue(Type propertyType, ReadOnlySpan<byte> bytes, ref double numBytes, IEnumerable<Attribute> propertyAttributes, CpuType cpu)
         {
             object? value = null;
 
@@ -246,36 +263,30 @@ namespace S7.Net.Types
 
                     // If the property does not have a S7DateTimeAttribute set, then set a default attribute based on what
                     // the CPU's default DateTime parsing mechanism is
-#if NETSTANDARD1_3
-                    S7DateTimeAttribute dateAttribute =
-                        propertyType.GetTypeInfo().GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                        cpu switch
-                        {
-                            CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                            CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                            _ => new S7DateTimeAttribute(S7DateTimeType.DT),
-                        };
-#else
-                    S7DateTimeAttribute dateAttribute =
-                        propertyType.GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                        cpu switch
-                        {
-                            CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                            CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                            _ => new S7DateTimeAttribute(S7DateTimeType.DT),
-                        };
 
-#endif
+                    S7DateTimeAttribute dateAttr = (cpu switch
+                    {
+                        CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
+                        _ => new S7DateTimeAttribute(S7DateTimeType.DT),
+                    });
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7DateTimeAttribute dateAttribute)
+                        {
+                            dateAttr = dateAttribute;
+                        }
+                    }
+
                     
                     switch (cpu)
                     {
                         case CpuType.S71500:
-                            value = dateAttribute.Type switch
+                            value = dateAttr.Type switch
                             {
                                 S7DateTimeType.DTL => DateTimeLong.FromByteArray(bytes.Slice((int)numBytes, 12)),
                                 _ => DateTime.FromByteArray(bytes.Slice((int)numBytes, 8))
                             };
-                            numBytes += dateAttribute.ByteLength;
+                            numBytes += dateAttr.ByteLength;
                             break;
                         case CpuType.S71200:
                             value = DateTimeLong.FromByteArray(bytes.Slice((int)numBytes, 12));
@@ -293,20 +304,24 @@ namespace S7.Net.Types
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
-#if NETSTANDARD1_3
-                    S7StringAttribute? attribute = propertyType.GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#else
-                    S7StringAttribute? attribute = propertyType.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#endif
-                    if (attribute == default(S7StringAttribute))
-                        throw new ArgumentException("Please add S7StringAttribute to the string property");
-                    
+
+                    S7StringAttribute attribute = new S7StringAttribute(S7StringType.S7String, 254);
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7StringAttribute sizeAttribute)
+                        {
+                            attribute = sizeAttribute;
+                        }
+                    }
+
+                    // Must read in ReservedLengthInBytes to include the MaxLength and actual length bits
                     value = attribute.Type switch
                     {
-                        S7StringType.S7String => S7String.FromByteArray(bytes.Slice((int)numBytes, attribute.ReservedLength).ToArray()),
-                        S7StringType.S7WString => S7WString.FromByteArray(bytes.Slice((int)numBytes, attribute.ReservedLength).ToArray()),
+                        S7StringType.S7String => S7String.FromByteArray(bytes.Slice((int)numBytes, attribute.ReservedLengthInBytes).ToArray()),
+                        S7StringType.S7WString => S7WString.FromByteArray(bytes.Slice((int)numBytes, attribute.ReservedLengthInBytes).ToArray()),
                         _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
                     };
+                    numBytes += attribute.ReservedLengthInBytes;
                     break;
 
                 default:
@@ -335,6 +350,7 @@ namespace S7.Net.Types
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
+                var propertyAttributes = property.GetCustomAttributes();
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
@@ -343,7 +359,7 @@ namespace S7.Net.Types
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
                         array.SetValue(
-                            GetPropertyValue(elementType, bytes, ref numBytes, cpu),
+                            GetPropertyValue(elementType, bytes, ref numBytes, propertyAttributes, cpu),
                             i);
                     }
                 }
@@ -351,7 +367,7 @@ namespace S7.Net.Types
                 {
                     property.SetValue(
                         sourceClass,
-                        GetPropertyValue(property.PropertyType, bytes, ref numBytes, cpu),
+                        GetPropertyValue(property.PropertyType, bytes, ref numBytes, propertyAttributes, cpu),
                         null);
                 }
             }
@@ -359,7 +375,7 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static double SetBytesFromProperty(object propertyValue, Span<byte> bytes, double numBytes, CpuType cpu)
+        private static double SetBytesFromProperty(object propertyValue, Span<byte> bytes, double numBytes, IEnumerable<Attribute> propertyAttributes, CpuType cpu)
         {
             int bytePos = 0;
             int bitPos = 0;
@@ -408,28 +424,25 @@ namespace S7.Net.Types
                     bytes2 = LReal.ToByteArray((double)propertyValue);
                     break;
                 case "DateTime":
-
-#if NETSTANDARD1_3
-                    S7DateTimeAttribute dateAttribute = propertyValue.GetType().GetTypeInfo().GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                                                     (cpu switch
+                    
+                    // Establish 
+                    S7DateTimeAttribute dateAttr = (cpu switch
                     {
                         CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                        CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
                         _ => new S7DateTimeAttribute(S7DateTimeType.DT),
                     });
-#else
-                    S7DateTimeAttribute dateAttribute = propertyValue.GetType().GetCustomAttributes<S7DateTimeAttribute>().SingleOrDefault() ??
-                                                        (cpu switch
-                                                        {
-                                                            CpuType.S71200 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                                                            CpuType.S71500 => new S7DateTimeAttribute(S7DateTimeType.DTL),
-                                                            _ => new S7DateTimeAttribute(S7DateTimeType.DT),
-                                                        });
 
-#endif
-                    numBytes = dateAttribute.ByteLength;
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7DateTimeAttribute dateAttribute)
+                        {
+                            dateAttr = dateAttribute;
+                        }
+                    }
 
-                    bytes2 = dateAttribute.Type switch
+                    //numBytes = dateAttr.ByteLength;
+
+                    bytes2 = dateAttr.Type switch
                     {
                         S7DateTimeType.DTL => DateTimeLong.ToByteArray((System.DateTime)propertyValue),
                         _ => DateTime.ToByteArray((System.DateTime)propertyValue)
@@ -437,20 +450,23 @@ namespace S7.Net.Types
 
                     break;
                 case "String":
-#if NETSTANDARD1_3
-                    S7StringAttribute? attribute = propertyValue.GetType().GetTypeInfo().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#else
-                    S7StringAttribute? attribute = propertyValue.GetType().GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
-#endif
-                    if (attribute == default(S7StringAttribute))
-                        throw new ArgumentException("Please add S7StringAttribute to the string property");
 
+                    S7StringAttribute attribute = new S7StringAttribute(S7StringType.S7String, 254);
+                    foreach (var propertyAttribute in propertyAttributes)
+                    {
+                        if (propertyAttribute is S7StringAttribute sizeAttribute)
+                        {
+                            attribute = sizeAttribute;
+                        }
+                    }
+                    
                     bytes2 = attribute.Type switch
                     {
-                        S7StringType.S7String => S7String.ToByteArray((string)propertyValue, attribute.ReservedLength),
+                        S7StringType.S7String => S7String.ToByteArray((string)propertyValue, attribute.ReservedLength, attribute.TruncateOverflow),
                         S7StringType.S7WString => S7WString.ToByteArray((string)propertyValue, attribute.ReservedLength),
                         _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
                     };
+                    //numBytes = bytes2?.Length ?? 0;
                     break;
                 default:
                     numBytes = ToBytes(propertyValue, bytes, numBytes, cpu: cpu);
@@ -483,6 +499,7 @@ namespace S7.Net.Types
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
+                var propertyAttributes = property.GetCustomAttributes();
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
@@ -490,12 +507,12 @@ namespace S7.Net.Types
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        numBytes = SetBytesFromProperty(array.GetValue(i), bytes, numBytes, cpu);
+                        numBytes = SetBytesFromProperty(array.GetValue(i), bytes, numBytes, propertyAttributes, cpu);
                     }
                 }
                 else
                 {
-                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), bytes, numBytes, cpu);
+                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), bytes, numBytes, propertyAttributes, cpu);
                 }
             }
             return numBytes;

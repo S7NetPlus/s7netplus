@@ -2,11 +2,12 @@
 
 namespace S7.Net.Types
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class S7StringAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
+    public class S7StringAttribute : Attribute
     {
         private readonly S7StringType type;
         private readonly int reservedLength;
+        private readonly bool truncateOverflow;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="S7StringAttribute"/> class.
@@ -14,13 +15,14 @@ namespace S7.Net.Types
         /// <param name="type">The string type.</param>
         /// <param name="reservedLength">Reserved length of the string in characters.</param>
         /// <exception cref="ArgumentException">Please use a valid value for the string type</exception>
-        public S7StringAttribute(S7StringType type, int reservedLength)
+        public S7StringAttribute(S7StringType type, int reservedLength, bool truncateOverflow = false)
         {
             if (!Enum.IsDefined(typeof(S7StringType), type))
                 throw new ArgumentException("Please use a valid value for the string type");
 
             this.type = type;
             this.reservedLength = reservedLength;
+            this.truncateOverflow = truncateOverflow;
         }
 
         /// <summary>
@@ -46,6 +48,12 @@ namespace S7.Net.Types
         /// The reserved length in bytes.
         /// </value>
         public int ReservedLengthInBytes => type == S7StringType.S7String ? reservedLength + 2 : (reservedLength * 2) + 4;
+
+        /// <summary>
+        /// (Default: False) throws exception when string length exceeds byte size available. If 'true' then the string will be truncated to fit the defined size.
+        /// This does not apply to S7WString types
+        /// </summary>
+        public bool TruncateOverflow => truncateOverflow;
     }
 
 

@@ -298,7 +298,7 @@ namespace S7.Net.Types
 
                         bytes2 = attribute.Type switch
                         {
-                            S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
+                            S7StringType.S7String => S7String.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength, attribute.TruncateOverflow),
                             S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
                             _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
                         };

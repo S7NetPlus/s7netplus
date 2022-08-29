@@ -15,7 +15,8 @@ namespace S7.Net.Types
         private readonly S7DateTimeType type;
 
         /// <summary>
-        /// Allows you to specify a desired DateTime structure (DT / DTL) for S7-1500 PLC
+        /// Allows you to specify a desired DateTime structure (DT / DTL)
+        /// NOTE: S7-1200 only supports DTL natively
         /// </summary>
         /// <param name="type">Based on the struct type in PLC</param>
         /// <exception cref="ArgumentException"></exception>

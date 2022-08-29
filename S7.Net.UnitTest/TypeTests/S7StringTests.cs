@@ -106,6 +106,12 @@ namespace S7.Net.UnitTest.TypeTests
         }
 
         [TestMethod]
+        public void WriteAbcWithStringLargerThanReservedLengthWithTruncationOption()
+        {
+            AssertToByteArrayTruncatedAndBackEquals("Abc", 2, 2, 2, (byte) 'A', (byte) 'b');
+        }
+
+        [TestMethod]
         public void WriteAbcWithReservedLengthThree()
         {
             AssertToByteArrayAndBackEquals("Abc", 3, 3, 3, (byte) 'A', (byte) 'b', (byte) 'c');
@@ -133,6 +139,15 @@ namespace S7.Net.UnitTest.TypeTests
         {
             var convertedString = S7String.FromByteArray(bytes);
             Assert.AreEqual(expected, convertedString);
+        }
+
+        private static void AssertToByteArrayTruncatedAndBackEquals(string value, int reservedLength,
+            params byte[] expected)
+        {
+            var convertedData = S7String.ToByteArray(value, reservedLength, true);
+            CollectionAssert.AreEqual(expected, convertedData);
+            var convertedBack = S7String.FromByteArray(convertedData);
+            Assert.AreEqual(value.Substring(0, reservedLength), convertedBack);
         }
 
         private static void AssertToByteArrayAndBackEquals(string value, int reservedLength, params byte[] expected)

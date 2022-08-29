@@ -64,7 +64,8 @@ namespace S7.Net.Types
             buffer[3] = (byte)(value.Length & 0xFF);
 
             var stringLength = Encoding.BigEndianUnicode.GetBytes(value, 0, value.Length, buffer, 4) / 2;
-            if (stringLength > reservedLength) throw new ArgumentException($"The provided string length ({stringLength} is larger than the specified reserved length ({reservedLength}).");
+            if (stringLength > reservedLength) 
+                throw new ArgumentException($"The provided string length ({stringLength} is larger than the specified reserved length ({reservedLength}).");
 
             return buffer;
         }
