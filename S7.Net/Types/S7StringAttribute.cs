@@ -2,7 +2,7 @@
 
 namespace S7.Net.Types
 {
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
     public sealed class S7StringAttribute : Attribute
     {
         private readonly S7StringType type;
