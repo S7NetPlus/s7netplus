@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace S7.Net.Types
 {
@@ -25,7 +26,7 @@ namespace S7.Net.Types
 
         }
 
-        private static double GetIncreasedNumberOfBytes(double numBytes, Type type)
+        private static double GetIncreasedNumberOfBytes(double numBytes, Type type, PropertyInfo? propertyInfo)
         {
             switch (type.Name)
             {
@@ -38,29 +39,29 @@ namespace S7.Net.Types
                     break;
                 case "Int16":
                 case "UInt16":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     numBytes += 2;
                     break;
                 case "Int32":
                 case "UInt32":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     numBytes += 4;
                     break;
                 case "Single":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     numBytes += 4;
                     break;
                 case "Double":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     numBytes += 8;
+                    break;
+                case "String":
+                    S7StringAttribute? attribute = propertyInfo?.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                    IncrementToEven(ref numBytes);
+                    numBytes += attribute.ReservedLengthInBytes;
                     break;
                 default:
                     var propertyClass = Activator.CreateInstance(type);
@@ -93,12 +94,12 @@ namespace S7.Net.Types
                     IncrementToEven(ref numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
-                        numBytes = GetIncreasedNumberOfBytes(numBytes, elementType);
+                        numBytes = GetIncreasedNumberOfBytes(numBytes, elementType, property);
                     }
                 }
                 else
                 {
-                    numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType);
+                    numBytes = GetIncreasedNumberOfBytes(numBytes, property.PropertyType, property);
                 }
             }
             if (false == isInnerProperty)
@@ -111,7 +112,7 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static object? GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
+        private static object? GetPropertyValue(Type propertyType, PropertyInfo? propertyInfo, byte[] bytes, ref double numBytes)
         {
             object? value = null;
 
@@ -133,50 +134,35 @@ namespace S7.Net.Types
                     numBytes++;
                     break;
                 case "Int16":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     // hier auswerten
                     ushort source = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
                     value = source.ConvertToShort();
                     numBytes += 2;
                     break;
                 case "UInt16":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     // hier auswerten
                     value = Word.FromBytes(bytes[(int)numBytes + 1], bytes[(int)numBytes]);
                     numBytes += 2;
                     break;
                 case "Int32":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    // hier auswerten
-                    uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
-                                                                       bytes[(int)numBytes + 2],
-                                                                       bytes[(int)numBytes + 1],
-                                                                       bytes[(int)numBytes + 0]);
+                    IncrementToEven(ref numBytes);
+                    var wordBuffer = new byte[4];
+                    Array.Copy(bytes, (int)numBytes, wordBuffer, 0, wordBuffer.Length);
+                    uint sourceUInt = DWord.FromByteArray(wordBuffer);
                     value = sourceUInt.ConvertToInt();
                     numBytes += 4;
                     break;
                 case "UInt32":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
-                    // hier auswerten
-                    value = DWord.FromBytes(
-                        bytes[(int)numBytes],
-                        bytes[(int)numBytes + 1],
-                        bytes[(int)numBytes + 2],
-                        bytes[(int)numBytes + 3]);
+                    IncrementToEven(ref numBytes);
+                    var wordBuffer2 = new byte[4];
+                    Array.Copy(bytes, (int)numBytes, wordBuffer2, 0, wordBuffer2.Length);
+                    value = DWord.FromByteArray(wordBuffer2);
                     numBytes += 4;
                     break;
                 case "Single":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     // hier auswerten
                     value = Real.FromByteArray(
                         new byte[] {
@@ -187,14 +173,30 @@ namespace S7.Net.Types
                     numBytes += 4;
                     break;
                 case "Double":
-                    numBytes = Math.Ceiling(numBytes);
-                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                        numBytes++;
+                    IncrementToEven(ref numBytes);
                     var buffer = new byte[8];
                     Array.Copy(bytes, (int)numBytes, buffer, 0, 8);
                     // hier auswerten
                     value = LReal.FromByteArray(buffer);
                     numBytes += 8;
+                    break;
+                case "String":
+                    S7StringAttribute? attribute = propertyInfo?.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                    IncrementToEven(ref numBytes);
+
+                    // get the value
+                    var sData = new byte[attribute.ReservedLengthInBytes];
+                    Array.Copy(bytes, (int)numBytes, sData, 0, sData.Length);
+                    value = attribute.Type switch
+                    {
+                        S7StringType.S7String => S7String.FromByteArray(sData),
+                        S7StringType.S7WString => S7WString.FromByteArray(sData),
+                        _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                    };
+                    numBytes += sData.Length;
                     break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
@@ -227,7 +229,7 @@ namespace S7.Net.Types
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
                         array.SetValue(
-                            GetPropertyValue(elementType, bytes, ref numBytes),
+                            GetPropertyValue(elementType, property, bytes, ref numBytes),
                             i);
                     }
                 }
@@ -235,7 +237,7 @@ namespace S7.Net.Types
                 {
                     property.SetValue(
                         sourceClass,
-                        GetPropertyValue(property.PropertyType, bytes, ref numBytes),
+                        GetPropertyValue(property.PropertyType, property, bytes, ref numBytes),
                         null);
                 }
             }
@@ -243,7 +245,7 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static double SetBytesFromProperty(object propertyValue, byte[] bytes, double numBytes)
+        private static double SetBytesFromProperty(object propertyValue, PropertyInfo? propertyInfo, byte[] bytes, double numBytes)
         {
             int bytePos = 0;
             int bitPos = 0;
@@ -285,6 +287,18 @@ namespace S7.Net.Types
                 case "Double":
                     bytes2 = LReal.ToByteArray((double)propertyValue);
                     break;
+                case "String":
+                    S7StringAttribute? attribute = propertyInfo?.GetCustomAttributes<S7StringAttribute>().SingleOrDefault();
+                    if (attribute == default(S7StringAttribute))
+                        throw new ArgumentException("Please add S7StringAttribute to the string field");
+
+                    bytes2 = attribute.Type switch
+                    {
+                        S7StringType.S7String => S7String.ToByteArray((string)propertyValue, attribute.ReservedLength),
+                        S7StringType.S7WString => S7WString.ToByteArray((string)propertyValue, attribute.ReservedLength),
+                        _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
+                    };
+                    break;
                 default:
                     numBytes = ToBytes(propertyValue, bytes, numBytes);
                     break;
@@ -320,12 +334,12 @@ namespace S7.Net.Types
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        numBytes = SetBytesFromProperty(array.GetValue(i), bytes, numBytes);
+                        numBytes = SetBytesFromProperty(array.GetValue(i), property, bytes, numBytes);
                     }
                 }
                 else
                 {
-                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), bytes, numBytes);
+                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), property, bytes, numBytes);
                 }
             }
             return numBytes;
