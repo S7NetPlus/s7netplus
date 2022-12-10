@@ -17,6 +17,19 @@ namespace S7.Net.UnitTest.TypeTests
             Assert.AreEqual(Class.GetClassSize(new TestClassUnevenSize(3, 17)), 10);
         }
 
+        /// <summary>
+        /// Ensure Uint32 is correctly parsed through ReadClass functions. Adresses issue https://github.com/S7NetPlus/s7netplus/issues/414
+        /// </summary>
+        [TestMethod]
+        public void TestUint32Read()
+        {
+            var result = new TestUint32();
+            var data = new byte[4] { 0, 0, 0, 5 };
+            var bytesRead = Class.FromBytes(result, data);
+            Assert.AreEqual(bytesRead, data.Length);
+            Assert.AreEqual(5u, result.Value1);
+        }
+
         private class TestClassUnevenSize
         {
             public bool Bool { get; set; }
@@ -28,6 +41,11 @@ namespace S7.Net.UnitTest.TypeTests
                 Bytes = new byte[byteCount];
                 Bools = new bool[bitCount];
             }
+        }
+
+        private class TestUint32
+        {
+            public uint Value1 { get; set; }
         }
     }
 }

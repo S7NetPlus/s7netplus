@@ -148,22 +148,17 @@ namespace S7.Net.Types
                     break;
                 case "Int32":
                     IncrementToEven(ref numBytes);
-                    // hier auswerten
-                    uint sourceUInt = DWord.FromBytes(bytes[(int)numBytes + 3],
-                                                                       bytes[(int)numBytes + 2],
-                                                                       bytes[(int)numBytes + 1],
-                                                                       bytes[(int)numBytes + 0]);
+                    var wordBuffer = new byte[4];
+                    Array.Copy(bytes, (int)numBytes, wordBuffer, 0, wordBuffer.Length);
+                    uint sourceUInt = DWord.FromByteArray(wordBuffer);
                     value = sourceUInt.ConvertToInt();
                     numBytes += 4;
                     break;
                 case "UInt32":
                     IncrementToEven(ref numBytes);
-                    // hier auswerten
-                    value = DWord.FromBytes(
-                        bytes[(int)numBytes],
-                        bytes[(int)numBytes + 1],
-                        bytes[(int)numBytes + 2],
-                        bytes[(int)numBytes + 3]);
+                    var wordBuffer2 = new byte[4];
+                    Array.Copy(bytes, (int)numBytes, wordBuffer2, 0, wordBuffer2.Length);
+                    value = DWord.FromByteArray(wordBuffer2);
                     numBytes += 4;
                     break;
                 case "Single":
