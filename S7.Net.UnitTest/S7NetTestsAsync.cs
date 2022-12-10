@@ -7,6 +7,7 @@ using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Security.Cryptography;
 
 #endregion
 
@@ -154,7 +155,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -168,6 +171,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.WStringVariable, tc2.WStringVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         [TestMethod]
@@ -580,7 +585,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -628,7 +635,10 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
+
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -646,6 +656,9 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2.LRealVariable, 3), Math.Round(tc2Generic.LRealVariable, 3));
             Assert.AreEqual(tc2.RealVariable, tc2Generic.RealVariable);
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
+            Assert.AreEqual(tc2.WStringVariable, tc2Generic.WStringVariable);
+            Assert.AreEqual(tc2.StringVariable, tc2Generic.StringVariable);
+
         }
 
         [TestMethod]
@@ -671,7 +684,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
 
             await plc.WriteClassAsync(tc, DB2);
@@ -686,6 +701,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2Generic.LRealVariable, 3), Math.Round(tc2GenericWithClassFactory.LRealVariable, 3));
             Assert.AreEqual(tc2Generic.RealVariable, tc2GenericWithClassFactory.RealVariable);
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
+            Assert.AreEqual(tc2Generic.WStringVariable, tc2GenericWithClassFactory.WStringVariable);
+            Assert.AreEqual(tc2Generic.StringVariable, tc2GenericWithClassFactory.StringVariable);
         }
 
         [TestMethod]
@@ -792,7 +809,9 @@ namespace S7.Net.UnitTest
                 IntVariable = -15000,
                 LRealVariable = -154.789,
                 RealVariable = -154.789f,
-                DWordVariable = 850
+                DWordVariable = 850,
+                WStringVariable = "ÄÜÉÊéà",
+                StringVariable = "Hallo"
             };
             plc.WriteClass(tc, DB2);
 

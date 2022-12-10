@@ -25,7 +25,7 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous open operation.</returns>
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
-            var stream = await ConnectAsync().ConfigureAwait(false);
+            var stream = await ConnectAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await queue.Enqueue(async () =>
@@ -44,11 +44,16 @@ namespace S7.Net
             }
         }
 
-        private async Task<NetworkStream> ConnectAsync()
+        private async Task<NetworkStream> ConnectAsync(CancellationToken cancellationToken)
         {
             tcpClient = new TcpClient();
             ConfigureConnection();
+
+#if NET5_0_OR_GREATER
+            await tcpClient.ConnectAsync(IP, Port, cancellationToken).ConfigureAwait(false);
+#else
             await tcpClient.ConnectAsync(IP, Port).ConfigureAwait(false);
+#endif
             return tcpClient.GetStream();
         }
 
