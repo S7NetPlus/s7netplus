@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using S7.Net.UnitTest.Helpers;
 using S7.Net.Types;
 using S7.UnitTest.Helpers;
+using System.Security.Cryptography;
 
 #endregion
 
@@ -183,6 +184,9 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
+
             plc.WriteClass(tc, DB2);
             TestClass tc2 = new TestClass();
             // Values that are read from a class are stored inside the class itself, that is passed by reference
@@ -194,6 +198,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(tc.LRealVariable, tc2.LRealVariable);
             Assert.AreEqual(tc.RealVariable, tc2.RealVariable);
             Assert.AreEqual(tc.DWordVariable, tc2.DWordVariable);
+            Assert.AreEqual(tc.WStringVariable, tc2.WStringVariable);
+            Assert.AreEqual(tc.StringVariable, tc2.StringVariable);
         }
 
         /// <summary>
@@ -577,6 +583,8 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
 
             plc.WriteClass(tc, DB2);
 
@@ -622,6 +630,8 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
 
             plc.WriteClass(tc, DB2);
 
@@ -637,6 +647,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2.LRealVariable, 3), Math.Round(tc2Generic.LRealVariable, 3));
             Assert.AreEqual(tc2.RealVariable, tc2Generic.RealVariable);
             Assert.AreEqual(tc2.DWordVariable, tc2Generic.DWordVariable);
+            Assert.AreEqual(tc2.WStringVariable, tc2Generic.WStringVariable);
+            Assert.AreEqual(tc2.StringVariable, tc2Generic.StringVariable);
         }
 
         [TestMethod, ExpectedException(typeof(PlcException))]
@@ -665,6 +677,8 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
 
             plc.WriteClass(tc, DB2);
 
@@ -679,6 +693,8 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(Math.Round(tc2Generic.LRealVariable, 3), Math.Round(tc2GenericWithClassFactory.LRealVariable, 3));
             Assert.AreEqual(tc2Generic.RealVariable, tc2GenericWithClassFactory.RealVariable);
             Assert.AreEqual(tc2Generic.DWordVariable, tc2GenericWithClassFactory.DWordVariable);
+            Assert.AreEqual(tc2Generic.WStringVariable, tc2GenericWithClassFactory.WStringVariable);
+            Assert.AreEqual(tc2Generic.StringVariable, tc2GenericWithClassFactory.StringVariable);
         }
 
         [TestMethod, ExpectedException(typeof(PlcException))]
@@ -837,6 +853,9 @@ namespace S7.Net.UnitTest
             tc.LRealVariable = -154.789;
             tc.RealVariable = -154.789f;
             tc.DWordVariable = 850;
+            tc.WStringVariable = "ÄÜÉÊéà";
+            tc.StringVariable = "Hallo";
+
             plc.WriteClass(tc, DB2);
 
             int expectedReadBytes = (int)Types.Class.GetClassSize(tc);

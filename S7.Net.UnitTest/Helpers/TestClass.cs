@@ -1,4 +1,6 @@
 ﻿
+using S7.Net.Types;
+
 namespace S7.Net.UnitTest.Helpers
 {
     class TestClass
@@ -51,5 +53,16 @@ namespace S7.Net.UnitTest.Helpers
         /// DB1.DBD16
         /// </summary>
         public ushort DWordVariable { get; set; }
+
+        /// <summary>
+        /// DB1.DBX20.0
+        /// </summary>
+        [S7String(S7StringType.S7WString, 10)]
+        public string WStringVariable { get; set; }
+        /// <summary>
+        /// DB1.DBX44.0
+        /// </summary>
+        [S7String(S7StringType.S7String, 10)]
+        public string StringVariable { get; set; }
     }
 }
