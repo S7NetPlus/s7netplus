@@ -57,12 +57,10 @@ namespace S7.Net.Protocol
         /// -or-
         ///
         /// The <paramref name="slot"/> parameter is greater than 15.</exception>
-        public static TsapPair GetDefaultTsapPair(CpuType cpuType, int rack, int slot)
+        public static TsapPair GetDefaultTsapPair(CpuType cpuType, byte rack, byte slot)
         {
-            if (rack < 0) throw InvalidRackOrSlot(rack, nameof(rack), "minimum", 0);
             if (rack > 0x0F) throw InvalidRackOrSlot(rack, nameof(rack), "maximum", 0x0F);
 
-            if (slot < 0) throw InvalidRackOrSlot(slot, nameof(slot), "minimum", 0);
             if (slot > 0x0F) throw InvalidRackOrSlot(slot, nameof(slot), "maximum", 0x0F);
 
             switch (cpuType)
@@ -85,8 +83,7 @@ namespace S7.Net.Protocol
             }
         }
 
-        private static ArgumentOutOfRangeException InvalidRackOrSlot(int value, string name, string extrema,
-            int extremaValue)
+        private static ArgumentOutOfRangeException InvalidRackOrSlot(int value, string name, string extrema,int extremaValue)
         {
             return new ArgumentOutOfRangeException(name,
                 $"Invalid {name} value specified (decimal: {value}, hexadecimal: {value:X}), {extrema} value " +
