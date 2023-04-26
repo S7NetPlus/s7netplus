@@ -37,6 +37,8 @@ namespace S7.Net.Protocol
                     return new[] { (byte)((bool)value ? 1 : 0) };
                 case "Byte":
                     return Types.Byte.ToByteArray((byte)value);
+                case "SByte":
+                    return Types.sByte.ToByteArray((sbyte)value);
                 case "Int16":
                     return Types.Int.ToByteArray((Int16)value);
                 case "UInt16":
