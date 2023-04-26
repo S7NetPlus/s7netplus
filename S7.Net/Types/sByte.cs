@@ -10,9 +10,9 @@ namespace S7.Net.Types
         /// <summary>
         /// Converts a byte to byte array
         /// </summary>
-        public static byte[] ToByteArray(byte value)
+        public static sbyte[] ToByteArray(sbyte value)
         {
-            return new byte[] { value }; ;
+            return new sbyte[] { value }; ;
         }
        
         /// <summary>
@@ -20,13 +20,13 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
-        public static byte FromByteArray(byte[] bytes)
+        public static sbyte FromByteArray(sbyte[] sbytes)
         {
-            if (bytes.Length != 1)
+            if (sbytes.Length != 1)
             {
                 throw new ArgumentException("Wrong number of bytes. Bytes array must contain 1 bytes.");
             }
-            return bytes[0];
+            return sbytes[0];
         }
         
     }
