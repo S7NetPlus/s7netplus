@@ -1,7 +1,6 @@
 ﻿using S7.Net.Helper;
 using S7.Net.Protocol.S7;
 using S7.Net.Types;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using DateTime = S7.Net.Types.DateTime;
@@ -18,13 +17,13 @@ namespace S7.Net
         private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
             //header size = 19 bytes
-            stream.WriteByteArray(new byte[] { 0x03, 0x00 });
+            stream.Write(new byte[] { 0x03, 0x00 });
             //complete package size
-            stream.WriteByteArray(Types.Int.ToByteArray((short)(19 + (12 * amount))));
-            stream.WriteByteArray(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            stream.Write(Int.ToByteArray((short)(19 + (12 * amount))));
+            stream.Write(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
-            stream.WriteByteArray(Types.Word.ToByteArray((ushort)(2 + (amount * 12))));
-            stream.WriteByteArray(new byte[] { 0x00, 0x00, 0x04 });
+            stream.Write(Word.ToByteArray((ushort)(2 + (amount * 12))));
+            stream.Write(new byte[] { 0x00, 0x00, 0x04 });
             //amount of requests
             stream.WriteByte((byte)amount);
         }
@@ -41,7 +40,7 @@ namespace S7.Net
         private static void BuildReadDataRequestPackage(System.IO.MemoryStream stream, DataType dataType, int db, int startByteAdr, int count = 1)
         {
             //single data req = 12
-            stream.WriteByteArray(new byte[] { 0x12, 0x0a, 0x10 });
+            stream.Write(new byte[] { 0x12, 0x0a, 0x10 });
             switch (dataType)
             {
                 case DataType.Timer:
@@ -53,8 +52,8 @@ namespace S7.Net
                     break;
             }
 
-            stream.WriteByteArray(Word.ToByteArray((ushort)(count)));
-            stream.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            stream.Write(Word.ToByteArray((ushort)(count)));
+            stream.Write(Word.ToByteArray((ushort)(db)));
             stream.WriteByte((byte)dataType);
             var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
             stream.WriteByte((byte)overflow);
@@ -62,10 +61,10 @@ namespace S7.Net
             {
                 case DataType.Timer:
                 case DataType.Counter:
-                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)(startByteAdr)));
+                    stream.Write(Word.ToByteArray((ushort)(startByteAdr)));
                     break;
                 default:
-                    stream.WriteByteArray(Types.Word.ToByteArray((ushort)((startByteAdr) * 8)));
+                    stream.Write(Word.ToByteArray((ushort)((startByteAdr) * 8)));
                     break;
             }
         }
