@@ -95,7 +95,6 @@ namespace S7.Net
             MaxPDUSize = s7data[18] * 256 + s7data[19];
         }
 
-
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the read was not successful, check LastErrorCode or LastErrorString.
@@ -110,19 +109,11 @@ namespace S7.Net
         public async Task<byte[]> ReadBytesAsync(DataType dataType, int db, int startByteAdr, int count, CancellationToken cancellationToken = default)
         {
             var resultBytes = new byte[count];
-            int index = 0;
-            while (count > 0)
-            {
-                //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
-                var maxToRead = Math.Min(count, MaxPDUSize - 18);
-                await ReadBytesWithSingleRequestAsync(dataType, db, startByteAdr + index, resultBytes, index, maxToRead, cancellationToken).ConfigureAwait(false);
-                count -= maxToRead;
-                index += maxToRead;
-            }
+
+            await ReadBytesAsync(resultBytes, dataType, db, startByteAdr, cancellationToken).ConfigureAwait(false);
+
             return resultBytes;
         }
-
-#if NET5_0_OR_GREATER
 
         /// <summary>
         /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
@@ -147,8 +138,6 @@ namespace S7.Net
                 index += maxToRead;
             }
         }
-
-#endif
 
         /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided.
@@ -323,7 +312,6 @@ namespace S7.Net
             return dataItems;
         }
 
-
         /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the write was not successful, check LastErrorCode or LastErrorString.
@@ -335,20 +323,10 @@ namespace S7.Net
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
         /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public async Task WriteBytesAsync(DataType dataType, int db, int startByteAdr, byte[] value, CancellationToken cancellationToken = default)
+        public Task WriteBytesAsync(DataType dataType, int db, int startByteAdr, byte[] value, CancellationToken cancellationToken = default)
         {
-            int localIndex = 0;
-            int count = value.Length;
-            while (count > 0)
-            {
-                var maxToWrite = (int)Math.Min(count, MaxPDUSize - 35);
-                await WriteBytesWithASingleRequestAsync(dataType, db, startByteAdr + localIndex, value, localIndex, maxToWrite, cancellationToken).ConfigureAwait(false);
-                count -= maxToWrite;
-                localIndex += maxToWrite;
-            }
+            return WriteBytesAsync(dataType, db, startByteAdr, value.AsMemory(), cancellationToken);
         }
-
-#if NET5_0_OR_GREATER
 
         /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
@@ -372,8 +350,6 @@ namespace S7.Net
                 localIndex += maxToWrite;
             }
         }
-
-#endif
 
         /// <summary>
         /// Write a single bit from a DB with the specified index.
@@ -496,18 +472,6 @@ namespace S7.Net
             await WriteBytesAsync(DataType.DataBlock, db, startByteAdr, bytes, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            var dataToSend = BuildReadRequestPackage(new[] { new DataItemAddress(dataType, db, startByteAdr, count) });
-
-            var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
-            AssertReadResponse(s7data, count);
-
-            Array.Copy(s7data, 18, buffer, offset, count);
-        }
-
-#if NET5_0_OR_GREATER
-
         private async Task ReadBytesWithSingleRequestAsync(DataType dataType, int db, int startByteAdr, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             var dataToSend = BuildReadRequestPackage(new[] { new DataItemAddress(dataType, db, startByteAdr, buffer.Length) });
@@ -517,8 +481,6 @@ namespace S7.Net
 
             s7data.AsSpan(18, buffer.Length).CopyTo(buffer.Span);
         }
-
-#endif
 
         /// <summary>
         /// Write DataItem(s) to the PLC. Throws an exception if the response is invalid
@@ -546,35 +508,6 @@ namespace S7.Net
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value, dataOffset, count);
-                var s7data = await RequestTsduAsync(dataToSend, cancellationToken).ConfigureAwait(false);
-
-                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception exc)
-            {
-                throw new PlcException(ErrorCode.WriteData, exc);
-            }
-        }
-
-#if NET5_0_OR_GREATER
-
-        /// <summary>
-        /// Writes up to 200 bytes to the PLC. You must specify the memory area type, memory are address, byte start address and bytes count.
-        /// </summary>
-        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
-        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
-        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
-        /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
-        /// <returns>A task that represents the asynchronous write operation.</returns>
         private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, ReadOnlyMemory<byte> value, CancellationToken cancellationToken)
         {
             try
@@ -593,8 +526,6 @@ namespace S7.Net
                 throw new PlcException(ErrorCode.WriteData, exc);
             }
         }
-
-#endif
 
         private async Task WriteBitWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, int bitAdr, bool bitValue, CancellationToken cancellationToken)
         {
