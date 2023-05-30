@@ -51,6 +51,32 @@ namespace S7.Net
             return result;
         }
 
+#if NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Reads a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// If the read was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="buffer">Buffer to receive the read bytes. The <see cref="Span{T}.Length"/> determines the number of bytes to read.</param>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
+        /// <returns>Returns the bytes in an array</returns>
+        public void ReadBytes(Span<byte> buffer, DataType dataType, int db, int startByteAdr)
+        {
+            int index = 0;
+            while (buffer.Length > 0)
+            {
+                //This works up to MaxPDUSize-1 on SNAP7. But not MaxPDUSize-0.
+                var maxToRead = Math.Min(buffer.Length, MaxPDUSize - 18);
+                ReadBytesWithSingleRequest(dataType, db, startByteAdr + index, buffer.Slice(0, maxToRead));
+                buffer = buffer.Slice(maxToRead);
+                index += maxToRead;
+            }
+        }
+
+#endif
+
         /// <summary>
         /// Read and decode a certain number of bytes of the "VarType" provided.
         /// This can be used to read multiple consecutive variables of the same type (Word, DWord, Int, etc).
@@ -193,6 +219,33 @@ namespace S7.Net
             }
         }
 
+#if NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
+        /// If the write was not successful, check LastErrorCode or LastErrorString.
+        /// </summary>
+        /// <param name="dataType">Data type of the memory area, can be DB, Timer, Counter, Merker(Memory), Input, Output.</param>
+        /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
+        /// <param name="startByteAdr">Start byte address. If you want to write DB1.DBW200, this is 200.</param>
+        /// <param name="value">Bytes to write. If more than 200, multiple requests will be made.</param>
+        public void WriteBytes(DataType dataType, int db, int startByteAdr, ReadOnlySpan<byte> value)
+        {
+            int localIndex = 0;
+            while (value.Length > 0)
+            {
+                //TODO: Figure out how to use MaxPDUSize here
+                //Snap7 seems to choke on PDU sizes above 256 even if snap7
+                //replies with bigger PDU size in connection setup.
+                var maxToWrite = Math.Min(value.Length, MaxPDUSize - 28);//TODO tested only when the MaxPDUSize is 480
+                WriteBytesWithASingleRequest(dataType, db, startByteAdr + localIndex, value.Slice(0, maxToWrite));
+                value = value.Slice(maxToWrite);
+                localIndex += maxToWrite;
+            }
+        }
+
+#endif
+
         /// <summary>
         /// Write a single bit from a DB with the specified index.
         /// </summary>
@@ -317,6 +370,33 @@ namespace S7.Net
             }
         }
 
+#if NET5_0_OR_GREATER
+
+        private void ReadBytesWithSingleRequest(DataType dataType, int db, int startByteAdr, Span<byte> buffer)
+        {
+            try
+            {
+                // first create the header
+                int packageSize = 19 + 12; // 19 header + 12 for 1 request
+                var package = new System.IO.MemoryStream(packageSize);
+                BuildHeaderPackage(package);
+                // package.Add(0x02);  // datenart
+                BuildReadDataRequestPackage(package, dataType, db, startByteAdr, buffer.Length);
+
+                var dataToSend = package.ToArray();
+                var s7data = RequestTsdu(dataToSend);
+                AssertReadResponse(s7data, buffer.Length);
+
+                s7data.AsSpan(18, buffer.Length).CopyTo(buffer);
+            }
+            catch (Exception exc)
+            {
+                throw new PlcException(ErrorCode.ReadData, exc);
+            }
+        }
+
+#endif
+
         /// <summary>
         /// Write DataItem(s) to the PLC. Throws an exception if the response is invalid
         /// or when the PLC reports errors for item(s) written.
@@ -349,6 +429,25 @@ namespace S7.Net
             }
         }
 
+#if NET5_0_OR_GREATER
+
+        private void WriteBytesWithASingleRequest(DataType dataType, int db, int startByteAdr, ReadOnlySpan<byte> value)
+        {
+            try
+            {
+                var dataToSend = BuildWriteBytesPackage(dataType, db, startByteAdr, value);
+                var s7data = RequestTsdu(dataToSend);
+
+                ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
+            }
+            catch (Exception exc)
+            {
+                throw new PlcException(ErrorCode.WriteData, exc);
+            }
+        }
+
+#endif
+
         private byte[] BuildWriteBytesPackage(DataType dataType, int db, int startByteAdr, byte[] value, int dataOffset, int count)
         {
             int varCount = count;
@@ -379,6 +478,41 @@ namespace S7.Net
 
             return package.ToArray();
         }
+
+#if NET5_0_OR_GREATER
+
+        private byte[] BuildWriteBytesPackage(DataType dataType, int db, int startByteAdr, ReadOnlySpan<byte> value)
+        {
+            int varCount = value.Length;
+            // first create the header
+            int packageSize = 35 + varCount;
+            var package = new MemoryStream(new byte[packageSize]);
+
+            package.WriteByte(3);
+            package.WriteByte(0);
+            //complete package size
+            package.WriteByteArray(Int.ToByteArray((short)packageSize));
+            package.WriteByteArray(new byte[] { 2, 0xf0, 0x80, 0x32, 1, 0, 0 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount - 1)));
+            package.WriteByteArray(new byte[] { 0, 0x0e });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount + 4)));
+            package.WriteByteArray(new byte[] { 0x05, 0x01, 0x12, 0x0a, 0x10, 0x02 });
+            package.WriteByteArray(Word.ToByteArray((ushort)varCount));
+            package.WriteByteArray(Word.ToByteArray((ushort)(db)));
+            package.WriteByte((byte)dataType);
+            var overflow = (int)(startByteAdr * 8 / 0xffffU); // handles words with address bigger than 8191
+            package.WriteByte((byte)overflow);
+            package.WriteByteArray(Word.ToByteArray((ushort)(startByteAdr * 8)));
+            package.WriteByteArray(new byte[] { 0, 4 });
+            package.WriteByteArray(Word.ToByteArray((ushort)(varCount * 8)));
+
+            // now join the header and the data
+            package.Write(value);
+
+            return package.ToArray();
+        }
+
+#endif
 
         private byte[] BuildWriteBitPackage(DataType dataType, int db, int startByteAdr, bool bitValue, int bitAdr)
         {
