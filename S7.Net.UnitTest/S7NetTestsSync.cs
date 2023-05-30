@@ -7,6 +7,10 @@ using S7.Net.Types;
 using S7.UnitTest.Helpers;
 using System.Security.Cryptography;
 
+#if NET5_0_OR_GREATER
+using System.Buffers;
+#endif
+
 #endregion
 
 /**
@@ -778,6 +782,33 @@ namespace S7.Net.UnitTest
             CollectionAssert.AreEqual(data, readData);
         }
 
+#if NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public void T33_WriteLargeByteArrayWithSpan()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            using var dataOwner = MemoryPool<byte>.Shared.Rent(8192);
+            var data = dataOwner.Memory.Span.Slice(0, 8192);
+            var db = 2;
+            randomEngine.NextBytes(data);
+
+            plc.WriteBytes(DataType.DataBlock, db, 0, data);
+
+            using var readDataOwner = MemoryPool<byte>.Shared.Rent(data.Length);
+            var readData = readDataOwner.Memory.Span.Slice(0, data.Length);
+            plc.ReadBytes(readData, DataType.DataBlock, db, 0);
+
+            CollectionAssert.AreEqual(data.ToArray(), readData.ToArray());
+        }
+
+#endif
+
         [TestMethod, ExpectedException(typeof(PlcException))]
         public void T18_ReadStructThrowsIfPlcIsNotConnected()
         {
@@ -1006,6 +1037,32 @@ namespace S7.Net.UnitTest
             }
         }
 
+#if NET5_0_OR_GREATER
+
+        [TestMethod]
+        public void T27_ReadWriteBytesManyWithSpan()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            using var dataOwner = MemoryPool<byte>.Shared.Rent(2000);
+            var data = dataOwner.Memory.Span;
+            for (int i = 0; i < data.Length; i++)
+                data[i] = (byte)(i % 256);
+
+            plc.WriteBytes(DataType.DataBlock, 2, 0, data);
+
+            using var readDataOwner = MemoryPool<byte>.Shared.Rent(data.Length);
+            var readData = readDataOwner.Memory.Span.Slice(0, data.Length);
+            plc.ReadBytes(readData, DataType.DataBlock, 2, 0);
+
+            for (int x = 0; x < data.Length; x++)
+            {
+                Assert.AreEqual(x % 256, readData[x], $"Mismatch at offset {x}, expected {x % 256}, actual {readData[x]}.");
+            }
+        }
+
+#endif
+
         [TestMethod]
         public void T28_ReadClass_DoesntCrash_When_ReadingLessThan1Byte()
         {
@@ -1060,7 +1117,7 @@ namespace S7.Net.UnitTest
             Assert.AreEqual(test_value, test_value2, "Compare DateTimeLong Write/Read");
         }
 
-        #endregion
+#endregion
 
         #region Private methods
 

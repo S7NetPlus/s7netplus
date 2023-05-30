@@ -9,6 +9,11 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Security.Cryptography;
 
+
+#if NET5_0_OR_GREATER
+using System.Buffers;
+#endif
+
 #endregion
 
 /**
@@ -138,6 +143,33 @@ namespace S7.Net.UnitTest
 
             CollectionAssert.AreEqual(data, readData);
         }
+
+#if NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Write/Read a large amount of data to test PDU max
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArrayWithMemory()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var randomEngine = new Random();
+            using var dataOwner = MemoryPool<byte>.Shared.Rent(8192);
+            var data = dataOwner.Memory.Slice(0, 8192);
+            var db = 2;
+            randomEngine.NextBytes(data.Span);
+
+            await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data);
+
+            using var readDataOwner = MemoryPool<byte>.Shared.Rent(data.Length);
+            var readData = readDataOwner.Memory.Slice(0, data.Length);
+            await plc.ReadBytesAsync(readData, DataType.DataBlock, db, 0);
+
+            CollectionAssert.AreEqual(data.ToArray(), readData.ToArray());
+        }
+
+#endif
 
         /// <summary>
         /// Read/Write a class that has the same properties of a DB with the same field in the same order
@@ -933,6 +965,31 @@ namespace S7.Net.UnitTest
             }
         }
 
+#if NET5_0_OR_GREATER
+
+        [TestMethod]
+        public async Task Test_Async_ReadWriteBytesManyWithMemory()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            using var data = MemoryPool<byte>.Shared.Rent(2000);
+            for (int i = 0; i < data.Memory.Length; i++)
+                data.Memory.Span[i] = (byte)(i % 256);
+
+            await plc.WriteBytesAsync(DataType.DataBlock, 2, 0, data.Memory);
+
+            using var readData = MemoryPool<byte>.Shared.Rent(data.Memory.Length);
+
+            await plc.ReadBytesAsync(readData.Memory.Slice(0, data.Memory.Length), DataType.DataBlock, 2, 0);
+
+            for (int x = 0; x < data.Memory.Length; x++)
+            {
+                Assert.AreEqual(x % 256, readData.Memory.Span[x], string.Format("Bit {0} failed", x));
+            }
+        }
+
+#endif
+
         /// <summary>
         /// Write a large amount of data and test cancellation
         /// </summary>
@@ -969,6 +1026,47 @@ namespace S7.Net.UnitTest
             Console.WriteLine("Task was not cancelled as expected.");
         }
 
+#if NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Write a large amount of data and test cancellation
+        /// </summary>
+        [TestMethod]
+        public async Task Test_Async_WriteLargeByteArrayWithCancellationWithMemory()
+        {
+            Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
+
+            var cancellationSource = new CancellationTokenSource();
+            var cancellationToken = cancellationSource.Token;
+
+            using var dataOwner = MemoryPool<byte>.Shared.Rent(8192);
+            var data = dataOwner.Memory.Slice(0, 8192);
+            var randomEngine = new Random();
+            var db = 2;
+            randomEngine.NextBytes(data.Span);
+
+            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
+            try
+            {
+                await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // everything is good, that is the exception we expect
+                Console.WriteLine("Operation was cancelled as expected.");
+                return;
+            }
+            catch (Exception e)
+            {
+                Assert.Fail($"Wrong exception type received. Expected {typeof(OperationCanceledException)}, received {e.GetType()}.");
+            }
+
+            // Depending on how tests run, this can also just succeed without getting cancelled at all. Do nothing in this case.
+            Console.WriteLine("Task was not cancelled as expected.");
+        }
+
+#endif
+
         /// <summary>
         /// Write a large amount of data and test cancellation
         /// </summary>
@@ -1001,6 +1099,7 @@ namespace S7.Net.UnitTest
             };
             await plc.ReadMultipleVarsAsync(dataItems, CancellationToken.None);
         }
+
         #endregion
     }
 }
