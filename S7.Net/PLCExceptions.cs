@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 
 namespace S7.Net
 {
-    internal class WrongNumberOfBytesException : Exception
+    public class WrongNumberOfBytesException : Exception
     {
         public WrongNumberOfBytesException() : base()
         {
@@ -27,7 +27,7 @@ namespace S7.Net
         #endif
     }
 
-    internal class InvalidAddressException : Exception
+    public class InvalidAddressException : Exception
     {
         public InvalidAddressException() : base ()
         {
@@ -48,7 +48,7 @@ namespace S7.Net
         #endif
     }
 
-    internal class InvalidVariableTypeException : Exception
+    public class InvalidVariableTypeException : Exception
     {
         public InvalidVariableTypeException() : base()
         {
@@ -69,7 +69,7 @@ namespace S7.Net
         #endif
     }
 
-    internal class TPKTInvalidException : Exception
+    public class TPKTInvalidException : Exception
     {
         public TPKTInvalidException() : base()
         {
@@ -90,7 +90,7 @@ namespace S7.Net
         #endif
     }
 
-    internal class TPDUInvalidException : Exception
+    public class TPDUInvalidException : Exception
     {
         public TPDUInvalidException() : base()
         {
