@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: .NET
+
+on:
+  workflow_dispatch: # Allow running the workflow manually from the GitHub UI
+  push:
+    branches:
+      - 'main'       # Run the workflow when pushing to the main branch
+  pull_request:
+    branches:
+      - '*'          # Run the workflow for all pull requests
+  release:
+    types:
+      - published    # Run the workflow when a new GitHub release is published
+  
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace}}/nuget
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  create_nuget:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # Get all history to allow automatic versioning
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0
+      with:
+        versionSpec: '6.x'
+        includePrerelease: true
+        preferLatestVersion: true
+    
+    - name: Determine Version
+      id:   gitversion
+      uses: gittools/actions/gitversion/execute@v0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+
+    - run: >
+        dotnet pack
+        --configuration Release
+        /p:AssemblyVersion=${{ steps.gitversion.outputs.assemblySemVer }}
+        /p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }}
+        /p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+        /p:PackageVersion=${{ steps.gitversion.outputs.semVer }}
+        --output ${{ env.NuGetDirectory }}
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nuget
+        if-no-files-found: error
+        retention-days: 7
+        path: |
+          ${{ env.NuGetDirectory }}/*.nupkg
+          ${{ env.NuGetDirectory }}/*.snupkg
+
+  run_test:
+    name: test-${{ matrix.os }}-${{ matrix.test-framework }}
+    runs-on: ${{ matrix.os }}
+    env:
+      configuration: Release
+      artifacts: ${{ github.workspace }}/artifacts
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-20.04, macos-latest]
+        test-framework: [netcoreapp3.1, net5.0]
+        include:
+          - os: ubuntu-20.04
+            test-framework: netcoreapp3.1
+            installSnap7: true
+            dotnet-sdk: '3.1.x'
+          - os: ubuntu-20.04
+            test-framework: net5.0
+            installSnap7: true
+            dotnet-sdk: '5.0.x'
+          - os: macos-latest
+            test-framework: netcoreapp3.1
+            installSnap7: true
+            dotnet-sdk: '3.1.x'
+          - os: macos-latest
+            test-framework: net5.0
+            installSnap7: true
+            dotnet-sdk: '5.0.x'
+          - os: windows-latest
+            test-framework: netcoreapp3.1
+            dotnet-sdk: '3.1.x'
+          - os: windows-latest
+            test-framework: net5.0
+            dotnet-sdk: '5.0.x'
+          - os: windows-latest
+            test-framework: net452
+            dotnet-sdk: '5.0.x'
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Snap7 Linux
+        if: ${{ matrix.installSnap7 && matrix.os == 'ubuntu-20.04' }}
+        run: |
+          sudo add-apt-repository ppa:gijzelaar/snap7
+          sudo apt-get update
+          sudo apt-get install libsnap7-1 libsnap7-dev
+          
+      - name: Install Snap7 MacOs
+        if: ${{ matrix.installSnap7 && matrix.os == 'macos-latest' }}
+        run: |
+          brew install snap7
+
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ matrix.dotnet-sdk }}
+          
+      - name: Nuget Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.test-framework }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.test-framework }}-nuget
+
+      - name: Restore
+        run: dotnet restore S7.Net.UnitTest
+        
+      - name: Test
+        run: dotnet test --no-restore --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
+
+  deploy:
+    # Publish only when creating a GitHub Release
+    # https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+    # You can update this logic if you want to manage releases differently
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    needs: [ create_nuget, run_test ]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: nuget
+          path: ${{ env.NuGetDirectory }}
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+
+      # Publish all NuGet packages to NuGet.org
+      # Use --skip-duplicate to prevent errors if a package with the same version already exists.
+      # If you retry a failed workflow, already published packages will be skipped without error.
+      - name: Publish NuGet package
+        run: |
+          foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include *.nupkg)) {
+              dotnet nuget push $file --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          }
