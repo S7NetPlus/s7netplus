@@ -71,34 +71,34 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-20.04, macos-latest]
-        test-framework: [netcoreapp3.1, net5.0]
+        os: [windows-latest, ubuntu-22.04, macos-latest]
+        test-framework: [net6.0, net7.0]
         include:
-          - os: ubuntu-20.04
-            test-framework: netcoreapp3.1
+          - os: ubuntu-22.04
+            test-framework: net6.0
             installSnap7: true
-            dotnet-sdk: '3.1.x'
-          - os: ubuntu-20.04
-            test-framework: net5.0
+            dotnet-sdk: '6.x'
+          - os: ubuntu-22.04
+            test-framework: net7.0
             installSnap7: true
-            dotnet-sdk: '5.0.x'
+            dotnet-sdk: '7.x'
           - os: macos-latest
-            test-framework: netcoreapp3.1
+            test-framework: net6.0
             installSnap7: true
-            dotnet-sdk: '3.1.x'
+            dotnet-sdk: '6.x'
           - os: macos-latest
-            test-framework: net5.0
+            test-framework: net7.0
             installSnap7: true
-            dotnet-sdk: '5.0.x'
+            dotnet-sdk: '7.x'
           - os: windows-latest
-            test-framework: netcoreapp3.1
-            dotnet-sdk: '3.1.x'
+            test-framework: net6.0
+            dotnet-sdk: '6.x'
           - os: windows-latest
-            test-framework: net5.0
-            dotnet-sdk: '5.0.x'
+            test-framework: net7.0
+            dotnet-sdk: '7.x'
           - os: windows-latest
-            test-framework: net452
-            dotnet-sdk: '5.0.x'
+            test-framework: net462
+            dotnet-sdk: '7.x'
       fail-fast: false
 
     steps:
