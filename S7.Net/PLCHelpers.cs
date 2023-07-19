@@ -38,9 +38,9 @@ namespace S7.Net
         private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
             // Header size 19, 12 bytes per item
-            WriteTpktHeader(stream, 19 + (12 * amount));
+            WriteTpktHeader(stream, 19 + 12 * amount);
             WriteDateHeader(stream);
-            WriteS7Header(stream, 0x01, 2 + amount * 12, 0);
+            WriteS7Header(stream, 0x01, 2 + 12 * amount, 0);
             // Function code: read request
             stream.Write(0x04);
             //amount of requests
