@@ -167,6 +167,15 @@ namespace S7.Net
                     {
                         return DateTimeLong.ToArray(bytes);
                     }
+                case VarType.Time:
+                    if (varCount == 1)
+                    {
+                        return TimeSpan.FromByteArray(bytes);
+                    }
+                    else
+                    {
+                        return TimeSpan.ToArray(bytes);
+                    }
                 default:
                     return null;
             }
@@ -200,6 +209,7 @@ namespace S7.Net
                 case VarType.DWord:
                 case VarType.DInt:
                 case VarType.Real:
+                case VarType.Time:
                     return varCount * 4;
                 case VarType.LReal:
                 case VarType.DateTime:
