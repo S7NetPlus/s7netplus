@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace S7.Net.Types
 {
+    /// <summary>
+    /// Contains the methods to convert between <see cref="T:System.TimeSpan"/> and S7 representation of TIME values.
+    /// </summary>
     public static class TimeSpan
     {
         /// <summary>
@@ -45,7 +48,6 @@ namespace S7.Net.Types
                 throw new ArgumentOutOfRangeException(nameof(bytes), bytes.Length,
                     $"Parsing an array of {nameof(System.TimeSpan)} requires a multiple of {singleTimeSpanLength} bytes of input data, input data is '{bytes.Length}' long.");
 
-            var cnt = bytes.Length / singleTimeSpanLength;
             var result = new System.TimeSpan[bytes.Length / singleTimeSpanLength];
 
             var milliseconds = DInt.ToArray(bytes);
@@ -56,13 +58,13 @@ namespace S7.Net.Types
         }
 
         /// <summary>
-        /// Converts a <see cref="T:System.DateTime"/> value to a byte array.
+        /// Converts a <see cref="T:System.TimeSpan"/> value to a byte array.
         /// </summary>
-        /// <param name="timeSpan">The DateTime value to convert.</param>
+        /// <param name="timeSpan">The TimeSpan value to convert.</param>
         /// <returns>A byte array containing the S7 date time representation of <paramref name="timeSpan"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when the value of
-        ///   <paramref name="timeSpan"/> is before <see cref="P:SpecMinimumDateTime"/>
-        ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>
+        ///   <paramref name="timeSpan"/> is before <see cref="P:SpecMinimumTimeSpan"/>
+        ///   or after <see cref="P:SpecMaximumTimeSpan"/>.</exception>
         public static byte[] ToByteArray(System.TimeSpan timeSpan)
         {
             if (timeSpan < SpecMinimumTimeSpan)
@@ -77,13 +79,13 @@ namespace S7.Net.Types
         }
 
         /// <summary>
-        /// Converts an array of <see cref="T:System.DateTime"/> values to a byte array.
+        /// Converts an array of <see cref="T:System.TimeSpan"/> values to a byte array.
         /// </summary>
-        /// <param name="timeSpans">The DateTime values to convert.</param>
-        /// <returns>A byte array containing the S7 date time representations of <paramref name="dateTime"/>.</returns>
+        /// <param name="timeSpans">The TimeSpan values to convert.</param>
+        /// <returns>A byte array containing the S7 date time representations of <paramref name="timeSpans"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when any value of
-        ///   <paramref name="timeSpans"/> is before <see cref="P:SpecMinimumDateTime"/>
-        ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>
+        ///   <paramref name="timeSpans"/> is before <see cref="P:SpecMinimumTimeSpan"/>
+        ///   or after <see cref="P:SpecMaximumTimeSpan"/>.</exception>
         public static byte[] ToByteArray(System.TimeSpan[] timeSpans)
         {
             var bytes = new List<byte>(timeSpans.Length * 4);
