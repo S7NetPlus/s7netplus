@@ -12,7 +12,7 @@ namespace S7.Net
         private static void WriteTpktHeader(System.IO.MemoryStream stream, int length)
         {
             stream.Write(new byte[] { 0x03, 0x00 });
-            stream.Write(Int.ToByteArray((short)length));
+            stream.Write(Word.ToByteArray((ushort) length));
         }
 
         private static void WriteDataHeader(System.IO.MemoryStream stream)
