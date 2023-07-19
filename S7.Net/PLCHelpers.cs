@@ -15,6 +15,11 @@ namespace S7.Net
             stream.Write(Int.ToByteArray((short)length));
         }
 
+        private static void WriteDataHeader(System.IO.MemoryStream stream)
+        {
+            stream.Write(new byte[] { 0x02, 0xf0, 0x80 });
+        }
+
         /// <summary>
         /// Creates the header to read bytes from the PLC
         /// </summary>
@@ -24,8 +29,8 @@ namespace S7.Net
         {
             // Header size 19, 12 bytes per item
             WriteTpktHeader(stream, 19 + (12 * amount));
-
-            stream.Write(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
+            WriteDateHeader(stream);
+            stream.Write(new byte[] { 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
             stream.Write(Word.ToByteArray((ushort)(2 + (amount * 12))));
             stream.Write(new byte[] { 0x00, 0x00, 0x04 });
