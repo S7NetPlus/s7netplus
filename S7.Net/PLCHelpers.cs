@@ -9,6 +9,12 @@ namespace S7.Net
 {
     public partial class Plc
     {
+        private static void WriteTpktHeader(System.IO.MemoryStream stream, int length)
+        {
+            stream.Write(new byte[] { 0x03, 0x00 });
+            stream.Write(Int.ToByteArray((short)length));
+        }
+
         /// <summary>
         /// Creates the header to read bytes from the PLC
         /// </summary>
@@ -16,10 +22,9 @@ namespace S7.Net
         /// <returns></returns>
         private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
         {
-            //header size = 19 bytes
-            stream.Write(new byte[] { 0x03, 0x00 });
-            //complete package size
-            stream.Write(Int.ToByteArray((short)(19 + (12 * amount))));
+            // Header size 19, 12 bytes per item
+            WriteTpktHeader(stream, 19 + (12 * amount));
+
             stream.Write(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
             //data part size
             stream.Write(Word.ToByteArray((ushort)(2 + (amount * 12))));
