@@ -45,6 +45,7 @@ namespace S7.Net.Types
                         break;
                     case "Int32":
                     case "UInt32":
+                    case "TimeSpan":
                         numBytes = Math.Ceiling(numBytes);
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
@@ -215,6 +216,21 @@ namespace S7.Net.Types
 
                         numBytes += sData.Length;
                         break;
+                    case "TimeSpan":
+                        numBytes = Math.Ceiling(numBytes);
+                        if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                            numBytes++;
+                        
+                        // get the value
+                        info.SetValue(structValue, TimeSpan.FromByteArray(new[] 
+                        {
+                            bytes[(int)numBytes + 0],
+                            bytes[(int)numBytes + 1],
+                            bytes[(int)numBytes + 2],
+                            bytes[(int)numBytes + 3]
+                        }));
+                        numBytes += 4;
+                        break;
                     default:
                         var buffer = new byte[GetStructSize(info.FieldType)];
                         if (buffer.Length == 0)
@@ -302,6 +318,9 @@ namespace S7.Net.Types
                             S7StringType.S7WString => S7WString.ToByteArray((string)info.GetValue(structValue), attribute.ReservedLength),
                             _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
                         };
+                        break;
+                    case "TimeSpan":
+                        bytes2 = TimeSpan.ToByteArray((System.TimeSpan)info.GetValue(structValue));
                         break;
                 }
                 if (bytes2 != null)
