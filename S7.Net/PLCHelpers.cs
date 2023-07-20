@@ -22,8 +22,8 @@ namespace S7.Net
 
         private static void WriteS7Header(System.IO.MemoryStream stream, byte messageType, int parameterLength, int dataLength)
         {
-            stream.Write(0x32); // S7 protocol ID
-            stream.Write(messageType); // Message type
+            stream.WriteByte(0x32); // S7 protocol ID
+            stream.WriteByte(messageType); // Message type
             stream.Write(new byte[] { 0x00, 0x00 }); // Reserved
             stream.Write(new byte[] { 0x00, 0x00 }); // PDU ref
             stream.Write(Word.ToByteArray((ushort) parameterLength));
@@ -39,10 +39,10 @@ namespace S7.Net
         {
             // Header size 19, 12 bytes per item
             WriteTpktHeader(stream, 19 + 12 * amount);
-            WriteDateHeader(stream);
+            WriteDataHeader(stream);
             WriteS7Header(stream, 0x01, 2 + 12 * amount, 0);
             // Function code: read request
-            stream.Write(0x04);
+            stream.WriteByte(0x04);
             //amount of requests
             stream.WriteByte((byte)amount);
         }
