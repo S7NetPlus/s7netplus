@@ -35,7 +35,7 @@ namespace S7.Net
         /// </summary>
         /// <param name="amount"></param>
         /// <returns></returns>
-        private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
+        private static void WriteReadHeader(System.IO.MemoryStream stream, int amount = 1)
         {
             // Header size 19, 12 bytes per item
             WriteTpktHeader(stream, 19 + 12 * amount);
@@ -271,7 +271,7 @@ namespace S7.Net
             int packageSize = 19 + (dataItems.Count * 12);
             var package = new System.IO.MemoryStream(packageSize);
 
-            BuildHeaderPackage(package, dataItems.Count);
+            WriteReadHeader(package, dataItems.Count);
 
             foreach (var dataItem in dataItems)
             {

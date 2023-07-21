@@ -329,7 +329,7 @@ namespace S7.Net
                 const int packageSize = 19 + 12; // 19 header + 12 for 1 request
                 var dataToSend = new byte[packageSize];
                 var package = new MemoryStream(dataToSend);
-                BuildHeaderPackage(package);
+                WriteReadHeader(package);
                 // package.Add(0x02);  // datenart
                 BuildReadDataRequestPackage(package, dataType, db, startByteAdr, buffer.Length);
 
@@ -474,7 +474,7 @@ namespace S7.Net
                 int packageSize = 19 + (dataItems.Count * 12);
                 var dataToSend = new byte[packageSize];
                 var package = new MemoryStream(dataToSend);
-                BuildHeaderPackage(package, dataItems.Count);
+                WriteReadHeader(package, dataItems.Count);
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
                 {
