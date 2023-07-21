@@ -56,6 +56,45 @@ namespace S7.Net
             WriteS7Header(stream, s7MessageTypeUserData, parameterLength, dataLength);
         }
 
+        private static void WriteSzlReadRequest(System.IO.MemoryStream stream, ushort szlId, ushort szlIndex)
+        {
+            WriteUserDataHeader(stream, 8, 8);
+
+            // Parameter
+            const byte szlMethodRequest = 0x11;
+            const byte szlTypeRequest = 0b100;
+            const byte szlFunctionGroupCpuFunctions = 0b100;
+            const byte subFunctionReadSzl = 0x01;
+
+            // Parameter head
+            stream.Write(new byte[] { 0x00, 0x01, 0x12 });
+            // Parameter length
+            stream.WriteByte(0x04);
+            // Method
+            stream.WriteByte(szlMethodRequest);
+            // Type / function group
+            stream.WriteByte(szlTypeRequest << 4 | szlFunctionGroupCpuFunctions);
+            // Subfunction
+            stream.WriteByte(subFunctionReadSzl);
+            // Sequence number
+            stream.WriteByte(0);
+
+            // Data
+            const byte success = 0xff;
+            const byte transportSizeOctetString = 0x09;
+
+            // Return code
+            stream.WriteByte(success);
+            // Transport size
+            stream.WriteByte(transportSizeOctetString);
+            // Length
+            stream.Write(Word.ToByteArray(4));
+            // SZL-ID
+            stream.Write(Word.ToByteArray(szlId));
+            // SZL-Index
+            stream.Write(Word.ToByteArray(szlIndex));
+        }
+
         /// <summary>
         /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
         /// the address of the memory, the address of the byte and the bytes count.
