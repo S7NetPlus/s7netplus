@@ -47,6 +47,15 @@ namespace S7.Net
             stream.WriteByte((byte)amount);
         }
 
+        private static void WriteUserDataHeader(System.IO.MemoryStream stream, int parameterLength, int dataLength)
+        {
+            const byte s7MessageTypeUserData = 0x07;
+
+            WriteTpktHeader(stream, 17 + parameterLength + dataLength);
+            WriteDataHeader(stream);
+            WriteS7Header(stream, s7MessageTypeUserData, parameterLength, dataLength);
+        }
+
         /// <summary>
         /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
         /// the address of the memory, the address of the byte and the bytes count.
