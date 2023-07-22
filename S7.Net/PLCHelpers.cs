@@ -329,5 +329,15 @@ namespace S7.Net
 
             return package.ToArray();
         }
+
+        private static byte[] BuildSzlReadRequestPackage(ushort szlId, ushort szlIndex)
+        {
+            var stream = new System.IO.MemoryStream();
+            
+            WriteSzlReadRequest(stream, szlId, szlIndex);
+            stream.SetLength(stream.Position);
+
+            return stream.ToArray();
+        }
     }
 }
