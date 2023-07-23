@@ -71,14 +71,14 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-latest]
+        os: [windows-latest, ubuntu-20.04, macos-latest]
         test-framework: [net6.0, net7.0]
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-20.04
             test-framework: net6.0
             installSnap7: true
             dotnet-sdk: '6.x'
-          - os: ubuntu-22.04
+          - os: ubuntu-20.04
             test-framework: net7.0
             installSnap7: true
             dotnet-sdk: '7.x'
