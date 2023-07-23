@@ -129,12 +129,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.test-framework }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.test-framework }}-nuget
-
-      - name: Restore
-        run: dotnet restore --runtime ${{ matrix.test-framework }} S7.Net.UnitTest
         
       - name: Test
-        run: dotnet test --no-restore --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
+        run: dotnet test --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
 
   deploy:
     # Publish only when creating a GitHub Release
