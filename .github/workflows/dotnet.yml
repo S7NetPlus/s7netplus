@@ -131,7 +131,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.test-framework }}-nuget
 
       - name: Restore
-        run: dotnet restore S7.Net.UnitTest
+        run: dotnet restore --runtime ${{ matrix.test-framework }} S7.Net.UnitTest
         
       - name: Test
         run: dotnet test --no-restore --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
