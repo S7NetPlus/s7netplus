@@ -71,14 +71,14 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-latest]
+        os: [windows-latest, ubuntu-20.04, macos-latest]
         test-framework: [net6.0, net7.0]
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-20.04
             test-framework: net6.0
             installSnap7: true
             dotnet-sdk: '6.x'
-          - os: ubuntu-22.04
+          - os: ubuntu-20.04
             test-framework: net7.0
             installSnap7: true
             dotnet-sdk: '7.x'
@@ -119,7 +119,9 @@ jobs:
       - name: Setup Dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ matrix.dotnet-sdk }}
+          dotnet-version: |
+            ${{ matrix.dotnet-sdk }}
+            7.x
           
       - name: Nuget Cache
         uses: actions/cache@v2
@@ -129,12 +131,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.test-framework }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.test-framework }}-nuget
-
-      - name: Restore
-        run: dotnet restore S7.Net.UnitTest
         
       - name: Test
-        run: dotnet test --no-restore --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
+        run: dotnet test --nologo --verbosity normal --logger GitHubActions --framework ${{ matrix.test-framework }}
 
   deploy:
     # Publish only when creating a GitHub Release

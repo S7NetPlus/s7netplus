@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
-    <TargetFrameworks>net452;netstandard2.0;netstandard1.3;net5.0</TargetFrameworks>
+    <TargetFrameworks>net452;net462;netstandard2.0;netstandard1.3;net5.0;net6.0;net7.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
@@ -23,11 +23,11 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'netstandard2.0' ">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0' ">
     <DefineConstants>NET_FULL</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0' And '$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net7.0'">
     <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
   
