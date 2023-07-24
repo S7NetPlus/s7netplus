@@ -64,7 +64,7 @@ jobs:
           ${{ env.NuGetDirectory }}/*.snupkg
 
   run_test:
-    name: test-${{ matrix.os }}-${{ matrix.test-framework }}
+    name: test-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
       configuration: Release
