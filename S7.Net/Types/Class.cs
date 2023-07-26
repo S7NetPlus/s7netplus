@@ -333,19 +333,21 @@ namespace S7.Net.Types
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
+                var value = property.GetValue(sourceClass, null) ??
+                    throw new ArgumentException($"Property {property.Name} on sourceClass can't be null.", nameof(sourceClass));
+
                 if (property.PropertyType.IsArray)
                 {
-                    Array array = (Array)property.GetValue(sourceClass, null);
+                    Array array = (Array) value;
                     IncrementToEven(ref numBytes);
-                    Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        numBytes = SetBytesFromProperty(array.GetValue(i), property, bytes, numBytes);
+                        numBytes = SetBytesFromProperty(array.GetValue(i)!, property, bytes, numBytes);
                     }
                 }
                 else
                 {
-                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), property, bytes, numBytes);
+                    numBytes = SetBytesFromProperty(value, property, bytes, numBytes);
                 }
             }
             return numBytes;
