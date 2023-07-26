@@ -64,7 +64,8 @@ namespace S7.Net.Types
                     numBytes += attribute.ReservedLengthInBytes;
                     break;
                 default:
-                    var propertyClass = Activator.CreateInstance(type);
+                    var propertyClass = Activator.CreateInstance(type) ??
+                        throw new ArgumentException($"Failed to create instance of type {type}.", nameof(type));
                     numBytes = GetClassSize(propertyClass, numBytes, true);
                     break;
             }
@@ -86,8 +87,10 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
-                    Type elementType = property.PropertyType.GetElementType();
-                    Array array = (Array)property.GetValue(instance, null);
+                    Type elementType = property.PropertyType.GetElementType()!;
+                    Array array = (Array?) property.GetValue(instance, null) ??
+                        throw new ArgumentException($"Property {property.Name} on {instance} must have a non-null value to get it's size.", nameof(instance));
+
                     if (array.Length <= 0)
                     {
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
@@ -201,7 +204,9 @@ namespace S7.Net.Types
                     numBytes += sData.Length;
                     break;
                 default:
-                    var propClass = Activator.CreateInstance(propertyType);
+                    var propClass = Activator.CreateInstance(propertyType) ??
+                        throw new ArgumentException($"Failed to create instance of type {propertyType}.", nameof(propertyType));
+
                     numBytes = FromBytes(propClass, bytes, numBytes);
                     value = propClass;
                     break;
