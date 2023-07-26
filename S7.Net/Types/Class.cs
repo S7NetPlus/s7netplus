@@ -76,6 +76,8 @@ namespace S7.Net.Types
         /// Gets the size of the class in bytes.
         /// </summary>
         /// <param name="instance">An instance of the class</param>
+        /// <param name="numBytes">The offset of the current field.</param>
+        /// <param name="isInnerProperty"><see langword="true" /> if this property belongs to a class being serialized as member of the class requested for serialization; otherwise, <see langword="false" />.</param>
         /// <returns>the number of bytes</returns>
         public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false)
         {
@@ -213,6 +215,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The object to fill in the given array of bytes</param>
         /// <param name="bytes">The array of bytes</param>
+        /// <param name="numBytes">The offset for the current field.</param>
+        /// <param name="isInnerClass"><see langword="true" /> if this class is the type of a member of the class to be serialized; otherwise, <see langword="false" />.</param>
         public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false)
         {
             if (bytes == null)
@@ -320,7 +324,9 @@ namespace S7.Net.Types
         /// <summary>
         /// Creates a byte array depending on the struct type.
         /// </summary>
-        /// <param name="sourceClass">The struct object</param>
+        /// <param name="sourceClass">The struct object.</param>
+        /// <param name="bytes">The target byte array.</param>
+        /// <param name="numBytes">The offset for the current field.</param>
         /// <returns>A byte array or null if fails.</returns>
         public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0)
         {
