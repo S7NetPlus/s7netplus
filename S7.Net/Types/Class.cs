@@ -227,9 +227,11 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
-                    Array array = (Array)property.GetValue(sourceClass, null);
+                    Array array = (Array?) property.GetValue(sourceClass, null) ??
+                        throw new ArgumentException($"Property {property.Name} on sourceClass must be an array instance.", nameof(sourceClass));
+
                     IncrementToEven(ref numBytes);
-                    Type elementType = property.PropertyType.GetElementType();
+                    Type elementType = property.PropertyType.GetElementType()!;
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
                         array.SetValue(
