@@ -58,7 +58,7 @@ namespace S7.Net.Types
         /// <param name="value">The string to convert to byte array.</param>
         /// <param name="reservedLength">The length (in characters) allocated in PLC for the string.</param>
         /// <returns>A <see cref="T:byte[]" /> containing the string header and string value with a maximum length of <paramref name="reservedLength"/> + 2.</returns>
-        public static byte[] ToByteArray(string value, int reservedLength)
+        public static byte[] ToByteArray(string? value, int reservedLength)
         {
             if (value is null)
             {
