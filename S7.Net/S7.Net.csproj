@@ -15,7 +15,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>PLC Siemens Communication S7</PackageTags>
     <Copyright>Derek Heiser 2015</Copyright>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Nullable>Enable</Nullable>
     <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
