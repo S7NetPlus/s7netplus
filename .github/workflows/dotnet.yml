@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install Snap7 Linux
         if: ${{ matrix.os == 'ubuntu-20.04' }}
@@ -90,14 +90,14 @@ jobs:
           brew install snap7
 
       - name: Setup Dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: |
             6.x
             7.x
           
       - name: Nuget Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file

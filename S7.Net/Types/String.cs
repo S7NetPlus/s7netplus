@@ -12,13 +12,15 @@
         /// <param name="reservedLength">The amount of bytes reserved for the <paramref name="value"/> in the PLC.</param>
         public static byte[] ToByteArray(string value, int reservedLength)
         {
-            var length = value?.Length;
-            if (length > reservedLength) length = reservedLength;
             var bytes = new byte[reservedLength];
+            if (value == null) return bytes;
 
-            if (length == null || length == 0) return bytes;
+            var length = value.Length;
+            if (length == 0) return bytes;
 
-            System.Text.Encoding.ASCII.GetBytes(value, 0, length.Value, bytes, 0);
+            if (length > reservedLength) length = reservedLength;
+
+            System.Text.Encoding.ASCII.GetBytes(value, 0, length, bytes, 0);
 
             return bytes;
         }

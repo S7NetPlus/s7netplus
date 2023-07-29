@@ -33,8 +33,8 @@ namespace S7.Net
         /// <summary>
         /// Creates the header to read bytes from the PLC.
         /// </summary>
-        /// <param name="stream">The <see cref="System.IO.MemoryStream"/> to write to.</param>
-        /// <param name="amount">The amount of items to read.</param>
+        /// <param name="stream">The stream to write to.</param>
+        /// <param name="amount">The number of items to read.</param>
         private static void WriteReadHeader(System.IO.MemoryStream stream, int amount = 1)
         {
             // Header size 19, 12 bytes per item
@@ -99,7 +99,7 @@ namespace S7.Net
         /// Create the bytes-package to request data from the PLC. You have to specify the memory type (dataType),
         /// the address of the memory, the address of the byte and the bytes count.
         /// </summary>
-        /// <param name="stream">The <see cref="System.IO.MemoryStream"/> to write to.</param>
+        /// <param name="stream">The stream to write the read data request to.</param>
         /// <param name="dataType">MemoryType (DB, Timer, Counter, etc.)</param>
         /// <param name="db">Address of the memory to be read</param>
         /// <param name="startByteAdr">Start address of the byte</param>

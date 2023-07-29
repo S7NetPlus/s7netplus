@@ -39,6 +39,7 @@ namespace S7.Net
         /// <param name="buffer">the buffer to read into</param>
         /// <param name="offset">the offset in the buffer to read into</param>
         /// <param name="count">the amount of bytes to read into the buffer</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>returns the amount of read bytes</returns>
         public static async Task<int> ReadExactAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

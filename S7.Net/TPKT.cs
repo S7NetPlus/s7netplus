@@ -29,6 +29,7 @@ namespace S7.Net
         /// Reads a TPKT from the socket Async
         /// </summary>
         /// <param name="stream">The stream to read from</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>Task TPKT Instace</returns>
         public static async Task<TPKT> ReadAsync(Stream stream, CancellationToken cancellationToken)
         {

@@ -15,12 +15,13 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>PLC Siemens Communication S7</PackageTags>
     <Copyright>Derek Heiser 2015</Copyright>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Nullable>Enable</Nullable>
     <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;NETSDK1138</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0' ">

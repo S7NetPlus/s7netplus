@@ -55,6 +55,7 @@ namespace S7.Net
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
             /// <param name="stream">The socket to read from</param>
+            /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
             /// <returns>COTP DPDU instance</returns>
             public static async Task<TPDU> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
@@ -89,6 +90,7 @@ namespace S7.Net
             /// See: https://tools.ietf.org/html/rfc905
             /// </summary>
             /// <param name="stream">The stream to read from</param>
+            /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
             /// <returns>Data in TSDU</returns>
             public static async Task<byte[]> ReadAsync(Stream stream, CancellationToken cancellationToken)
             {
