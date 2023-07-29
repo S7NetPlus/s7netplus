@@ -289,7 +289,6 @@ namespace S7.Net
 
         /// <summary>
         /// Writes a single variable from the PLC, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
-        /// If the write was not successful, check <see cref="LastErrorCode"/> or <see cref="LastErrorString"/>.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <param name="value">Value to be written to the PLC</param>
