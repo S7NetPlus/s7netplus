@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <LangVersion>latest</LangVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
