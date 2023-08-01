@@ -316,7 +316,7 @@ namespace S7.Net
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC status on completion.</returns>
-        public async Task<byte> ReadStatusAsync(CancellationToken cancellationToken) {
+        public async Task<byte> ReadStatusAsync(CancellationToken cancellationToken = default) {
             var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
             var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
 
