@@ -315,6 +315,8 @@ namespace S7.Net
         /// <summary>
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
+        /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
         /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC status on completion.</returns>
         public async Task<byte> ReadStatusAsync(CancellationToken cancellationToken = default) {
             var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
