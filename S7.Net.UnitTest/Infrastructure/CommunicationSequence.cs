@@ -13,9 +13,9 @@ internal class CommunicationSequence : IEnumerable<RequestResponsePair>
 {
     private readonly List<RequestResponsePair> _requestResponsePairs = new List<RequestResponsePair>();
 
-    public CommunicationSequence()
+    public void Add(RequestResponsePair requestResponsePair)
     {
-        
+        _requestResponsePairs.Add(requestResponsePair);
     }
 
     public void Add(string requestPattern, string responsePattern)
