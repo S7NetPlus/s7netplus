@@ -322,7 +322,7 @@ namespace S7.Net
             var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
             var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
 
-            return (byte) (s7data[94] & 0x0f);
+            return (byte) (s7data[37] & 0x0f);
         }
 
         /// <summary>
