@@ -328,7 +328,7 @@ namespace S7.Net
                 const int packageSize = 19 + 12; // 19 header + 12 for 1 request
                 var dataToSend = new byte[packageSize];
                 var package = new MemoryStream(dataToSend);
-                BuildHeaderPackage(package);
+                WriteReadHeader(package);
                 // package.Add(0x02);  // datenart
                 BuildReadDataRequestPackage(package, dataType, db, startByteAdr, buffer.Length);
 
@@ -473,7 +473,7 @@ namespace S7.Net
                 int packageSize = 19 + (dataItems.Count * 12);
                 var dataToSend = new byte[packageSize];
                 var package = new MemoryStream(dataToSend);
-                BuildHeaderPackage(package, dataItems.Count);
+                WriteReadHeader(package, dataItems.Count);
                 // package.Add(0x02);  // datenart
                 foreach (var dataItem in dataItems)
                 {
@@ -490,6 +490,18 @@ namespace S7.Net
             {
                 throw new PlcException(ErrorCode.ReadData, exc);
             }
+        }
+
+        /// <summary>
+        /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
+        /// </summary>
+        /// <returns>The current PLC status.</returns>
+        public byte ReadStatus()
+        {
+            var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
+            var s7data = RequestTsdu(dataToSend);
+
+            return (byte) (s7data[37] & 0x0f);
         }
 
         private byte[] RequestTsdu(byte[] requestData) => RequestTsdu(requestData, 0, requestData.Length);

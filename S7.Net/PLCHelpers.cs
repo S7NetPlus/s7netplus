@@ -9,23 +9,90 @@ namespace S7.Net
 {
     public partial class Plc
     {
+        private static void WriteTpktHeader(System.IO.MemoryStream stream, int length)
+        {
+            stream.Write(new byte[] { 0x03, 0x00 });
+            stream.Write(Word.ToByteArray((ushort) length));
+        }
+
+        private static void WriteDataHeader(System.IO.MemoryStream stream)
+        {
+            stream.Write(new byte[] { 0x02, 0xf0, 0x80 });
+        }
+
+        private static void WriteS7Header(System.IO.MemoryStream stream, byte messageType, int parameterLength, int dataLength)
+        {
+            stream.WriteByte(0x32); // S7 protocol ID
+            stream.WriteByte(messageType); // Message type
+            stream.Write(new byte[] { 0x00, 0x00 }); // Reserved
+            stream.Write(new byte[] { 0x00, 0x00 }); // PDU ref
+            stream.Write(Word.ToByteArray((ushort) parameterLength));
+            stream.Write(Word.ToByteArray((ushort) dataLength));
+        }
+
         /// <summary>
-        /// Creates the header to read bytes from the PLC
+        /// Creates the header to read bytes from the PLC.
         /// </summary>
         /// <param name="stream">The stream to write to.</param>
         /// <param name="amount">The number of items to read.</param>
-        private static void BuildHeaderPackage(System.IO.MemoryStream stream, int amount = 1)
+        private static void WriteReadHeader(System.IO.MemoryStream stream, int amount = 1)
         {
-            //header size = 19 bytes
-            stream.Write(new byte[] { 0x03, 0x00 });
-            //complete package size
-            stream.Write(Int.ToByteArray((short)(19 + (12 * amount))));
-            stream.Write(new byte[] { 0x02, 0xf0, 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00 });
-            //data part size
-            stream.Write(Word.ToByteArray((ushort)(2 + (amount * 12))));
-            stream.Write(new byte[] { 0x00, 0x00, 0x04 });
+            // Header size 19, 12 bytes per item
+            WriteTpktHeader(stream, 19 + 12 * amount);
+            WriteDataHeader(stream);
+            WriteS7Header(stream, 0x01, 2 + 12 * amount, 0);
+            // Function code: read request
+            stream.WriteByte(0x04);
             //amount of requests
             stream.WriteByte((byte)amount);
+        }
+
+        private static void WriteUserDataHeader(System.IO.MemoryStream stream, int parameterLength, int dataLength)
+        {
+            const byte s7MessageTypeUserData = 0x07;
+
+            WriteTpktHeader(stream, 17 + parameterLength + dataLength);
+            WriteDataHeader(stream);
+            WriteS7Header(stream, s7MessageTypeUserData, parameterLength, dataLength);
+        }
+
+        private static void WriteSzlReadRequest(System.IO.MemoryStream stream, ushort szlId, ushort szlIndex)
+        {
+            WriteUserDataHeader(stream, 8, 8);
+
+            // Parameter
+            const byte szlMethodRequest = 0x11;
+            const byte szlTypeRequest = 0b100;
+            const byte szlFunctionGroupCpuFunctions = 0b100;
+            const byte subFunctionReadSzl = 0x01;
+
+            // Parameter head
+            stream.Write(new byte[] { 0x00, 0x01, 0x12 });
+            // Parameter length
+            stream.WriteByte(0x04);
+            // Method
+            stream.WriteByte(szlMethodRequest);
+            // Type / function group
+            stream.WriteByte(szlTypeRequest << 4 | szlFunctionGroupCpuFunctions);
+            // Subfunction
+            stream.WriteByte(subFunctionReadSzl);
+            // Sequence number
+            stream.WriteByte(0);
+
+            // Data
+            const byte success = 0xff;
+            const byte transportSizeOctetString = 0x09;
+
+            // Return code
+            stream.WriteByte(success);
+            // Transport size
+            stream.WriteByte(transportSizeOctetString);
+            // Length
+            stream.Write(Word.ToByteArray(4));
+            // SZL-ID
+            stream.Write(Word.ToByteArray(szlId));
+            // SZL-Index
+            stream.Write(Word.ToByteArray(szlIndex));
         }
 
         /// <summary>
@@ -253,7 +320,7 @@ namespace S7.Net
             int packageSize = 19 + (dataItems.Count * 12);
             var package = new System.IO.MemoryStream(packageSize);
 
-            BuildHeaderPackage(package, dataItems.Count);
+            WriteReadHeader(package, dataItems.Count);
 
             foreach (var dataItem in dataItems)
             {
@@ -261,6 +328,16 @@ namespace S7.Net
             }
 
             return package.ToArray();
+        }
+
+        private static byte[] BuildSzlReadRequestPackage(ushort szlId, ushort szlIndex)
+        {
+            var stream = new System.IO.MemoryStream();
+            
+            WriteSzlReadRequest(stream, szlId, szlIndex);
+            stream.SetLength(stream.Position);
+
+            return stream.ToArray();
         }
     }
 }
