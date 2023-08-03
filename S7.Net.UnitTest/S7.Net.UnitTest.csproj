@@ -4,7 +4,7 @@
     <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' "> 
-    <TargetFrameworks>net462;net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0;net462</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -17,7 +17,10 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="GitHubActionsTestLogger" Version="1.1.0" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.3.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
     <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
