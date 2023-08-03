@@ -141,7 +141,7 @@ namespace S7.Net.Types
         /// Converts an array of <see cref="T:System.DateTime"/> values to a byte array.
         /// </summary>
         /// <param name="dateTimes">The DateTime values to convert.</param>
-        /// <returns>A byte array containing the S7 date time representations of <paramref name="dateTime"/>.</returns>
+        /// <returns>A byte array containing the S7 date time representations of <paramref name="dateTimes"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when any value of
         ///   <paramref name="dateTimes"/> is before <see cref="P:SpecMinimumDateTime"/>
         ///   or after <see cref="P:SpecMaximumDateTime"/>.</exception>

@@ -313,6 +313,20 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
+        /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
+        /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC status on completion.</returns>
+        public async Task<byte> ReadStatusAsync(CancellationToken cancellationToken = default)
+        {
+            var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
+            var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
+
+            return (byte) (s7data[37] & 0x0f);
+        }
+
+        /// <summary>
         /// Write a number of bytes from a DB starting from a specified index. This handles more than 200 bytes with multiple requests.
         /// If the write was not successful, check LastErrorCode or LastErrorString.
         /// </summary>
@@ -428,7 +442,6 @@ namespace S7.Net
 
         /// <summary>
         /// Writes a single variable from the PLC, takes in input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.
-        /// If the write was not successful, check <see cref="LastErrorCode"/> or <see cref="LastErrorString"/>.
         /// </summary>
         /// <param name="variable">Input strings like "DB1.DBX0.0", "DB20.DBD200", "MB20", "T45", etc.</param>
         /// <param name="value">Value to be written to the PLC</param>
@@ -507,6 +520,7 @@ namespace S7.Net
         /// <param name="db">Address of the memory area (if you want to read DB1, this is set to 1). This must be set also for other memory area types: counters, timers,etc.</param>
         /// <param name="startByteAdr">Start byte address. If you want to read DB1.DBW200, this is 200.</param>
         /// <param name="value">Bytes to write. The lenght of this parameter can't be higher than 200. If you need more, use recursion.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         private async Task WriteBytesWithASingleRequestAsync(DataType dataType, int db, int startByteAdr, ReadOnlyMemory<byte> value, CancellationToken cancellationToken)
         {

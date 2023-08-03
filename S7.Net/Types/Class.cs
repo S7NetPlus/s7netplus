@@ -64,7 +64,8 @@ namespace S7.Net.Types
                     numBytes += attribute.ReservedLengthInBytes;
                     break;
                 default:
-                    var propertyClass = Activator.CreateInstance(type);
+                    var propertyClass = Activator.CreateInstance(type) ??
+                        throw new ArgumentException($"Failed to create instance of type {type}.", nameof(type));
                     numBytes = GetClassSize(propertyClass, numBytes, true);
                     break;
             }
@@ -76,6 +77,8 @@ namespace S7.Net.Types
         /// Gets the size of the class in bytes.
         /// </summary>
         /// <param name="instance">An instance of the class</param>
+        /// <param name="numBytes">The offset of the current field.</param>
+        /// <param name="isInnerProperty"><see langword="true" /> if this property belongs to a class being serialized as member of the class requested for serialization; otherwise, <see langword="false" />.</param>
         /// <returns>the number of bytes</returns>
         public static double GetClassSize(object instance, double numBytes = 0.0, bool isInnerProperty = false)
         {
@@ -84,8 +87,10 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
-                    Type elementType = property.PropertyType.GetElementType();
-                    Array array = (Array)property.GetValue(instance, null);
+                    Type elementType = property.PropertyType.GetElementType()!;
+                    Array array = (Array?) property.GetValue(instance, null) ??
+                        throw new ArgumentException($"Property {property.Name} on {instance} must have a non-null value to get it's size.", nameof(instance));
+
                     if (array.Length <= 0)
                     {
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
@@ -199,7 +204,9 @@ namespace S7.Net.Types
                     numBytes += sData.Length;
                     break;
                 default:
-                    var propClass = Activator.CreateInstance(propertyType);
+                    var propClass = Activator.CreateInstance(propertyType) ??
+                        throw new ArgumentException($"Failed to create instance of type {propertyType}.", nameof(propertyType));
+
                     numBytes = FromBytes(propClass, bytes, numBytes);
                     value = propClass;
                     break;
@@ -213,6 +220,8 @@ namespace S7.Net.Types
         /// </summary>
         /// <param name="sourceClass">The object to fill in the given array of bytes</param>
         /// <param name="bytes">The array of bytes</param>
+        /// <param name="numBytes">The offset for the current field.</param>
+        /// <param name="isInnerClass"><see langword="true" /> if this class is the type of a member of the class to be serialized; otherwise, <see langword="false" />.</param>
         public static double FromBytes(object sourceClass, byte[] bytes, double numBytes = 0, bool isInnerClass = false)
         {
             if (bytes == null)
@@ -223,9 +232,11 @@ namespace S7.Net.Types
             {
                 if (property.PropertyType.IsArray)
                 {
-                    Array array = (Array)property.GetValue(sourceClass, null);
+                    Array array = (Array?) property.GetValue(sourceClass, null) ??
+                        throw new ArgumentException($"Property {property.Name} on sourceClass must be an array instance.", nameof(sourceClass));
+
                     IncrementToEven(ref numBytes);
-                    Type elementType = property.PropertyType.GetElementType();
+                    Type elementType = property.PropertyType.GetElementType()!;
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
                         array.SetValue(
@@ -320,26 +331,30 @@ namespace S7.Net.Types
         /// <summary>
         /// Creates a byte array depending on the struct type.
         /// </summary>
-        /// <param name="sourceClass">The struct object</param>
+        /// <param name="sourceClass">The struct object.</param>
+        /// <param name="bytes">The target byte array.</param>
+        /// <param name="numBytes">The offset for the current field.</param>
         /// <returns>A byte array or null if fails.</returns>
         public static double ToBytes(object sourceClass, byte[] bytes, double numBytes = 0.0)
         {
             var properties = GetAccessableProperties(sourceClass.GetType());
             foreach (var property in properties)
             {
+                var value = property.GetValue(sourceClass, null) ??
+                    throw new ArgumentException($"Property {property.Name} on sourceClass can't be null.", nameof(sourceClass));
+
                 if (property.PropertyType.IsArray)
                 {
-                    Array array = (Array)property.GetValue(sourceClass, null);
+                    Array array = (Array) value;
                     IncrementToEven(ref numBytes);
-                    Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
-                        numBytes = SetBytesFromProperty(array.GetValue(i), property, bytes, numBytes);
+                        numBytes = SetBytesFromProperty(array.GetValue(i)!, property, bytes, numBytes);
                     }
                 }
                 else
                 {
-                    numBytes = SetBytesFromProperty(property.GetValue(sourceClass, null), property, bytes, numBytes);
+                    numBytes = SetBytesFromProperty(value, property, bytes, numBytes);
                 }
             }
             return numBytes;
