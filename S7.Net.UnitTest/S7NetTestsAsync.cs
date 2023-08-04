@@ -1006,7 +1006,7 @@ namespace S7.Net.UnitTest
             var db = 2;
             randomEngine.NextBytes(data);
 
-            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
+            cancellationSource.CancelAfter(System.TimeSpan.FromMilliseconds(5));
             try
             {
                 await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
@@ -1045,7 +1045,7 @@ namespace S7.Net.UnitTest
             var db = 2;
             randomEngine.NextBytes(data.Span);
 
-            cancellationSource.CancelAfter(TimeSpan.FromMilliseconds(5));
+            cancellationSource.CancelAfter(System.TimeSpan.FromMilliseconds(5));
             try
             {
                 await plc.WriteBytesAsync(DataType.DataBlock, db, 0, data, cancellationToken);
