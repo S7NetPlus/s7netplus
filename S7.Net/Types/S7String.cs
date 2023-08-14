@@ -42,7 +42,8 @@ namespace S7.Net.Types
 
             try
             {
-                return StringEncoding.GetString(bytes, 2, length);
+                int expect_length = bytes.Length - 2;
+                return StringEncoding.GetString(bytes, 2, Math.Min(expect_length, length));
             }
             catch (Exception e)
             {
