@@ -166,33 +166,13 @@ namespace S7.Net
 
             if (value)
             {
-                switch (bitPosition)
-                {
-                    case 0: data |= 0x01; return;
-                    case 1: data |= 0x02; return;
-                    case 2: data |= 0x04; return;
-                    case 3: data |= 0x08; return;
-                    case 4: data |= 0x10; return;
-                    case 5: data |= 0x20; return;
-                    case 6: data |= 0x40; return;
-                    case 7: data |= 0x80; return;
-                    default: return;
-                }
+                byte mask = (byte)(1 << bitPosition);
+                data |= mask;
             }
             else
             {
-                switch (bitPosition)
-                {
-                    case 0: data &= 0xFE; return;
-                    case 1: data &= 0xFD; return;
-                    case 2: data &= 0xFB; return;
-                    case 3: data &= 0xF7; return;
-                    case 4: data &= 0xEF; return;
-                    case 5: data &= 0xDF; return;
-                    case 6: data &= 0xBF; return;
-                    case 7: data &= 0x7F; return;
-                    default: return;
-                }
+                byte mask = (byte)~(1 << bitPosition);
+                data &= mask;
             }
         }
 
