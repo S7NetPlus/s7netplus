@@ -159,7 +159,7 @@ namespace S7.Net
         /// <param name="value"></param>
         public static void SetBit(this ref byte data, int bitPosition, bool value)
         {
-            if (bitPosition < 0 || bitPosition > 7)
+            if ((uint)bitPosition > 7)
             {
                 return;
             }
