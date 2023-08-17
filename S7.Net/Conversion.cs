@@ -138,14 +138,14 @@ namespace S7.Net
 
         /// <summary>
         /// Helper to get a bit value given a byte and the bit index.
-        /// Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5); 
+        /// Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5);
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="bitPosition"></param>
-        /// <returns></returns>
-        public static bool SelectBit(this byte data, int bitPosition)
+        /// <param name="data">byte data get from</param>
+        /// <param name="index">bit index</param>
+        /// <returns>bool value will get</returns>
+        public static bool SelectBit(this byte data, int index)
         {
-            int mask = 1 << bitPosition;
+            int mask = 1 << index;
             int result = data & mask;
 
             return (result != 0);
@@ -153,25 +153,26 @@ namespace S7.Net
 
         /// <summary>
         /// Helper to set a bit value to the given byte at the bit index.
+        /// Example: byte data = (byte)0x00; data.SetBit(4, true);// data -> 0x10
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="bitPosition"></param>
-        /// <param name="value"></param>
-        public static void SetBit(this ref byte data, int bitPosition, bool value)
+        /// <param name="data">byte data to be modified</param>
+        /// <param name="index">bit index</param>
+        /// <param name="value">bool value to set</param>
+        public static void SetBit(this ref byte data, int index, bool value)
         {
-            if ((uint)bitPosition > 7)
+            if ((uint)index > 7)
             {
                 return;
             }
 
             if (value)
             {
-                byte mask = (byte)(1 << bitPosition);
+                byte mask = (byte)(1 << index);
                 data |= mask;
             }
             else
             {
-                byte mask = (byte)~(1 << bitPosition);
+                byte mask = (byte)~(1 << index);
                 data &= mask;
             }
         }
