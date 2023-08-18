@@ -138,11 +138,18 @@ namespace S7.Net
 
         /// <summary>
         /// Helper to get a bit value given a byte and the bit index.
-        /// Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5);
+        /// <br/>
+        /// <example>
+        ///   Get the bit at DB1.DBX0.5:
+        ///   <code>
+        ///     byte data = ReadByte("DB1.DBB0");
+        ///     bool bit = data.SelectBit(5);
+        ///   </code>
+        /// </example>
         /// </summary>
-        /// <param name="data">byte data get from</param>
-        /// <param name="index">bit index</param>
-        /// <returns>bool value will get</returns>
+        /// <param name="data">The byte data to get from.</param>
+        /// <param name="index">The zero-based index of the bit to get.</param>
+        /// <returns>The Boolean value will get.</returns>
         public static bool SelectBit(this byte data, int index)
         {
             int mask = 1 << index;
@@ -153,7 +160,14 @@ namespace S7.Net
 
         /// <summary>
         /// Helper to set a bit value to the given byte at the bit index.
-        /// Example: byte data = (byte)0x00; data.SetBit(4, true);// data -> 0x10
+        /// <br/>
+        /// <example>
+        ///   Set the bit at index 4:
+        ///   <code>
+        ///     byte data = 0;
+        ///     data.SetBit(4, true);
+        ///   </code>
+        /// </example>
         /// </summary>
         /// <param name="data">The data to be modified.</param>
         /// <param name="index">The zero-based index of the bit to set.</param>
