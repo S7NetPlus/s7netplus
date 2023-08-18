@@ -155,9 +155,9 @@ namespace S7.Net
         /// Helper to set a bit value to the given byte at the bit index.
         /// Example: byte data = (byte)0x00; data.SetBit(4, true);// data -> 0x10
         /// </summary>
-        /// <param name="data">byte data to be modified</param>
-        /// <param name="index">bit index</param>
-        /// <param name="value">bool value to set</param>
+        /// <param name="data">The data to be modified.</param>
+        /// <param name="index">The zero-based index of the bit to set.</param>
+        /// <param name="value">The Boolean value to assign to the bit.</param>
         public static void SetBit(this ref byte data, int index, bool value)
         {
             if ((uint)index > 7)
