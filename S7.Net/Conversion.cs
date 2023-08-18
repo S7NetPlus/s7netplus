@@ -138,17 +138,57 @@ namespace S7.Net
 
         /// <summary>
         /// Helper to get a bit value given a byte and the bit index.
-        /// Example: DB1.DBX0.5 -> var bytes = ReadBytes(DB1.DBW0); bool bit = bytes[0].SelectBit(5); 
+        /// <br/>
+        /// <example>
+        ///   Get the bit at DB1.DBX0.5:
+        ///   <code>
+        ///     byte data = ReadByte("DB1.DBB0");
+        ///     bool bit = data.SelectBit(5);
+        ///   </code>
+        /// </example>
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="bitPosition"></param>
-        /// <returns></returns>
-        public static bool SelectBit(this byte data, int bitPosition)
+        /// <param name="data">The data to get from.</param>
+        /// <param name="index">The zero-based index of the bit to get.</param>
+        /// <returns>The Boolean value will get.</returns>
+        public static bool SelectBit(this byte data, int index)
         {
-            int mask = 1 << bitPosition;
+            int mask = 1 << index;
             int result = data & mask;
 
             return (result != 0);
+        }
+
+        /// <summary>
+        /// Helper to set a bit value to the given byte at the bit index.
+        /// <br/>
+        /// <example>
+        ///   Set the bit at index 4:
+        ///   <code>
+        ///     byte data = 0;
+        ///     data.SetBit(4, true);
+        ///   </code>
+        /// </example>
+        /// </summary>
+        /// <param name="data">The data to be modified.</param>
+        /// <param name="index">The zero-based index of the bit to set.</param>
+        /// <param name="value">The Boolean value to assign to the bit.</param>
+        public static void SetBit(this ref byte data, int index, bool value)
+        {
+            if ((uint)index > 7)
+            {
+                return;
+            }
+
+            if (value)
+            {
+                byte mask = (byte)(1 << index);
+                data |= mask;
+            }
+            else
+            {
+                byte mask = (byte)~(1 << index);
+                data &= mask;
+            }
         }
 
         /// <summary>
