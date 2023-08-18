@@ -147,7 +147,7 @@ namespace S7.Net
         ///   </code>
         /// </example>
         /// </summary>
-        /// <param name="data">The byte data to get from.</param>
+        /// <param name="data">The data to get from.</param>
         /// <param name="index">The zero-based index of the bit to get.</param>
         /// <returns>The Boolean value will get.</returns>
         public static bool SelectBit(this byte data, int index)
