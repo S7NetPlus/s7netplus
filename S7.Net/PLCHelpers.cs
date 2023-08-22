@@ -244,6 +244,15 @@ namespace S7.Net
                     {
                         return TimeSpan.ToArray(bytes);
                     }
+                case VarType.Date:
+                    if (varCount == 1)
+                    {
+                        return Date.FromByteArray(bytes);
+                    }
+                    else
+                    {
+                        return Date.ToArray(bytes);
+                    }
                 default:
                     return null;
             }
@@ -273,6 +282,7 @@ namespace S7.Net
                 case VarType.Timer:
                 case VarType.Int:
                 case VarType.Counter:
+                case VarType.Date:
                     return varCount * 2;
                 case VarType.DWord:
                 case VarType.DInt:
