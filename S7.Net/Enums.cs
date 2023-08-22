@@ -202,6 +202,11 @@
         /// DateTIme variable type
         /// </summary>
         DateTime,
+        
+        /// <summary>
+        /// IEC date (legacy) variable type
+        /// </summary>
+        Date,
 
         /// <summary>
         /// DateTimeLong variable type
