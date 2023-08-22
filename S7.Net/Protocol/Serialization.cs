@@ -26,6 +26,11 @@ namespace S7.Net.Protocol
                     _ => Types.String.ToByteArray(s, dataItem.Count)
                 };
 
+            if (dataItem.VarType == VarType.Date)
+            {
+                return Date.ToByteArray((System.DateTime)dataItem.Value);
+            }
+
             return SerializeValue(dataItem.Value);
         }
 
