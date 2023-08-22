@@ -15,8 +15,14 @@ namespace S7.Net.Types
         
         /// <summary>
         /// Maximum allowed date for the IEC date type
+        /// <remarks>
+        /// Although the spec allows only a max date of 31-12-2168, the PLC IEC date goes up to 06-06-2169 (which is the actual
+        /// WORD max value - 65535) 
+        /// </remarks>
         /// </summary>
-        public static readonly System.DateTime IecMaxDate = new(year: 2168, month: 12, day: 31);
+        public static readonly System.DateTime IecMaxDate = new(year: 2169, month: 06, day: 06);
+        
+        private static readonly ushort MaxNumberOfDays = (ushort)(IecMaxDate - IecMinDate).TotalDays;
         
         /// <summary>
         /// Converts a word (2 bytes) to IEC date (<see cref="System.DateTime"/>)
@@ -29,6 +35,12 @@ namespace S7.Net.Types
             }
 
             var daysSinceDateStart = Word.FromByteArray(bytes);
+            if (daysSinceDateStart > MaxNumberOfDays)
+            {
+                throw new ArgumentException($"Read number exceeded the number of maximum days in the IEC date (read: {daysSinceDateStart}, max: {MaxNumberOfDays})", 
+                    nameof(bytes));
+            }
+            
             return IecMinDate.AddDays(daysSinceDateStart);
         }
 
