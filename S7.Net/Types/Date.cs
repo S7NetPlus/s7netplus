@@ -11,7 +11,7 @@ namespace S7.Net.Types
         /// <summary>
         /// Minimum allowed date for the IEC date type
         /// </summary>
-        public static readonly System.DateTime IecMinDate = new(year: 1990, month: 01, day: 01);
+        public static System.DateTime IecMinDate { get; } = new(year: 1990, month: 01, day: 01);
         
         /// <summary>
         /// Maximum allowed date for the IEC date type
@@ -20,7 +20,7 @@ namespace S7.Net.Types
         /// WORD max value - 65535) 
         /// </remarks>
         /// </summary>
-        public static readonly System.DateTime IecMaxDate = new(year: 2169, month: 06, day: 06);
+        public static System.DateTime IecMaxDate { get; } = new(year: 2169, month: 06, day: 06);
         
         private static readonly ushort MaxNumberOfDays = (ushort)(IecMaxDate - IecMinDate).TotalDays;
         
