@@ -493,6 +493,15 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Read the PLC clock value.
+        /// </summary>
+        /// <returns>The current PLC time.</returns>
+        public System.DateTime ReadClock()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <returns>The current PLC status.</returns>
