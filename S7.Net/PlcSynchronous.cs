@@ -498,7 +498,10 @@ namespace S7.Net
         /// <returns>The current PLC time.</returns>
         public System.DateTime ReadClock()
         {
-            throw new NotImplementedException();
+            var request = BuildClockReadRequest();
+            var response = RequestTsdu(request);
+
+            return ParseClockReadResponse(response);
         }
 
         /// <summary>

@@ -320,7 +320,10 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC time on completion.</returns>
         public async Task<System.DateTime> ReadClockAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var request = BuildClockReadRequest();
+            var response = await RequestTsduAsync(request, cancellationToken);
+
+            return ParseClockReadResponse(response);
         }
 
         /// <summary>

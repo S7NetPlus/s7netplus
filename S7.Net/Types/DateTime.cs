@@ -9,6 +9,11 @@ namespace S7.Net.Types
     public static class DateTime
     {
         /// <summary>
+        /// The length in bytes of DateTime stored in the PLC.
+        /// </summary>
+        public const int Length = 10;
+
+        /// <summary>
         /// The minimum <see cref="T:System.DateTime"/> value supported by the specification.
         /// </summary>
         public static readonly System.DateTime SpecMinimumDateTime = new System.DateTime(1990, 1, 1);
