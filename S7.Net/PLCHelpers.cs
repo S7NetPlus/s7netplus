@@ -56,15 +56,13 @@ namespace S7.Net
             WriteS7Header(stream, s7MessageTypeUserData, parameterLength, dataLength);
         }
 
-        private static void WriteSzlReadRequest(System.IO.MemoryStream stream, ushort szlId, ushort szlIndex)
+        private static void WriteSzlRequestHeader(System.IO.MemoryStream stream, byte functionGroup, byte subFunction, int dataLength)
         {
-            WriteUserDataHeader(stream, 8, 8);
+            WriteUserDataHeader(stream, 8, dataLength);
 
             // Parameter
             const byte szlMethodRequest = 0x11;
-            const byte szlTypeRequest = 0b100;
-            const byte szlFunctionGroupCpuFunctions = 0b100;
-            const byte subFunctionReadSzl = 0x01;
+            const byte szlTypeRequest = 0x4;
 
             // Parameter head
             stream.Write(new byte[] { 0x00, 0x01, 0x12 });
@@ -73,11 +71,20 @@ namespace S7.Net
             // Method
             stream.WriteByte(szlMethodRequest);
             // Type / function group
-            stream.WriteByte(szlTypeRequest << 4 | szlFunctionGroupCpuFunctions);
+            stream.WriteByte((byte)(szlTypeRequest << 4 | (functionGroup & 0x0f)));
             // Subfunction
-            stream.WriteByte(subFunctionReadSzl);
+            stream.WriteByte(subFunction);
             // Sequence number
             stream.WriteByte(0);
+        }
+
+        private static void WriteSzlReadRequest(System.IO.MemoryStream stream, ushort szlId, ushort szlIndex)
+        {
+            // Parameter
+            const byte szlFunctionGroupCpuFunctions = 0b100;
+            const byte subFunctionReadSzl = 0x01;
+
+            WriteSzlRequestHeader(stream, szlFunctionGroupCpuFunctions, subFunctionReadSzl, 8);
 
             // Data
             const byte success = 0xff;
@@ -343,7 +350,7 @@ namespace S7.Net
         private static byte[] BuildSzlReadRequestPackage(ushort szlId, ushort szlIndex)
         {
             var stream = new System.IO.MemoryStream();
-            
+
             WriteSzlReadRequest(stream, szlId, szlIndex);
             stream.SetLength(stream.Position);
 
