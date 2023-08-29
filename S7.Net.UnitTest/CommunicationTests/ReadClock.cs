@@ -26,7 +26,7 @@ public class ReadClock
 
                     // S7 read clock
                     // UserData header
-                    32 07 00 00 07 00
+                    32 07 00 00 PDU1 PDU2
                     // Parameter length
                     00 08
                     // Data length
@@ -58,7 +58,7 @@ public class ReadClock
 
                     // S7 read clock response
                     // UserData header
-                    32 07 00 00 07 00
+                    32 07 00 00 PDU1 PDU2
                     // Parameter length
                     00 0c
                     // Data length
