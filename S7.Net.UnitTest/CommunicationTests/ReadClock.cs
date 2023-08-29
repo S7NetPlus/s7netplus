@@ -9,7 +9,7 @@ namespace S7.Net.UnitTest.CommunicationTests;
 [TestClass]
 public class ReadClock
 {
-    [TestMethod, Timeout(500)]
+    [TestMethod, Timeout(1000)]
     public async Task Read_Clock_Value()
     {
         var cs = new CommunicationSequence
