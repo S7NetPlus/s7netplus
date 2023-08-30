@@ -16,7 +16,7 @@ partial class Plc
     {
         var stream = new MemoryStream();
 
-        WriteSzlRequestHeader(stream, SzlFunctionGroupTimers, SzlSubFunctionReadClock, 4);
+        WriteUserDataRequest(stream, SzlFunctionGroupTimers, SzlSubFunctionReadClock, 4);
         stream.Write(new byte[] { 0x0a, 0x00, 0x00, 0x00 });
 
         stream.SetLength(stream.Position);
