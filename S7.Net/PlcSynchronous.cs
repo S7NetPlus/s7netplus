@@ -505,6 +505,15 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Write the PLC clock value.
+        /// </summary>
+        /// <param name="value">The date and time to set the PLC clock to.</param>
+        public void WriteClock(System.DateTime value)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <returns>The current PLC status.</returns>
