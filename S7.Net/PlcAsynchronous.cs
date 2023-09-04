@@ -327,7 +327,7 @@ namespace S7.Net
         }
 
         /// <summary>
-        ///Write the PLC clock value.
+        /// Write the PLC clock value.
         /// </summary>
         /// <param name="value">The date and time to set the PLC clock to</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
