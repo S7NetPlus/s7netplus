@@ -223,7 +223,7 @@ public class Clock
                     12
                     // Type response (8...) Function group timers (...7)
                     87
-                    // Subfunction: read clock
+                    // Subfunction: write clock
                     02
                     // Sequence number
                     01
@@ -237,7 +237,7 @@ public class Clock
                     // Data
                     // Error code
                     0a
-                    // Transport size: OCTET STRING
+                    // Transport size: NONE
                     00
                     // Length
                     00 00
