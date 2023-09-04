@@ -510,7 +510,10 @@ namespace S7.Net
         /// <param name="value">The date and time to set the PLC clock to.</param>
         public void WriteClock(System.DateTime value)
         {
-            throw new NotImplementedException();
+            var request = BuildClockWriteRequest(value);
+            var response = RequestTsdu(request);
+
+            ParseClockWriteResponse(response);
         }
 
         /// <summary>

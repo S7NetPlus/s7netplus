@@ -335,7 +335,10 @@ namespace S7.Net
         /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task WriteClockAsync(System.DateTime value, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var request = BuildClockWriteRequest(value);
+            var response = await RequestTsduAsync(request, cancellationToken);
+
+            ParseClockWriteResponse(response);
         }
 
         /// <summary>
