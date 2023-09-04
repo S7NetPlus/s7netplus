@@ -16,6 +16,11 @@ partial class Plc
     private const int PduErrOffset = 20;
     private const int UserDataResultOffset = PduErrOffset + 2;
 
+    /// <summary>
+    /// The length in bytes of DateTime stored in the PLC.
+    /// </summary>
+    private const int DateTimeLength = 10;
+
     private static byte[] BuildClockReadRequest()
     {
         var stream = new MemoryStream();
@@ -30,18 +35,21 @@ partial class Plc
     private static DateTime ParseClockReadResponse(byte[] message)
     {
         const int udLenOffset = UserDataResultOffset + 2;
-        const int udValueOffset = udLenOffset + 4;
+        const int udValueOffset = udLenOffset + 2;
+        const int dateTimeSkip = 2;
 
         AssertPduResult(message);
         AssertUserDataResult(message, 0xff);
 
         var len = Word.FromByteArray(message.Skip(udLenOffset).Take(2).ToArray());
-        if (len != Types.DateTime.Length)
+        if (len != DateTimeLength)
         {
-            throw new Exception($"Unexpected response length {len}, expected {Types.DateTime.Length}.");
+            throw new Exception($"Unexpected response length {len}, expected {DateTimeLength}.");
         }
 
-        return Types.DateTime.FromByteArray(message.Skip(udValueOffset).Take(Types.DateTime.Length).ToArray());
+        // Skip first 2 bytes from date time value because DateTime.FromByteArray doesn't parse them.
+        return Types.DateTime.FromByteArray(message.Skip(udValueOffset + dateTimeSkip)
+            .Take(DateTimeLength - dateTimeSkip).ToArray());
     }
 
     private static byte[] BuildClockWriteRequest(DateTime value)
@@ -49,8 +57,9 @@ partial class Plc
         var stream = new MemoryStream();
 
         WriteUserDataRequest(stream, SzlFunctionGroupTimers, SzlSubFunctionWriteClock, 14);
-        stream.Write(new byte[] { 0xff, TransportSizeOctetString, 0x00, Types.DateTime.Length });
-        stream.Write(new byte[] { 0x00, 0x19 }); // Start of actual DateTime value, DateTime.ToByteArray is broken
+        stream.Write(new byte[] { 0xff, TransportSizeOctetString, 0x00, DateTimeLength });
+        // Start of DateTime value, DateTime.ToByteArray only serializes the final 8 bytes
+        stream.Write(new byte[] { 0x00, 0x19 });
         stream.Write(Types.DateTime.ToByteArray(value));
 
         stream.SetLength(stream.Position);
