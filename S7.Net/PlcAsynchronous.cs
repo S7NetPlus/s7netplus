@@ -313,6 +313,35 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Read the PLC clock value.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
+        /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
+        /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC time on completion.</returns>
+        public async Task<System.DateTime> ReadClockAsync(CancellationToken cancellationToken = default)
+        {
+            var request = BuildClockReadRequest();
+            var response = await RequestTsduAsync(request, cancellationToken);
+
+            return ParseClockReadResponse(response);
+        }
+
+        /// <summary>
+        /// Write the PLC clock value.
+        /// </summary>
+        /// <param name="value">The date and time to set the PLC clock to</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
+        /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public async Task WriteClockAsync(System.DateTime value, CancellationToken cancellationToken = default)
+        {
+            var request = BuildClockWriteRequest(value);
+            var response = await RequestTsduAsync(request, cancellationToken);
+
+            ParseClockWriteResponse(response);
+        }
+
+        /// <summary>
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.

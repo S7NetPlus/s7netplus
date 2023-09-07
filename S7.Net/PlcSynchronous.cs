@@ -493,6 +493,30 @@ namespace S7.Net
         }
 
         /// <summary>
+        /// Read the PLC clock value.
+        /// </summary>
+        /// <returns>The current PLC time.</returns>
+        public System.DateTime ReadClock()
+        {
+            var request = BuildClockReadRequest();
+            var response = RequestTsdu(request);
+
+            return ParseClockReadResponse(response);
+        }
+
+        /// <summary>
+        /// Write the PLC clock value.
+        /// </summary>
+        /// <param name="value">The date and time to set the PLC clock to.</param>
+        public void WriteClock(System.DateTime value)
+        {
+            var request = BuildClockWriteRequest(value);
+            var response = RequestTsdu(request);
+
+            ParseClockWriteResponse(response);
+        }
+
+        /// <summary>
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <returns>The current PLC status.</returns>
