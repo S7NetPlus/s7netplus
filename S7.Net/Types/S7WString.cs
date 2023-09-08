@@ -31,7 +31,8 @@ namespace S7.Net.Types
 
             try
             {
-                return Encoding.BigEndianUnicode.GetString(bytes, 4, length * 2);
+                int expect_length = (bytes.Length - 4) / 2;
+                return Encoding.BigEndianUnicode.GetString(bytes, 4, Math.Min(expect_length, length) * 2);
             }
             catch (Exception e)
             {
