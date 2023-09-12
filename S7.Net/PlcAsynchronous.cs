@@ -347,12 +347,11 @@ namespace S7.Net
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is None.
         /// Please note that cancellation is advisory/cooperative and will not lead to immediate cancellation in all cases.</param>
         /// <returns>A task that represents the asynchronous operation, with it's result set to the current PLC status on completion.</returns>
-        public async Task<byte> ReadStatusAsync(CancellationToken cancellationToken = default)
+        public async Task<CpuStatus> ReadStatusAsync(CancellationToken cancellationToken = default)
         {
             var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
             var s7data = await RequestTsduAsync(dataToSend, cancellationToken);
-
-            return (byte) (s7data[37] & 0x0f);
+            return (CpuStatus)(s7data[37] & 0x0f);
         }
 
         /// <summary>

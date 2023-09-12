@@ -520,12 +520,11 @@ namespace S7.Net
         /// Read the current status from the PLC. A value of 0x08 indicates the PLC is in run status, regardless of the PLC type.
         /// </summary>
         /// <returns>The current PLC status.</returns>
-        public byte ReadStatus()
+        public CpuStatus ReadStatus()
         {
             var dataToSend = BuildSzlReadRequestPackage(0x0424, 0);
             var s7data = RequestTsdu(dataToSend);
-
-            return (byte) (s7data[37] & 0x0f);
+            return (CpuStatus)(s7data[37] & 0x0f);
         }
 
         private byte[] RequestTsdu(byte[] requestData) => RequestTsdu(requestData, 0, requestData.Length);
