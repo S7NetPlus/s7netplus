@@ -218,4 +218,14 @@
         /// </summary>
         Time
     }
+
+    /// <summary>
+    /// cpu current status
+    /// </summary>
+    public enum CpuStatus : byte
+    {
+        Unknown = 0x00,
+        Run = 0x08,
+        Stop = 0x04,
+    }
 }
