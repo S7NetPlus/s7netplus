@@ -48,7 +48,7 @@ public class ReadPlcStatus
             await conn.OpenAsync();
             var status = await conn.ReadStatusAsync();
 
-            Assert.AreEqual(0x08, status);
+            Assert.AreEqual(CpuStatus.Run, status);
             conn.Close();
         }
 
