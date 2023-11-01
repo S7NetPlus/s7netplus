@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <TargetFrameworks>net452;net462;netstandard2.0;netstandard1.3;net5.0;net6.0;net7.0</TargetFrameworks>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>Properties\S7.Net.snk</AssemblyOriginatorKeyFile>
+    <InternalsVisibleTo>S7.Net.UnitTest</InternalsVisibleTo>
+
+    <PackageId>S7netplus</PackageId>
+    <Title>S7.Net Plus</Title>
+    <Description>A continuation of Juergen1969's Siemens communication library.</Description>
+    <Authors>Derek Heiser;Michele Cattafesta;Michael Croes;Raphael Schlameuß</Authors>
+    <PackageProjectUrl>https://github.com/killnine/s7netplus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/killnine/s7netplus</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>PLC Siemens Communication S7</PackageTags>
+    <Copyright>Derek Heiser 2015</Copyright>
+    <LangVersion>latest</LangVersion>
+    <Nullable>Enable</Nullable>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;NETSDK1138</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0' ">
+    <DefineConstants>NET_FULL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0' And '$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net7.0'">
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>
