@@ -9,12 +9,12 @@ namespace S7.Net.Types
     /// </summary>
     public static class Struct
     {
-        /// <summary>
-        /// Gets the size of the struct in bytes.
-        /// </summary>
-        /// <param name="structType">the type of the struct</param>
-        /// <returns>the number of bytes</returns>
-        public static int GetStructSize(Type structType)
+		/// <summary>
+		/// Gets the size of the struct in bytes.
+		/// </summary>
+		/// <param name="structType">the type of the struct</param>
+		/// <returns>the number of bytes</returns>
+		public static int GetStructSize(Type structType)
         {
             double numBytes = 0.0;
 
@@ -24,10 +24,15 @@ namespace S7.Net.Types
 #else
                 .GetFields();
 #endif
-
-            foreach (var info in infos)
+            int count = 0;
+			foreach (var info in infos)
             {
-                switch (info.FieldType.Name)
+                count++;
+				var type = info.FieldType;
+				string name = info.FieldType.Name;
+				if (type.BaseType == typeof(System.Enum))
+					name = Enum.GetUnderlyingType(type).Name;
+				switch (name)
                 {
                     case "Boolean":
                         numBytes += 0.125;
@@ -75,11 +80,15 @@ namespace S7.Net.Types
                         break;
                     default:
                         numBytes += GetStructSize(info.FieldType);
+                        if (count != infos.Count()) {
+                            if(numBytes % 2 != 0) 
+							    numBytes++;//word align
+						}
                         break;
                 }
             }
-            return (int)numBytes;
-        }
+            return (int)Math.Ceiling(numBytes);     //For example: 9 bool data, length = 1.125, but actually occupies 2 bytes
+		}
 
         /// <summary>
         /// Creates a struct of a specified type by an array of bytes.
@@ -111,7 +120,11 @@ namespace S7.Net.Types
 
             foreach (var info in infos)
             {
-                switch (info.FieldType.Name)
+				var type = info.FieldType;
+				string name = info.FieldType.Name;
+				if (type.BaseType == typeof(System.Enum))
+					name = Enum.GetUnderlyingType(type).Name;
+				switch (name)
                 {
                     case "Boolean":
                         // get the value
@@ -238,6 +251,8 @@ namespace S7.Net.Types
                         Buffer.BlockCopy(bytes, (int)Math.Ceiling(numBytes), buffer, 0, buffer.Length);
                         info.SetValue(structValue, FromBytes(info.FieldType, buffer));
                         numBytes += buffer.Length;
+                        if(numBytes %2 != 0)        //word align
+                            numBytes++;
                         break;
                 }
             }
