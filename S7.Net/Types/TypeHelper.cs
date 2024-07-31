@@ -11,11 +11,12 @@ namespace S7.Net.Types
         /// </summary>
         public static byte[] ToByteArray<T>(T[] value, Func<T, byte[]> converter) where T : struct
         {
-            var buffer = new byte[Marshal.SizeOf(default(T)) * value.Length];
+            var typeSize = Marshal.SizeOf(default(T));
+            var buffer = new byte[typeSize * value.Length];
             var stream = new MemoryStream(buffer);
             foreach (var val in value)
             {
-                stream.Write(converter(val), 0, 4);
+                stream.Write(converter(val), 0, typeSize);
             }
 
             return buffer;

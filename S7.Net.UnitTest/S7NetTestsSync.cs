@@ -1016,6 +1016,17 @@ namespace S7.Net.UnitTest
         }
 
         [TestMethod]
+        public void T26_ReadWriteDoubles()
+        {
+          double[] test_values = [ 55.66, 89.88 ];
+          plc.Write(DataType.DataBlock, 1, 0, test_values);
+          var result = (double[])plc.Read(DataType.DataBlock, 1, 0, VarType.LReal, 2);
+
+          Assert.AreEqual(test_values[0], result[0], "Compare Write/Read 0");
+          Assert.AreEqual(test_values[1], result[1], "Compare Write/Read 1");
+        }
+
+        [TestMethod]
         public void T27_ReadWriteBytesMany()
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
