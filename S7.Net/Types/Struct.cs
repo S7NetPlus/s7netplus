@@ -163,10 +163,10 @@ namespace S7.Net.Types
                         if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                             numBytes++;
                         // get the value
-                        info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes],
-                                                                           bytes[(int)numBytes + 1],
+                        info.SetValue(structValue, DWord.FromBytes(bytes[(int)numBytes + 3],
                                                                            bytes[(int)numBytes + 2],
-                                                                           bytes[(int)numBytes + 3]));
+                                                                           bytes[(int)numBytes + 1],
+                                                                           bytes[(int)numBytes + 0]));
                         numBytes += 4;
                         break;
                     case "Single":
