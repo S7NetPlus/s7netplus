@@ -1,11 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using S7.Net.Tcp;
 
 namespace S7.Net.UnitTest
 {
@@ -92,7 +91,7 @@ namespace S7.Net.UnitTest
             }
 
             // Set a value to tcpClient field so we can later ensure that it has been closed.
-            tcpClientField.SetValue(plc, new TcpClient());
+            tcpClientField.SetValue(plc, new TcpClientWrapper());
             var tcpClientValue = tcpClientField.GetValue(plc);
             Assert.IsNotNull(tcpClientValue);
             
@@ -147,7 +146,7 @@ namespace S7.Net.UnitTest
             }
 
             // Set a value to tcpClient field so we can later ensure that it has been closed.
-            tcpClientField.SetValue(plc, new TcpClient());
+            tcpClientField.SetValue(plc, new TcpClientWrapper());
             var tcpClientValue = tcpClientField.GetValue(plc);
             Assert.IsNotNull(tcpClientValue);
 
