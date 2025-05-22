@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using S7.Net.Internal;
 using S7.Net.Protocol;
+using S7.Net.Tcp;
 using S7.Net.Types;
 
 
@@ -27,8 +28,11 @@ namespace S7.Net
 
         private readonly TaskQueue queue = new TaskQueue();
 
+        private readonly ITcpClientFactory _tcpClientFactory;
+
         //TCP connection to device
-        private TcpClient? tcpClient;
+        private ITcpClient? tcpClient;
+
         private NetworkStream? _stream;
 
         private int readTimeout = DefaultTimeout; // default no timeout
@@ -124,8 +128,9 @@ namespace S7.Net
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot)
-            : this(cpu, ip, DefaultPort, rack, slot)
+        /// <param name="tcpClientFactory">Factory to provide the underlying <see cref="ITcpClient"/> for network communication.</param>
+        public Plc(CpuType cpu, string ip, Int16 rack, Int16 slot, ITcpClientFactory? tcpClientFactory = null)
+            : this(cpu, ip, DefaultPort, rack, slot, tcpClientFactory)
         {
         }
 
@@ -141,8 +146,9 @@ namespace S7.Net
         /// <param name="rack">rack of the PLC, usually it's 0, but check in the hardware configuration of Step7 or TIA portal</param>
         /// <param name="slot">slot of the CPU of the PLC, usually it's 2 for S7300-S7400, 0 for S7-1200 and S7-1500.
         ///  If you use an external ethernet card, this must be set accordingly.</param>
-        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot)
-            : this(ip, port, TsapPair.GetDefaultTsapPair(cpu, rack, slot))
+        /// <param name="tcpClientFactory">Factory to provide the underlying <see cref="ITcpClient"/> for network communication.</param>
+        public Plc(CpuType cpu, string ip, int port, Int16 rack, Int16 slot, ITcpClientFactory? tcpClientFactory = null)
+            : this(ip, port, TsapPair.GetDefaultTsapPair(cpu, rack, slot), tcpClientFactory)
         {
             if (!Enum.IsDefined(typeof(CpuType), cpu))
                 throw new ArgumentException(
@@ -162,7 +168,9 @@ namespace S7.Net
         /// </summary>
         /// <param name="ip">Ip address of the PLC</param>
         /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
-        public Plc(string ip, TsapPair tsapPair) : this(ip, DefaultPort, tsapPair)
+        /// <param name="tcpClientFactory">Factory to provide the underlying <see cref="ITcpClient"/> for network communication.</param>
+        public Plc(string ip, TsapPair tsapPair, ITcpClientFactory? tcpClientFactory = null)
+            : this(ip, DefaultPort, tsapPair, tcpClientFactory)
         {
         }
 
@@ -173,7 +181,8 @@ namespace S7.Net
         /// <param name="ip">Ip address of the PLC</param>
         /// <param name="port">Port number used for the connection, default 102.</param>
         /// <param name="tsapPair">The TSAP addresses used for the connection request.</param>
-        public Plc(string ip, int port, TsapPair tsapPair)
+        /// <param name="tcpClientFactory">Factory to provide the underlying <see cref="ITcpClient"/> for network communication.</param>
+        public Plc(string ip, int port, TsapPair tsapPair, ITcpClientFactory? tcpClientFactory = null)
         {
             if (string.IsNullOrEmpty(ip))
                 throw new ArgumentException("IP address must valid.", nameof(ip));
@@ -182,6 +191,7 @@ namespace S7.Net
             Port = port;
             MaxPDUSize = 240;
             TsapPair = tsapPair;
+            _tcpClientFactory = tcpClientFactory ?? new TcpClientWrapperFactory();
         }
 
         /// <summary>

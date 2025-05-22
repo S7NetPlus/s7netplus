@@ -46,7 +46,7 @@ namespace S7.Net
 
         private async Task<NetworkStream> ConnectAsync(CancellationToken cancellationToken)
         {
-            tcpClient = new TcpClient();
+            tcpClient = _tcpClientFactory.Create();
             ConfigureConnection();
 
 #if NET5_0_OR_GREATER
