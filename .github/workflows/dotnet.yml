@@ -71,7 +71,7 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13]
       fail-fast: false
 
     steps:
@@ -85,7 +85,7 @@ jobs:
           sudo apt-get install libsnap7-1 libsnap7-dev
           
       - name: Install Snap7 MacOs
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-13' }}
         run: |
           brew install snap7
 
