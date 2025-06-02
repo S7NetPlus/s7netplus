@@ -31,6 +31,9 @@ jobs:
       with:
         fetch-depth: 0 # Get all history to allow automatic versioning
 
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v0
       with:
@@ -41,9 +44,6 @@ jobs:
     - name: Determine Version
       id:   gitversion
       uses: gittools/actions/gitversion/execute@v0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
 
     - run: >
         dotnet pack
