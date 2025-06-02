@@ -80,7 +80,7 @@ jobs:
       - name: Install Snap7 Linux
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         run: |
-          sudo add-apt-repository ppa:gijzelaar/snap7
+          sudo add-apt-repository ppa:gijzelaar/snap7 -y
           sudo apt-get update
           sudo apt-get install libsnap7-1 libsnap7-dev
           
