@@ -71,14 +71,14 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-20.04, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Snap7 Linux
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sudo add-apt-repository ppa:gijzelaar/snap7 -y
           sudo apt-get update
