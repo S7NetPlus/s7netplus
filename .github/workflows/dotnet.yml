@@ -19,10 +19,6 @@ env:
   DOTNET_NOLOGO: true
   NuGetDirectory: ${{ github.workspace}}/nuget
 
-defaults:
-  run:
-    shell: pwsh
-
 jobs:
   create_nuget:
     runs-on: ubuntu-latest
@@ -31,19 +27,23 @@ jobs:
       with:
         fetch-depth: 0 # Get all history to allow automatic versioning
 
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          6.x
+          7.x
+
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v0
       with:
-        versionSpec: '6.x'
+        versionSpec: '6.0.x'
         includePrerelease: true
         preferLatestVersion: true
     
     - name: Determine Version
       id:   gitversion
       uses: gittools/actions/gitversion/execute@v0
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
 
     - run: >
         dotnet pack
@@ -54,7 +54,7 @@ jobs:
         /p:PackageVersion=${{ steps.gitversion.outputs.semVer }}
         --output ${{ env.NuGetDirectory }}
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: nuget
         if-no-files-found: error
@@ -71,21 +71,21 @@ jobs:
       artifacts: ${{ github.workspace }}/artifacts
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-20.04, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13]
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Snap7 Linux
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          sudo add-apt-repository ppa:gijzelaar/snap7
+          sudo add-apt-repository ppa:gijzelaar/snap7 -y
           sudo apt-get update
           sudo apt-get install libsnap7-1 libsnap7-dev
           
       - name: Install Snap7 MacOs
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-13' }}
         run: |
           brew install snap7
 
@@ -97,6 +97,7 @@ jobs:
             7.x
           
       - name: Nuget Cache
+        if: ${{ !env.ACT }}
         uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
@@ -116,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ create_nuget, run_test ]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
