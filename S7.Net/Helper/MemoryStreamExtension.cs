@@ -28,10 +28,15 @@ namespace S7.Net.Helper
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(value.Length);
 
-            value.CopyTo(buffer);
-            stream.Write(buffer, 0, value.Length);
-
-            ArrayPool<byte>.Shared.Return(buffer);
+            try
+            {
+                value.CopyTo(buffer);
+                stream.Write(buffer, 0, value.Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
     }
 #endif
