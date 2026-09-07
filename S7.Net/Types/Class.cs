@@ -63,6 +63,11 @@ namespace S7.Net.Types
                     IncrementToEven(ref numBytes);
                     numBytes += attribute.ReservedLengthInBytes;
                     break;
+                case "DateTime":
+                    IncrementToEven(ref numBytes);
+                    numBytes += 8;
+                    break;
+
                 default:
                     var propertyClass = Activator.CreateInstance(type) ??
                         throw new ArgumentException($"Failed to create instance of type {type}.", nameof(type));
@@ -203,6 +208,14 @@ namespace S7.Net.Types
                     };
                     numBytes += sData.Length;
                     break;
+                case "DateTime":
+                    IncrementToEven(ref numBytes);
+                    var dateBuffer = new byte[8];
+                    Array.Copy(bytes, (int)numBytes, dateBuffer, 0, 8);
+                    // hier auswerten
+                    value = DateTime.FromByteArray(dateBuffer);
+                    numBytes += 8;
+                    break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType) ??
                         throw new ArgumentException($"Failed to create instance of type {propertyType}.", nameof(propertyType));
@@ -309,6 +322,9 @@ namespace S7.Net.Types
                         S7StringType.S7WString => S7WString.ToByteArray((string)propertyValue, attribute.ReservedLength),
                         _ => throw new ArgumentException("Please use a valid string type for the S7StringAttribute")
                     };
+                    break;
+                case "DateTime":
+                    bytes2 = DateTime.ToByteArray((System.DateTime)propertyValue);
                     break;
                 default:
                     numBytes = ToBytes(propertyValue, bytes, numBytes);
