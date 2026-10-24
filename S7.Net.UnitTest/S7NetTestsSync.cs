@@ -719,7 +719,7 @@ namespace S7.Net.UnitTest
         {
             Assert.IsTrue(plc.IsConnected, "Before executing this test, the plc must be connected. Check constructor.");
 
-            Assert.AreEqual(6, Types.Class.GetClassSize(new TestClassWithNestedClass()));
+            Assert.AreEqual(10, Types.Class.GetClassSize(new TestClassWithNestedClass()));
 
             TestClassWithNestedClass tc = new TestClassWithNestedClass();
             tc.BitVariable00 = true;

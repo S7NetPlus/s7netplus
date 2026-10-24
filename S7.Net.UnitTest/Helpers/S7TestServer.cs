@@ -9,7 +9,9 @@ namespace S7.Net.UnitTest.Helpers
         static private byte[] DB1 = new byte[1024];  // Our DB1
         static private byte[] DB2 = new byte[64000]; // Our DB2
         static private byte[] DB3 = new byte[1024]; // Our DB3
-        static private byte[] DB4 = new byte[6] { 3, 128, 1, 0, 197, 104 }; // Our DB4
+        // Layout of TestClassWithNestedClass: bool @0.0, inner bool struct @2.0, inner byte struct @4,
+        // bool @6.0, inner short struct @8: every nested struct starts on an even byte and is padded to one.
+        static private byte[] DB4 = new byte[10] { 1, 0, 1, 0, 128, 0, 1, 0, 197, 104 }; // Our DB4
 
         private static S7Server.TSrvCallback TheEventCallBack; // <== Static var containig the callback
         private static S7Server.TSrvCallback TheReadCallBack; // <== Static var containig the callback

@@ -64,9 +64,12 @@ namespace S7.Net.Types
                     numBytes += attribute.ReservedLengthInBytes;
                     break;
                 default:
+                    // An inner UDT/STRUCT is aligned like a DB field: it starts on an even byte and
+                    // occupies an even number of bytes, otherwise every field behind it is shifted.
+                    IncrementToEven(ref numBytes);
                     var propertyClass = Activator.CreateInstance(type) ??
                         throw new ArgumentException($"Failed to create instance of type {type}.", nameof(type));
-                    numBytes = GetClassSize(propertyClass, numBytes, true);
+                    numBytes = GetClassSize(propertyClass, numBytes, false);
                     break;
             }
 
@@ -101,6 +104,8 @@ namespace S7.Net.Types
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType, property);
                     }
+                    // An ARRAY of UDTs is padded to an even byte count, same as a nested STRUCT.
+                    IncrementToEven(ref numBytes);
                 }
                 else
                 {
@@ -206,8 +211,11 @@ namespace S7.Net.Types
                 default:
                     var propClass = Activator.CreateInstance(propertyType) ??
                         throw new ArgumentException($"Failed to create instance of type {propertyType}.", nameof(propertyType));
-
+                    // Read the nested UDT/STRUCT from the same even aligned range that
+                    // GetClassSize reports for it, so both ends of the range match.
+                    IncrementToEven(ref numBytes);
                     numBytes = FromBytes(propClass, bytes, numBytes);
+                    IncrementToEven(ref numBytes);
                     value = propClass;
                     break;
             }
@@ -243,6 +251,8 @@ namespace S7.Net.Types
                             GetPropertyValue(elementType, property, bytes, ref numBytes),
                             i);
                     }
+                    // Same even padding as in GetClassSize, so the offsets stay in sync.
+                    IncrementToEven(ref numBytes);
                 }
                 else
                 {
@@ -311,7 +321,11 @@ namespace S7.Net.Types
                     };
                     break;
                 default:
+                    // Mirror the read side (GetClassSize/FromBytes): a nested UDT/STRUCT must start
+                    // on an even byte and keep an even length on the write side as well.
+                    IncrementToEven(ref numBytes);
                     numBytes = ToBytes(propertyValue, bytes, numBytes);
+                    IncrementToEven(ref numBytes);
                     break;
             }
 
@@ -351,6 +365,8 @@ namespace S7.Net.Types
                     {
                         numBytes = SetBytesFromProperty(array.GetValue(i)!, property, bytes, numBytes);
                     }
+                    // Same even padding as GetClassSize/FromBytes apply to arrays.
+                    IncrementToEven(ref numBytes);
                 }
                 else
                 {

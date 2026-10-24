@@ -29,22 +29,22 @@ namespace S7.Net.UnitTest.Helpers
         public bool BitVariable00 { get; set; }
 
         /// <summary>
-        /// DB1.DBX0.1
+        /// DB1.DBB2.0
         /// </summary>
         public TestClassInnerWithBool BitVariable01 { get; set; } = new TestClassInnerWithBool();
 
         /// <summary>
-        /// DB1.DBB1.0
+        /// DB1.DBB4.0
         /// </summary>
         public TestClassInnerWithByte ByteVariable02 { get; set; } = new TestClassInnerWithByte();
 
         /// <summary>
-        /// DB1.DBX2.0
+        /// DB1.DBX6.0
         /// </summary>
         public bool BitVariable03 { get; set; }
 
         /// <summary>
-        /// DB1.DBW4
+        /// DB1.DBW8
         /// </summary>
         public TestClassInnerWithShort ShortVariable04 { get; set; } = new TestClassInnerWithShort();
     }
