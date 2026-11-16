@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using S7.Net.Internal;
 using S7.Net.Protocol;
 using S7.Net.Types;
@@ -111,7 +112,20 @@ namespace S7.Net
         /// gracefully handle failed transmissions.
         /// </para>
         /// </remarks>
-        public bool IsConnected => tcpClient?.Connected ?? false;
+        public bool IsConnected
+        {
+            get
+            {
+                try
+                {
+                    return tcpClient?.Connected ?? false;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
+            }
+        }
 
         /// <summary>
         /// Creates a PLC object with all the parameters needed for connections.
@@ -189,11 +203,10 @@ namespace S7.Net
         /// </summary>
         public void Close()
         {
-            if (tcpClient != null)
-            {
-                if (tcpClient.Connected) tcpClient.Close();
-                tcpClient = null; // Can not reuse TcpClient once connection gets closed.
-            }
+            var client = Interlocked.Exchange(ref tcpClient, null);
+            var stream = Interlocked.Exchange(ref _stream, null);
+            try { stream?.Dispose(); } catch { }
+            try { client?.Close(); } catch { }
         }
 
         private void AssertPduSizeForRead(ICollection<DataItem> dataItems)
@@ -219,13 +232,29 @@ namespace S7.Net
 
         private void ConfigureConnection()
         {
-            if (tcpClient == null)
+            var client = tcpClient;
+            if (client == null)
             {
                 return;
             }
 
-            tcpClient.ReceiveTimeout = ReadTimeout;
-            tcpClient.SendTimeout = WriteTimeout;
+            client.ReceiveTimeout = ReadTimeout;
+            client.SendTimeout = WriteTimeout;
+            client.NoDelay = true;
+
+            try
+            {
+                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+#if NET5_0_OR_GREATER
+                client.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 5);
+                client.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1);
+                client.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
+#endif
+            }
+            catch
+            {
+                // Ignore on platforms/sockets that do not support fine-grained TCP keep-alive options
+            }
         }
 
         private int GetDataLength(IEnumerable<DataItem> dataItems)
