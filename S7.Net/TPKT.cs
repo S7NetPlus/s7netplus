@@ -40,6 +40,10 @@ namespace S7.Net
             var version = buf[0];
             var reserved1 = buf[1];
             var length = buf[2] * 256 + buf[3]; //BigEndian
+            if (length < 4)
+            {
+                throw new TPKTInvalidException($"TPKT length ({length}) is invalid.");
+            }
 
             var data = new byte[length - 4];
             len = await stream.ReadExactAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);

@@ -40,6 +40,7 @@ namespace S7.Net
             catch (Exception)
             {
                 stream.Dispose();
+                Close();
                 throw;
             }
         }
@@ -49,12 +50,35 @@ namespace S7.Net
             tcpClient = new TcpClient();
             ConfigureConnection();
 
+            try
+            {
 #if NET5_0_OR_GREATER
-            await tcpClient.ConnectAsync(IP, Port, cancellationToken).ConfigureAwait(false);
+                if (!cancellationToken.CanBeCanceled && ReadTimeout > 0)
+                {
+                    using var connectTimeoutCts = new CancellationTokenSource(ReadTimeout);
+                    try
+                    {
+                        await tcpClient.ConnectAsync(IP, Port, connectTimeoutCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException ex) when (connectTimeoutCts.IsCancellationRequested)
+                    {
+                        throw new PlcException(ErrorCode.ConnectionError, $"Connecting to {IP}:{Port} timed out after {ReadTimeout} ms.", new TimeoutException($"Connecting to {IP}:{Port} timed out after {ReadTimeout} ms.", ex));
+                    }
+                }
+                else
+                {
+                    await tcpClient.ConnectAsync(IP, Port, cancellationToken).ConfigureAwait(false);
+                }
 #else
-            await tcpClient.ConnectAsync(IP, Port).ConfigureAwait(false);
+                await tcpClient.ConnectAsync(IP, Port).ConfigureAwait(false);
 #endif
-            return tcpClient.GetStream();
+                return tcpClient.GetStream();
+            }
+            catch
+            {
+                Close();
+                throw;
+            }
         }
 
         private async Task EstablishConnection(Stream stream, CancellationToken cancellationToken)
@@ -302,6 +326,10 @@ namespace S7.Net
                 throw new PlcException(ErrorCode.ReadData, socketException);
             }
             catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (PlcException)
             {
                 throw;
             }
@@ -564,6 +592,10 @@ namespace S7.Net
             {
                 throw;
             }
+            catch (PlcException)
+            {
+                throw;
+            }
             catch (Exception exc)
             {
                 throw new PlcException(ErrorCode.WriteData, exc);
@@ -580,6 +612,10 @@ namespace S7.Net
                 ValidateResponseCode((ReadWriteErrorCode)s7data[14]);
             }
             catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (PlcException)
             {
                 throw;
             }
@@ -600,19 +636,65 @@ namespace S7.Net
                 NoLockRequestTsduAsync(stream, requestData, offset, length, cancellationToken));
         }
 
-        private async Task<COTP.TPDU> NoLockRequestTpduAsync(Stream stream, byte[] requestData,
+        private Task<COTP.TPDU> NoLockRequestTpduAsync(Stream stream, byte[] requestData,
             CancellationToken cancellationToken = default)
+        {
+            return ExecuteRequestWithTimeoutAsync(
+                stream,
+                requestData,
+                0,
+                requestData.Length,
+                static (s, ct) => COTP.TPDU.ReadAsync(s, ct),
+                cancellationToken);
+        }
+
+        private Task<byte[]> NoLockRequestTsduAsync(Stream stream, byte[] requestData, int offset, int length,
+            CancellationToken cancellationToken = default)
+        {
+            return ExecuteRequestWithTimeoutAsync(
+                stream,
+                requestData,
+                offset,
+                length,
+                static (s, ct) => COTP.TSDU.ReadAsync(s, ct),
+                cancellationToken);
+        }
+
+        private async Task<TResponse> ExecuteRequestWithTimeoutAsync<TResponse>(
+            Stream stream,
+            byte[] requestData,
+            int offset,
+            int length,
+            Func<Stream, CancellationToken, Task<TResponse>> readResponseAsync,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 using var closeOnCancellation = cancellationToken.Register(Close);
-                await stream.WriteAsync(requestData, 0, requestData.Length, cancellationToken).ConfigureAwait(false);
-                return await COTP.TPDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+
+                await ExecuteWriteWithTimeoutAsync(stream, requestData, offset, length, cancellationToken)
+                    .ConfigureAwait(false);
+
+                return await ExecuteReadWithTimeoutAsync(stream, readResponseAsync, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Close();
+                throw;
+            }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                Close();
+                cancellationToken.ThrowIfCancellationRequested();
+                throw;
             }
             catch (Exception exc)
             {
-                if (exc is TPDUInvalidException || exc is TPKTInvalidException)
+                if (exc is TPDUInvalidException || exc is TPKTInvalidException ||
+                    exc is IOException || exc is SocketException || exc is ObjectDisposedException ||
+                    exc is PlcException || exc is TimeoutException)
                 {
                     Close();
                 }
@@ -621,24 +703,75 @@ namespace S7.Net
             }
         }
 
-        private async Task<byte[]> NoLockRequestTsduAsync(Stream stream, byte[] requestData, int offset, int length,
-            CancellationToken cancellationToken = default)
+        private async Task ExecuteWriteWithTimeoutAsync(
+            Stream stream,
+            byte[] requestData,
+            int offset,
+            int length,
+            CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            int timeoutMs = WriteTimeout;
+            if (timeoutMs <= 0)
+            {
+                await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(timeoutMs);
+            using var closeOnTimeout = timeoutCts.Token.Register(Close);
             try
             {
-                using var closeOnCancellation = cancellationToken.Register(Close);
-                await stream.WriteAsync(requestData, offset, length, cancellationToken).ConfigureAwait(false);
-                return await COTP.TSDU.ReadAsync(stream, cancellationToken).ConfigureAwait(false);
+                await stream.WriteAsync(requestData, offset, length, timeoutCts.Token).ConfigureAwait(false);
             }
-            catch (Exception exc)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested && timeoutCts.IsCancellationRequested &&
+                (ex is OperationCanceledException || ex is IOException || ex is ObjectDisposedException || ex is SocketException))
             {
-                if (exc is TPDUInvalidException || exc is TPKTInvalidException)
-                {
-                    Close();
-                }
+                throw new PlcException(
+                    ErrorCode.WriteData,
+                    $"Writing to PLC timed out after {timeoutMs} ms.",
+                    new TimeoutException($"Writing to PLC timed out after {timeoutMs} ms.", ex));
+            }
+        }
 
-                throw;
+        private async Task<TResponse> ExecuteReadWithTimeoutAsync<TResponse>(
+            Stream stream,
+            Func<Stream, CancellationToken, Task<TResponse>> readResponseAsync,
+            CancellationToken cancellationToken)
+        {
+            int timeoutMs = ReadTimeout;
+            if (timeoutMs <= 0)
+            {
+                return await readResponseAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(timeoutMs);
+            using var closeOnTimeout = timeoutCts.Token.Register(Close);
+            try
+            {
+#if NET6_0_OR_GREATER
+                return await readResponseAsync(stream, timeoutCts.Token)
+                    .WaitAsync(System.TimeSpan.FromMilliseconds(timeoutMs + 2000), cancellationToken)
+                    .ConfigureAwait(false);
+#else
+                return await readResponseAsync(stream, timeoutCts.Token).ConfigureAwait(false);
+#endif
+            }
+            catch (TimeoutException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new PlcException(
+                    ErrorCode.ConnectionError,
+                    $"Reading from PLC timed out after {timeoutMs} ms.",
+                    ex);
+            }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested && timeoutCts.IsCancellationRequested &&
+                (ex is OperationCanceledException || ex is IOException || ex is ObjectDisposedException || ex is SocketException))
+            {
+                throw new PlcException(
+                    ErrorCode.ConnectionError,
+                    $"Reading from PLC timed out after {timeoutMs} ms.",
+                    new TimeoutException($"Reading from PLC timed out after {timeoutMs} ms.", ex));
             }
         }
     }
